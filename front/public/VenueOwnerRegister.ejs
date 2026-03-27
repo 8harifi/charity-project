@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ثبت نام صاحب مکان | Momentum</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Shabnam Font -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/shabnam-font@v5.0.0/dist/font-face.css">
+
+  <style>
+    body {
+      font-family: 'Shabnam', sans-serif; /* فونت فارسی Shabnam */
+      background: linear-gradient(135deg,#f3e7ff 0%,#fce4ec 50%,#e8eaf6 100%);
+    }
+
+    .glass {
+      background: linear-gradient(135deg,rgba(255,255,255,.15),rgba(255,255,255,.05));
+      backdrop-filter: blur(12px);
+    }
+
+    .text-gradient {
+      background: linear-gradient(135deg,#ec4899,#8b5cf6,#6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .input {
+      border: 2px solid #e5e7eb;
+      font-family: 'Shabnam', sans-serif;
+    }
+
+    .input:focus {
+      border-color:#8b5cf6;
+      box-shadow:0 0 0 3px rgba(139,92,246,.15);
+      outline:none;
+    }
+
+    .btn-gradient {
+      background: linear-gradient(135deg,#ec4899,#8b5cf6,#6366f1);
+      font-family: 'Shabnam', sans-serif;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+  <!-- background blobs -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute w-96 h-96 bg-pink-300/20 rounded-full -top-24 -left-24"></div>
+    <div class="absolute w-80 h-80 bg-indigo-300/20 rounded-full bottom-0 -right-24"></div>
+  </div>
+
+  <div class="w-full max-w-lg">
+
+    <div class="glass border border-white/40 rounded-3xl shadow-2xl overflow-hidden">
+
+      <!-- header -->
+      <div class="bg-gradient-to-l from-pink-500 via-purple-500 to-indigo-500 p-6 text-center">
+        <h1 class="text-2xl font-bold text-white">Momentum</h1>
+        <p class="text-white/90 mt-1">ثبت نام صاحب مکان </p>
+      </div>
+
+      <!-- form -->
+      <div class="p-8">
+        <h2 class="text-3xl font-bold text-center mb-8 text-gray-900">
+          ساخت حساب صاحب مکان
+        </h2>
+
+        <form action="/auth/register/event-manager" method="POST" class="space-y-5">
+
+          <!-- name -->
+          <div>
+            <label class="block mb-1 text-gray-700 font-medium">
+              <i class="fas fa-user ml-2 text-pink-500"></i>
+              نام و نام خانوادگی
+            </label>
+            <input name="name" required placeholder="نام کامل"
+              class="input w-full p-4 rounded-xl bg-white/80">
+          </div>
+
+          <!-- phone -->
+          <div>
+            <label class="block mb-1 text-gray-700 font-medium">
+              <i class="fas fa-phone ml-2 text-purple-500"></i>
+              شماره تلفن
+            </label>
+            <input name="phoneNumber" required dir="ltr"
+              class="input w-full p-4 rounded-xl bg-white/80"
+              placeholder="09xxxxxxxxx">
+          </div>
+
+          <!-- certificate -->
+          <div>
+            <label class="block mb-1 text-gray-700 font-medium">
+              <i class="fas fa-id-card ml-2 text-indigo-500"></i>
+              شماره مجوز
+            </label>
+            <input name="certificateId" required
+              class="input w-full p-4 rounded-xl bg-white/80"
+              placeholder="شماره مجوز">
+          </div>
+
+          <!-- national code -->
+          <div>
+            <label class="block mb-1 text-gray-700 font-medium">
+              <i class="fas fa-fingerprint ml-2 text-pink-500"></i>
+              کد ملی
+            </label>
+            <input name="nationalCode" required
+              class="input w-full p-4 rounded-xl bg-white/80"
+              placeholder="کد ملی">
+          </div>
+
+          <!-- password -->
+          <div>
+            <label class="block mb-1 text-gray-700 font-medium">
+              <i class="fas fa-lock ml-2 text-purple-500"></i>
+              رمز عبور
+            </label>
+            <input type="password" name="password" required
+              class="input w-full p-4 rounded-xl bg-white/80"
+              placeholder="رمز عبور">
+          </div>
+
+          <!-- confirm -->
+          <div>
+            <label class="block mb-1 text-gray-700 font-medium">
+              <i class="fas fa-lock ml-2 text-indigo-500"></i>
+              تایید رمز عبور
+            </label>
+            <input type="password" name="confirmPassword" required
+              class="input w-full p-4 rounded-xl bg-white/80"
+              placeholder="تکرار رمز عبور">
+          </div>
+
+          <!-- submit -->
+          <button type="submit"
+            class="btn-gradient w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg">
+            <i class="fas fa-user-plus ml-2"></i>
+            ثبت نام
+          </button>
+
+        </form>
+
+        <!-- footer -->
+        <div class="mt-6 text-center text-gray-600">
+          حساب دارید؟
+          <a href="/auth/login/event-manager" class="text-gradient font-bold hover:underline">
+            ورود
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد کاربر | دنیای رویدادها</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #fdf2f8 0%, #faf5ff 100%);
+            min-height: 100vh;
+            color: #4c0519;
+        }
+        
+        /* تم بنفش-صورتی مشابه داشبورد */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 207, 232, 0.4);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(236, 72, 153, 0.15);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            box-shadow: 0 30px 80px rgba(236, 72, 153, 0.25);
+            transform: translateY(-8px);
+            border-color: rgba(236, 72, 153, 0.6);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 20px rgba(236, 72, 153, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #7c3aed;
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            border-color: rgba(236, 72, 153, 0.5);
+            background: white;
+        }
+        
+        .action-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-view {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+       
+        
+        .btn-share {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.1));
+            color: #db2777;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card {
+            padding: 2rem;
+            border-radius: 24px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.15));
+            z-index: 1;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.02);
+        }
+        
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .search-input {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            border-radius: 16px;
+            padding: 1rem 1rem 1rem 3.5rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            color: #4c0519;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.1);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #ec4899;
+            box-shadow: 0 12px 30px rgba(236, 72, 153, 0.2);
+            background: white;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ec4899;
+            z-index: 10;
+        }
+        
+        .tab-button {
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            background: transparent;
+            color: #881337;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(168, 85, 247, 0.1));
+            color: #db2777;
+            font-weight: 600;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.15);
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ec4899, #a855f7);
+            border-radius: 3px;
+        }
+        
+        .ticket-card, .event-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 1px solid rgba(236, 72, 153, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ticket-card::before, .event-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.05), transparent);
+            transition: 0.5s;
+        }
+        
+        .ticket-card:hover::before, .event-card:hover::before {
+            right: 100%;
+        }
+        
+        .ticket-card:hover, .event-card:hover {
+            background: linear-gradient(90deg, rgba(236, 72, 153, 0.05), transparent);
+            transform: translateX(-10px);
+        }
+        
+        .featured-badge {
+            background: linear-gradient(135deg, #f472b6, #ec4899);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(236, 72, 153, 0.5); }
+            100% { box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3); }
+        }
+        
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        /* Particle effects */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: particle-float 20s infinite linear;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(251, 207, 232, 0.3);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            border-radius: 10px;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Status badges */
+        .status-badge {
+            padding: 0.5rem 1.2rem;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .status-active {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .status-upcoming {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .status-completed {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.1));
+            color: #7c3aed;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        
+        .status-cancelled {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        /* Gradient backgrounds */
+        .gradient-pink-1 {
+            background: linear-gradient(135deg, #e495bc 0%, #e0bccc 100%);
+        }
+        
+        .gradient-purple-1 {
+            background: linear-gradient(135deg, #ba9cd5 0%, #9d83cc 100%);
+        }
+        
+       
+        .gradient-mixed-1 {
+            background: linear-gradient(135deg, #ddaec6 0%, #bd9ed9 50%, #9c9ddd 100%);
+        }
+        
+        
+        
+        /* Hover effects for cards */
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Shimmer effect */
+        .shimmer {
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                transparent 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Event category badges */
+        .category-badge {
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .category-conference {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.1));
+            color: #db2777;
+        }
+        
+        .category-workshop {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+            color: #16a34a;
+        }
+        
+        .category-concert {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+            color: #d97706;
+        }
+        
+        .category-exhibition {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
+            color: #2563eb;
+        }
+        
+        /* Ticket styling */
+        .ticket {
+            position: relative;
+            border: 2px dashed rgba(236, 72, 153, 0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(251, 207, 232, 0.1));
+        }
+        
+        .ticket::before, .ticket::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fdf2f8;
+            border: 2px solid rgba(236, 72, 153, 0.3);
+        }
+        
+        .ticket::before {
+            top: -10px;
+            left: -10px;
+        }
+        
+        .ticket::after {
+            bottom: -10px;
+            left: -10px;
+        }
+        
+        /* Review stars */
+        .review-stars {
+            color: #fbbf24;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6 relative overflow-x-hidden">
+    
+    <!-- Particles Background -->
+    <div class="particles-container" id="particles"></div>
+    
+    <!-- Floating Shapes -->
+    <div class="fixed top-1/4 right-10 w-64 h-64 rounded-full bg-gradient-to-r from-pink-500/10 to-purple-500/10 blur-3xl floating z-0"></div>
+    <div class="fixed bottom-1/3 left-10 w-48 h-48 rounded-full bg-gradient-to-r from-indigo-500/10 to-blue-500/10 blur-3xl floating z-0" style="animation-delay: 2s;"></div>
+    
+    <!-- Header -->
+    <header class="mb-8 pt-8 relative z-10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold gradient-text mb-4 pt-12">داشبورد کاربر</h1>
+                <p class="text-pink-700 text-lg">خوش آمدید! رویدادهای خود را مدیریت کنید</p>
+            </div>
+            
+         
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div class="stat-card gradient-pink-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۱۲</div>
+                        <div class="text-xl opacity-90">رویدادهای شرکت‌کرده</div>
+                    </div>
+                    <i class="fas  text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">آینده: ۳ | گذشته: ۹</div>
+            </div>
+            
+            <div class="stat-card gradient-purple-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۵</div>
+                        <div class="text-xl opacity-90">رویدادهای ذخیره‌شده</div>
+                    </div>
+                    <i class="fas  text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">علاقه‌مندی‌ها</div>
+            </div>
+            
+          
+         
+            
+            <div class="stat-card gradient-mixed-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۲</div>
+                        <div class="text-xl opacity-90">اعلان‌ها</div>
+                    </div>
+                    <i class="fas  text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">خوانده نشده</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10">
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-4 mb-8">
+            <button onclick="exploreEvents()" class="btn-primary">
+                <i class="fas fa-search"></i> جستجوی رویداد جدید
+            </button>
+            
+            <button onclick="showMyTickets()" class="btn-secondary">
+                <i class="fas fa-ticket-alt"></i> بلیط‌های من
+            </button>
+            
+          
+            
+            <!-- جستجوی پیشرفته -->
+          
+        </div>
+        
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-3 mb-8 border-b border-pink-100 pb-4">
+            <button class="tab-button active" onclick="switchTab('upcoming')" id="tab-upcoming">
+                <i class="fas fa-clock ml-2"></i> رویدادهای پیش‌رو (۳)
+            </button>
+            <button class="tab-button" onclick="switchTab('past')" id="tab-past">
+                <i class="fas fa-history ml-2"></i> رویدادهای گذشته (۹)
+            </button>
+            <button class="tab-button" onclick="switchTab('saved')" id="tab-saved">
+                <i class="fas fa-bookmark ml-2"></i> ذخیره‌شده‌ها (۵)
+            </button>
+            <button class="tab-button" onclick="switchTab('tickets')" id="tab-tickets">
+                <i class="fas fa-ticket-alt ml-2"></i> بلیط‌ها (۱۲)
+            </button>
+            <button class="tab-button" onclick="switchTab('messages')" id="tab-messages">
+                <i class="fas fa-envelope ml-2"></i> پیام‌ها (۷)
+            </button>
+        </div>
+        
+        <!-- Tab Content - Upcoming Events -->
+        <div id="upcoming-content" class="tab-content active">
+            <!-- Events Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+                <!-- Event Card 1 -->
+                <div class="glass-card p-6 hover-lift">
+                    <div class="relative mb-4">
+                        <div class="w-full h-48 rounded-xl bg-gradient-to-r from-pink-400 to-purple-500 mb-4"></div>
+                        <span class="category-badge category-conference absolute top-4 left-4">همایش</span>
+                        <span class="featured-badge absolute top-4 right-4">
+                            <i class="fas fa-star"></i> ویژه
+                        </span>
+                    </div>
+                    
+                    <h3 class="font-bold text-pink-900 text-xl mb-3">همایش فناوری هوش مصنوعی</h3>
+                    
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-calendar text-pink-500"></i>
+                            <span class="text-pink-700">۱۵ اردیبهشت ۱۴۰۳ - ۱۴:۰۰ تا ۱۸:۰۰</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-map-marker-alt text-pink-500"></i>
+                            <span class="text-pink-700">مرکز همایش بین‌المللی تهران</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-ticket-alt text-pink-500"></i>
+                            <span class="text-pink-700">بلیط شماره: TICKET-00123</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <div class="text-sm text-pink-500">وضعیت:</div>
+                            <span class="status-badge status-upcoming">
+                                <i class="fas fa-clock"></i> پیش‌رو
+                            </span>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm text-pink-500">ظرفیت:</div>
+                            <div class="font-bold text-pink-900">۸۵% پر شده</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar mb-4">
+                        <div class="progress-fill" style="width: 85%"></div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="viewEventDetails(1)" class="action-btn btn-view flex-1">
+                            <i class="fas fa-eye"></i> جزییات
+                        </button>
+                      
+                        <button onclick="shareEvent(1)" class="action-btn btn-share">
+                            <i class="fas fa-share"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Event Card 2 -->
+                <div class="glass-card p-6 hover-lift">
+                    <div class="relative mb-4">
+                        <div class="w-full h-48 rounded-xl bg-gradient-to-r from-green-400 to-emerald-500 mb-4"></div>
+                        <span class="category-badge category-workshop absolute top-4 left-4">کارگاه</span>
+                    </div>
+                    
+                    <h3 class="font-bold text-pink-900 text-xl mb-3">کارگاه برنامه‌نویسی پایتون</h3>
+                    
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-calendar text-pink-500"></i>
+                            <span class="text-pink-700">۲۰ اردیبهشت ۱۴۰۳ - ۱۰:۰۰ تا ۱۶:۰۰</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-map-marker-alt text-pink-500"></i>
+                            <span class="text-pink-700">پارک علم و فناوری مشهد</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-ticket-alt text-pink-500"></i>
+                            <span class="text-pink-700">بلیط شماره: TICKET-00124</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <div class="text-sm text-pink-500">وضعیت:</div>
+                            <span class="status-badge status-upcoming">
+                                <i class="fas fa-clock"></i> پیش‌رو
+                            </span>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm text-pink-500">ظرفیت:</div>
+                            <div class="font-bold text-pink-900">۹۲% پر شده</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar mb-4">
+                        <div class="progress-fill" style="width: 92%"></div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="viewEventDetails(2)" class="action-btn btn-view flex-1">
+                            <i class="fas fa-eye"></i> جزییات
+                        </button>
+                       
+                        <button onclick="shareEvent(2)" class="action-btn btn-share">
+                            <i class="fas fa-share"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Event Card 3 -->
+                <div class="glass-card p-6 hover-lift">
+                    <div class="relative mb-4">
+                        <div class="w-full h-48 rounded-xl bg-gradient-to-r from-yellow-400 to-orange-500 mb-4"></div>
+                        <span class="category-badge category-concert absolute top-4 left-4">کنسرت</span>
+                    </div>
+                    
+                    <h3 class="font-bold text-pink-900 text-xl mb-3">فستیوال موسیقی کلاسیک</h3>
+                    
+                    <div class="space-y-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-calendar text-pink-500"></i>
+                            <span class="text-pink-700">۱۰ خرداد ۱۴۰۳ - ۱۹:۰۰ تا ۲۲:۰۰</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-map-marker-alt text-pink-500"></i>
+                            <span class="text-pink-700">تالار رودکی اصفهان</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-ticket-alt text-pink-500"></i>
+                            <span class="text-pink-700">بلیط شماره: TICKET-00125</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <div class="text-sm text-pink-500">وضعیت:</div>
+                            <span class="status-badge status-upcoming">
+                                <i class="fas fa-clock"></i> پیش‌رو
+                            </span>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-sm text-pink-500">ظرفیت:</div>
+                            <div class="font-bold text-pink-900">۷۸% پر شده</div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar mb-4">
+                        <div class="progress-fill" style="width: 78%"></div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="viewEventDetails(3)" class="action-btn btn-view flex-1">
+                            <i class="fas fa-eye"></i> جزییات
+                        </button>
+                  
+                        <button onclick="shareEvent(3)" class="action-btn btn-share">
+                            <i class="fas fa-share"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upcoming Events Calendar -->
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="text-2xl font-bold text-pink-900 mb-6">تقویم رویدادهای پیش‌رو</h3>
+                
+                <div class="grid grid-cols-7 gap-4 mb-6">
+                    <div class="text-center text-pink-700 font-bold py-2">شنبه</div>
+                    <div class="text-center text-pink-700 font-bold py-2">یکشنبه</div>
+                    <div class="text-center text-pink-700 font-bold py-2">دوشنبه</div>
+                    <div class="text-center text-pink-700 font-bold py-2">سه‌شنبه</div>
+                    <div class="text-center text-pink-700 font-bold py-2">چهارشنبه</div>
+                    <div class="text-center text-pink-700 font-bold py-2">پنجشنبه</div>
+                    <div class="text-center text-pink-700 font-bold py-2">جمعه</div>
+                    
+                    <!-- Calendar Days -->
+                    <div class="calendar-day">۱</div>
+                    <div class="calendar-day">۲</div>
+                    <div class="calendar-day">۳</div>
+                    <div class="calendar-day">۴</div>
+                    <div class="calendar-day">۵</div>
+                    <div class="calendar-day">۶</div>
+                    <div class="calendar-day">۷</div>
+                    
+                    <div class="calendar-day">۸</div>
+                    <div class="calendar-day">۹</div>
+                    <div class="calendar-day">۱۰</div>
+                    <div class="calendar-day">۱۱</div>
+                    <div class="calendar-day">۱۲</div>
+                    <div class="calendar-day">۱۳</div>
+                    <div class="calendar-day event">۱۴<br><span class="text-xs">همایش</span></div>
+                    
+                    <div class="calendar-day event">۱۵<br><span class="text-xs">همایش</span></div>
+                    <div class="calendar-day">۱۶</div>
+                    <div class="calendar-day">۱۷</div>
+                    <div class="calendar-day">۱۸</div>
+                    <div class="calendar-day">۱۹</div>
+                    <div class="calendar-day event">۲۰<br><span class="text-xs">کارگاه</span></div>
+                    <div class="calendar-day">۲۱</div>
+                    
+                    <div class="calendar-day">۲۲</div>
+                    <div class="calendar-day">۲۳</div>
+                    <div class="calendar-day">۲۴</div>
+                    <div class="calendar-day">۲۵</div>
+                    <div class="calendar-day">۲۶</div>
+                    <div class="calendar-day">۲۷</div>
+                    <div class="calendar-day">۲۸</div>
+                    
+                    <div class="calendar-day">۲۹</div>
+                    <div class="calendar-day">۳۰</div>
+                    <div class="calendar-day">۳۱</div>
+                    <div class="calendar-day"></div>
+                    <div class="calendar-day"></div>
+                    <div class="calendar-day"></div>
+                    <div class="calendar-day"></div>
+                </div>
+                
+                <div class="flex justify-between items-center">
+                    <button onclick="prevMonth()" class="btn-secondary">
+                        <i class="fas fa-chevron-right"></i> ماه قبل
+                    </button>
+                    <div class="text-pink-900 font-bold text-xl">اردیبهشت ۱۴۰۳</div>
+                    <button onclick="nextMonth()" class="btn-secondary">
+                        ماه بعد <i class="fas fa-chevron-left"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Content - Past Events -->
+        <div id="past-content" class="tab-content" style="display: none;">
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="text-2xl font-bold text-pink-900 mb-6">رویدادهای شرکت‌کرده گذشته</h3>
+                
+                <div class="space-y-4">
+                    <!-- Past Event 1 -->
+                    <div class="p-6 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 event-card">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="font-bold text-pink-900 text-lg mb-2">همایش توسعه وب پیشرفته</div>
+                                <div class="flex flex-wrap gap-4 text-sm text-pink-600">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>۵ فروردین ۱۴۰۳</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>مرکز همایش‌های تهران</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock"></i>
+                                        <span>۴ ساعت</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-col md:items-end gap-3">
+                                <span class="status-badge status-completed">
+                                    <i class="fas fa-check-circle"></i> تکمیل شده
+                                </span>
+                                
+                                <div class="review-stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star-half-alt"></i>
+                                    <span class="text-pink-700 text-sm mr-2">۴.۵</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-3 mt-4">
+                          
+                            <button onclick="writeReview(1)" class="action-btn btn-view">
+                                <i class="fas fa-comment"></i> نوشتن بازخورد
+                            </button>
+                            <button onclick="viewMaterials(1)" class="action-btn btn-download">
+                                <i class="fas fa-download"></i> دریافت مطالب
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Past Event 2 -->
+                    <div class="p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100 event-card">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="font-bold text-purple-900 text-lg mb-2">کارگاه طراحی UX/UI</div>
+                                <div class="flex flex-wrap gap-4 text-sm text-purple-600">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>۲۰ اسفند ۱۴۰۲</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>مرکز نوآوری دانشگاه تهران</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock"></i>
+                                        <span>۶ ساعت</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-col md:items-end gap-3">
+                                <span class="status-badge status-completed">
+                                    <i class="fas fa-check-circle"></i> تکمیل شده
+                                </span>
+                                
+                                <div class="review-stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <span class="text-purple-700 text-sm mr-2">۵.۰</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-3 mt-4">
+                         
+                            <button onclick="writeReview(2)" class="action-btn btn-view">
+                                <i class="fas fa-comment"></i> نوشتن بازخورد
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Past Event 3 -->
+                    <div class="p-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100 event-card">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex-1">
+                                <div class="font-bold text-indigo-900 text-lg mb-2">سمینار بازاریابی دیجیتال</div>
+                                <div class="flex flex-wrap gap-4 text-sm text-indigo-600">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>۱۰ بهمن ۱۴۰۲</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <span>هتل اسپیناس پالاس</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock"></i>
+                                        <span>۳ ساعت</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-col md:items-end gap-3">
+                                <span class="status-badge status-completed">
+                                    <i class="fas fa-check-circle"></i> تکمیل شده
+                                </span>
+                                
+                                <div class="review-stars">
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="fas fa-star"></i>
+                                    <i class="far fa-star"></i>
+                                    <span class="text-indigo-700 text-sm mr-2">۴.۰</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="flex justify-center gap-3 mt-8">
+                    <button class="px-4 py-2 rounded-lg bg-pink-100 text-pink-700 hover:bg-pink-200 transition-colors">۱</button>
+                    <button class="px-4 py-2 rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors">۲</button>
+                    <button class="px-4 py-2 rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors">۳</button>
+                    <button class="px-4 py-2 rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors">بعدی</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Content - Saved Events -->
+        <div id="saved-content" class="tab-content" style="display: none;">
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="text-2xl font-bold text-pink-900 mb-6">رویدادهای ذخیره‌شده</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Saved Event 1 -->
+                    <div class="p-6 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="font-bold text-pink-900 text-lg">نمایشگاه هنرهای تجسمی</div>
+                                <div class="text-sm text-pink-600 mt-1">۲۵ اردیبهشت ۱۴۰۳ - گالری آرت تهران</div>
+                            </div>
+                            <button onclick="removeFromSaved(1)" class="text-pink-500 hover:text-pink-700">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-pink-700">ظرفیت باقی‌مانده: ۳۵ نفر</span>
+                            <button onclick="bookEvent(1)" class="btn-primary py-2 px-4 text-sm">
+                                <i class="fas fa-shopping-cart ml-1"></i> رزرو
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Saved Event 2 -->
+                    <div class="p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="font-bold text-purple-900 text-lg">کارگاه مذاکره حرفه‌ای</div>
+                                <div class="text-sm text-purple-600 mt-1">۵ خرداد ۱۴۰۳ - مرکز آموزش مدیریت</div>
+                            </div>
+                            <button onclick="removeFromSaved(2)" class="text-purple-500 hover:text-purple-700">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-purple-700">ظرفیت باقی‌مانده: ۱۸ نفر</span>
+                            <button onclick="bookEvent(2)" class="btn-primary py-2 px-4 text-sm">
+                                <i class="fas fa-shopping-cart ml-1"></i> رزرو
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Saved Event 3 -->
+                    <div class="p-6 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="font-bold text-indigo-900 text-lg">کنفرانس فناوری‌های نوین</div>
+                                <div class="text-sm text-indigo-600 mt-1">۱۵ خرداد ۱۴۰۳ - دانشگاه صنعتی شریف</div>
+                            </div>
+                            <button onclick="removeFromSaved(3)" class="text-indigo-500 hover:text-indigo-700">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-indigo-700">ظرفیت باقی‌مانده: ۱۲۲ نفر</span>
+                            <button onclick="bookEvent(3)" class="btn-primary py-2 px-4 text-sm">
+                                <i class="fas fa-shopping-cart ml-1"></i> رزرو
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Saved Event 4 -->
+                    <div class="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <div class="font-bold text-blue-900 text-lg">فستیوال فیلم کوتاه</div>
+                                <div class="text-sm text-blue-600 mt-1">۲۵ خرداد ۱۴۰۳ - سینما فرهنگ</div>
+                            </div>
+                            <button onclick="removeFromSaved(4)" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-bookmark"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-blue-700">ظرفیت باقی‌مانده: ۴۷ نفر</span>
+                            <button onclick="bookEvent(4)" class="btn-primary py-2 px-4 text-sm">
+                                <i class="fas fa-shopping-cart ml-1"></i> رزرو
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <button onclick="exploreEvents()" class="btn-secondary">
+                        <i class="fas fa-search ml-2"></i> مشاهده رویدادهای بیشتر
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Content - Tickets -->
+        <div id="tickets-content" class="tab-content" style="display: none;">
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="text-2xl font-bold text-pink-900 mb-6">بلیط‌های من</h3>
+                
+                <div class="space-y-6">
+                    <!-- Ticket 1 -->
+                    <div class="ticket">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                            <div>
+                                <div class="font-bold text-pink-900 text-lg mb-2">همایش فناوری هوش مصنوعی</div>
+                                <div class="text-sm text-pink-600">کد بلیط: TICKET-00123</div>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-sm text-pink-500">تاریخ رویداد:</div>
+                                <div class="font-bold text-pink-900">۱۵ اردیبهشت ۱۴۰۳</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <div class="text-sm text-pink-500">نام صاحب بلیط:</div>
+                                <div class="font-medium text-pink-900">سارا محمدی</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-pink-500">نوع بلیط:</div>
+                                <div class="font-medium text-pink-900">ویژه (VIP)</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-pink-500">قیمت:</div>
+                                <div class="font-medium text-pink-900">۱,۵۰۰,۰۰۰ تومان</div>
+                            </div>
+                        </div>
+                        
+                      
+                    </div>
+                    
+                    <!-- Ticket 2 -->
+                    <div class="ticket">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                            <div>
+                                <div class="font-bold text-pink-900 text-lg mb-2">کارگاه برنامه‌نویسی پایتون</div>
+                                <div class="text-sm text-pink-600">کد بلیط: TICKET-00124</div>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-sm text-pink-500">تاریخ رویداد:</div>
+                                <div class="font-bold text-pink-900">۲۰ اردیبهشت ۱۴۰۳</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <div class="text-sm text-pink-500">نام صاحب بلیط:</div>
+                                <div class="font-medium text-pink-900">سارا محمدی</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-pink-500">نوع بلیط:</div>
+                                <div class="font-medium text-pink-900">عادی</div>
+                            </div>
+                            <div>
+                                <div class="text-sm text-pink-500">قیمت:</div>
+                                <div class="font-medium text-pink-900">۸۵۰,۰۰۰ تومان</div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-3">
+                           
+                            <button onclick="addToCalendar(2)" class="action-btn btn-view">
+                                <i class="fas fa-calendar-plus"></i> افزودن به تقویم
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 flex justify-between items-center">
+                    <div class="text-pink-600">
+                        مجموع هزینه بلیط‌ها: <span class="font-bold text-pink-900 text-xl">۴,۷۵۰,۰۰۰ تومان</span>
+                    </div>
+                    <button onclick="showAllTickets()" class="btn-secondary">
+                        <i class="fas fa-list ml-2"></i> مشاهده همه بلیط‌ها
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+            <!-- Recommended Events -->
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="font-bold text-xl mb-6 text-pink-900 flex items-center gap-3">
+                    <i class="fas fa-fire text-pink-500 text-2xl"></i>
+                    پیشنهاد ویژه برای شما
+                </h3>
+                <div class="space-y-5">
+                    <div class="p-4 bg-gradient-to-l from-pink-50 to-transparent rounded-xl border border-pink-100 cursor-pointer hover:shadow-lg transition-all" onclick="viewEventDetails(4)">
+                        <div class="font-medium text-pink-900">نمایشگاه هنرهای تجسمی</div>
+                        <div class="text-sm text-pink-600 mt-2">۲۵ اردیبهشت - گالری آرت تهران</div>
+                        <div class="flex items-center gap-3 mt-3">
+                            <div class="progress-bar flex-1">
+                                <div class="progress-fill" style="width: 65%"></div>
+                            </div>
+                            <span class="text-xs text-pink-600 font-bold">۶۵% پر شده</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-gradient-to-l from-purple-50 to-transparent rounded-xl border border-purple-100 cursor-pointer hover:shadow-lg transition-all" onclick="viewEventDetails(5)">
+                        <div class="font-medium text-purple-900">کارگاه مذاکره حرفه‌ای</div>
+                        <div class="text-sm text-purple-600 mt-2">۵ خرداد - مرکز آموزش مدیریت</div>
+                        <div class="flex items-center gap-3 mt-3">
+                            <div class="progress-bar flex-1">
+                                <div class="progress-fill" style="width: 82%"></div>
+                            </div>
+                            <span class="text-xs text-purple-600 font-bold">۸۲% پر شده</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="exploreEvents()" class="w-full mt-6 p-3 text-center bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-700 border-2 border-pink-200 rounded-xl hover:shadow-xl transition-all hover:border-pink-300 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20">
+                    <i class="fas fa-search ml-2"></i> مشاهده رویدادهای بیشتر
+                </button>
+            </div>
+            
+            <!-- Upcoming Events -->
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="font-bold text-xl mb-6 text-pink-900 flex items-center gap-3">
+                    <i class="fas fa-calendar-day text-pink-500 text-2xl"></i>
+                    رویدادهای پیش‌رو
+                </h3>
+                <div class="space-y-5">
+                    <div class="p-4 bg-gradient-to-l from-pink-50 to-transparent rounded-xl border border-pink-100">
+                        <div class="font-medium text-pink-900">همایش هوش مصنوعی</div>
+                        <div class="text-sm text-pink-600 mt-2">۱۵ اردیبهشت - ۲ روز دیگر</div>
+                        <div class="flex items-center gap-3 mt-3">
+                            <div class="w-full bg-pink-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-pink-500 to-purple-500 h-2.5 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <span class="text-xs text-pink-600 font-bold">تایید شده</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-gradient-to-l from-purple-50 to-transparent rounded-xl border border-purple-100">
+                        <div class="font-medium text-purple-900">کارگاه برنامه‌نویسی</div>
+                        <div class="text-sm text-purple-600 mt-2">۲۰ اردیبهشت - ۷ روز دیگر</div>
+                        <div class="flex items-center gap-3 mt-3">
+                            <div class="w-full bg-purple-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-purple-500 to-indigo-500 h-2.5 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <span class="text-xs text-purple-600 font-bold">تایید شده</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="font-bold text-xl mb-6 text-pink-900 flex items-center gap-3">
+                    <i class="fas fa-bolt text-pink-500 text-2xl"></i>
+                    دسترسی سریع
+                </h3>
+                <div class="space-y-4">
+                    <button onclick="exploreEvents()" class="w-full p-4 text-right bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-700 border-2 border-pink-200 rounded-xl hover:shadow-xl transition-all hover:border-pink-300 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20">
+                        <i class="fas fa-search ml-2"></i> جستجوی رویداد جدید
+                    </button>
+                    
+                    <button onclick="showMyTickets()" class="w-full p-4 text-right bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-purple-700 border-2 border-purple-200 rounded-xl hover:shadow-xl transition-all hover:border-purple-300 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-indigo-500/20">
+                        <i class="fas fa-ticket-alt ml-2"></i> بلیط‌های من
+                    </button>
+                    
+                  
+                    
+                    <button onclick="contactSupport()" class="w-full p-4 text-right bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 border-2 border-blue-200 rounded-xl hover:shadow-xl transition-all hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-cyan-500/20">
+                        <i class="fas fa-headset ml-2"></i> تماس با پشتیبانی
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // ایجاد ذرات پس‌زمینه
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 6 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 20}s`;
+                particle.style.animationDuration = `${Math.random() * 15 + 10}s`;
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // متغیرها
+        let currentTab = 'upcoming';
+        
+        // Tab Switching
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Show/hide tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-content`).style.display = 'block';
+            document.getElementById(`${tabName}-content`).classList.add('active');
+            
+            // Filter content
+            filterContent();
+        }
+        
+        // Search Functionality
+        function filterContent() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            // In real app: filter content based on search term
+            // For demo purposes, just show a notification
+            if (searchTerm) {
+                showNotification(`جستجو برای: ${searchTerm}`, 'info');
+            }
+        }
+        
+        // Event Actions
+        function viewEventDetails(eventId) {
+            showNotification(`مشاهده جزییات رویداد شماره ${eventId}`, 'success');
+            // In real app: window.location.href = `/event/${eventId}`;
+        }
+        
+        function downloadTicket(ticketId) {
+            showNotification(`دانلود بلیط شماره ${ticketId}`, 'success');
+            // In real app: download ticket PDF
+        }
+        
+        function shareEvent(eventId) {
+            showNotification(`اشتراک‌گذاری رویداد شماره ${eventId}`, 'info');
+            // In real app: show share dialog
+        }
+        
+        function addToCalendar(eventId) {
+            showNotification(`افزودن رویداد شماره ${eventId} به تقویم`, 'success');
+            // In real app: add to Google/Apple calendar
+        }
+        
+     
+        
+        function writeReview(eventId) {
+            showNotification(`نوشتن بازخورد برای رویداد شماره ${eventId}`, 'info');
+            // In real app: open review modal
+        }
+        
+        function viewMaterials(eventId) {
+            showNotification(`مشاهده مطالب رویداد شماره ${eventId}`, 'info');
+            // In real app: open materials page
+        }
+        
+        function removeFromSaved(eventId) {
+            if (confirm('آیا از حذف این رویداد از لیست ذخیره‌شده‌ها اطمینان دارید؟')) {
+                showNotification(`رویداد شماره ${eventId} از ذخیره‌شده‌ها حذف شد`, 'success');
+                // In real app: API call to remove from saved
+            }
+        }
+        
+        function bookEvent(eventId) {
+            showNotification(`رزرو رویداد شماره ${eventId}`, 'info');
+            // In real app: open booking modal
+        }
+        
+      
+        
+       
+        
+        // Main Actions
+        function exploreEvents() {
+            showNotification('جستجوی رویدادها', 'info');
+            // In real app: window.location.href = '/events';
+        }
+        
+        function showMyTickets() {
+            switchTab('tickets');
+        }
+        
+      
+        
+        function showAllTickets() {
+            switchTab('tickets');
+        }
+        
+        // Calendar Navigation
+        function prevMonth() {
+            showNotification('ماه قبل', 'info');
+        }
+        
+        function nextMonth() {
+            showNotification('ماه بعد', 'info');
+        }
+        
+        // User Menu
+        function showUserMenu() {
+            showNotification('منو کاربری', 'info');
+            // In real app: show dropdown menu
+        }
+        
+        // Support
+        function contactSupport() {
+            showNotification('تماس با پشتیبانی', 'info');
+            // In real app: open support chat
+        }
+        
+        // Notification Function
+        function showNotification(message, type = 'info') {
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-6 left-6 z-50 p-4 rounded-xl border backdrop-blur-lg ${
+                type === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 text-green-800' :
+                type === 'error' ? 'bg-gradient-to-r from-red-50 to-rose-50 border-red-200 text-red-800' :
+                'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200 text-pink-800'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'success' ? 'check-circle text-green-500' : type === 'error' ? 'exclamation-circle text-red-500' : 'info-circle text-pink-500'} text-xl"></i>
+                    <span class="font-medium text-lg">${message}</span>
+                </div>
+            `;
+            
+            notification.classList.add('notification');
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            
+            // Add ripple effect to buttons
+            document.querySelectorAll('.btn-primary, .btn-secondary').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.cssText = `
+                        position: absolute;
+                        border-radius: 50%;
+                        background: rgba(255, 255, 255, 0.7);
+                        transform: scale(0);
+                        animation: ripple 0.6s linear;
+                        width: ${size}px;
+                        height: ${size}px;
+                        top: ${y}px;
+                        left: ${x}px;
+                        pointer-events: none;
+                    `;
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+            
+            // Add CSS for ripple animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Initialize calendar days click events
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                day.addEventListener('click', function() {
+                    const dayNumber = this.textContent.split('\n')[0];
+                    if (dayNumber && !isNaN(dayNumber)) {
+                        showNotification(`انتخاب روز ${dayNumber} اردیبهشت`, 'info');
+                    }
+                });
+            });
+            
+            // Add click events to event cards
+            document.querySelectorAll('.event-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (!e.target.closest('button')) {
+                        showNotification('مشاهده جزییات رویداد', 'info');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

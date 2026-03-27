@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - دسترسی ممنوع | Momentum</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+            min-height: 100vh;
+            color: #1e1b4b;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Background Elements */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -2;
+            background: linear-gradient(45deg, #da9fbf 0%, #c3abfc 50%, #fae8ff 100%);
+        }
+        
+        /* Floating Small 3D Spheres */
+        .small-sphere {
+            position: fixed;
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(15px);
+            animation: floatSphere 25s infinite ease-in-out;
+        }
+        
+        /* Sphere Colors */
+        .sphere-pink-1 {
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at 30% 30%, #b72870, #c03e78);
+            opacity: 0.15;
+            top: 10%;
+            right: 10%;
+            animation-duration: 25s;
+        }
+        
+        .sphere-purple-1 {
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle at 40% 40%, #b98ce2, #8b5cf6);
+            opacity: 0.12;
+            top: 60%;
+            left: 15%;
+            animation-duration: 30s;
+        }
+        
+        .sphere-blue-1 {
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle at 20% 80%, #7779fb, #4f46e5);
+            opacity: 0.1;
+            bottom: 20%;
+            right: 20%;
+            animation-duration: 20s;
+        }
+        
+        /* Floating Animation */
+        @keyframes floatSphere {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(40px, 20px) scale(1.1);
+            }
+            50% {
+                transform: translate(20px, 40px) scale(0.9);
+            }
+            75% {
+                transform: translate(-20px, 20px) scale(1.05);
+            }
+        }
+        
+        /* Glass Morphism Effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            box-shadow: 
+                0 20px 60px rgba(236, 72, 153, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.6);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Button Styles */
+        .btn-gradient {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+        }
+        
+        .btn-gradient:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4);
+        }
+        
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        
+        /* Background extends */
+        .background-extended {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -3;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+        }
+        
+        /* Text Colors */
+        .text-primary {
+            color: #1e1b4b;
+        }
+        
+        .text-secondary {
+            color: #5480bd;
+        }
+        
+        /* Error Glitch Effect */
+        .error-number {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .error-number::before,
+        .error-number::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .error-number::before {
+            animation: glitch-1 2.5s infinite linear alternate-reverse;
+            left: 2px;
+        }
+        
+        .error-number::after {
+            animation: glitch-2 2s infinite linear alternate-reverse;
+            left: -2px;
+        }
+        
+        @keyframes glitch-1 {
+            0% { clip-path: inset(40% 0 61% 0); }
+            5% { clip-path: inset(92% 0 1% 0); }
+            10% { clip-path: inset(43% 0 1% 0); }
+            15% { clip-path: inset(25% 0 58% 0); }
+            20% { clip-path: inset(54% 0 7% 0); }
+            25% { clip-path: inset(58% 0 43% 0); }
+            30% { clip-path: inset(98% 0 1% 0); }
+            35% { clip-path: inset(3% 0 46% 0); }
+            40% { clip-path: inset(80% 0 1% 0); }
+            45% { clip-path: inset(75% 0 9% 0); }
+            50% { clip-path: inset(37% 0 3% 0); }
+            55% { clip-path: inset(59% 0 1% 0); }
+            60% { clip-path: inset(26% 0 67% 0); }
+            65% { clip-path: inset(75% 0 19% 0); }
+            70% { clip-path: inset(84% 0 2% 0); }
+            75% { clip-path: inset(92% 0 5% 0); }
+            80% { clip-path: inset(10% 0 58% 0); }
+            85% { clip-path: inset(58% 0 23% 0); }
+            90% { clip-path: inset(20% 0 59% 0); }
+            95% { clip-path: inset(50% 0 32% 0); }
+            100% { clip-path: inset(43% 0 40% 0); }
+        }
+        
+        @keyframes glitch-2 {
+            0% { clip-path: inset(25% 0 58% 0); }
+            5% { clip-path: inset(54% 0 7% 0); }
+            10% { clip-path: inset(58% 0 43% 0); }
+            15% { clip-path: inset(98% 0 1% 0); }
+            20% { clip-path: inset(3% 0 46% 0); }
+            25% { clip-path: inset(80% 0 1% 0); }
+            30% { clip-path: inset(75% 0 9% 0); }
+            35% { clip-path: inset(37% 0 3% 0); }
+            40% { clip-path: inset(59% 0 1% 0); }
+            45% { clip-path: inset(26% 0 67% 0); }
+            50% { clip-path: inset(75% 0 19% 0); }
+            55% { clip-path: inset(84% 0 2% 0); }
+            60% { clip-path: inset(92% 0 5% 0); }
+            65% { clip-path: inset(10% 0 58% 0); }
+            70% { clip-path: inset(58% 0 23% 0); }
+            75% { clip-path: inset(20% 0 59% 0); }
+            80% { clip-path: inset(50% 0 32% 0); }
+            85% { clip-path: inset(43% 0 40% 0); }
+            90% { clip-path: inset(40% 0 61% 0); }
+            95% { clip-path: inset(92% 0 1% 0); }
+            100% { clip-path: inset(43% 0 1% 0); }
+        }
+        
+        /* Custom Glass Effect Animations */
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(200%);
+            }
+        }
+        
+        .animate-shimmer {
+            animation: shimmer 2s infinite;
+        }
+        
+        /* Glass Effect Utilities */
+        .glass-message {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .glass-message::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                transparent 100%);
+            transform: translateX(-100%);
+            animation: shimmer 3s infinite;
+        }
+        
+        .glass-info-item {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-info-item:hover {
+            transform: translateX(-8px);
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.1);
+        }
+        
+        .glass-info-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, 
+                rgba(255, 255, 255, 0) 0%, 
+                rgba(255, 255, 255, 0.1) 50%, 
+                rgba(255, 255, 255, 0) 100%);
+            transform: translateX(-100%);
+            transition: transform 0.6s ease;
+        }
+        
+        .glass-info-item:hover::before {
+            transform: translateX(100%);
+        }
+        
+        .text-gray-700 {
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Extended Background -->
+    <div class="background-extended"></div>
+    
+    <!-- 3D Background Elements -->
+    <div class="bg-pattern"></div>
+    
+    <!-- Floating Small 3D Spheres -->
+    <div class="small-sphere sphere-pink-1"></div>
+    <div class="small-sphere sphere-purple-1"></div>
+    <div class="small-sphere sphere-blue-1"></div>
+
+    <!-- Main Content -->
+    <div class="container pt-16 mx-auto px-4 min-h-screen flex items-center justify-center">
+        <div class="max-w-2xl w-full">
+            <div class="text-center">
+                <!-- Error Number -->
+                <div class="mb-8 pt-12 animate-fade-in-up">
+                    <div class="text-9xl font-bold">
+                        <span class="error-number" data-text="404">404</span>
+                    </div>
+                </div>
+                
+                <!-- Title -->
+                <h1 class="text-4xl font-bold text-primary mb-6 animate-fade-in-up" style="animation-delay: 0.2s">
+                    دسترسی <span class="gradient-text">ممنوع</span>
+                </h1>
+                
+                <!-- Message -->
+                <div class="relative p-8 mb-8 animate-fade-in-up" style="animation-delay: 0.3s">
+                    <!-- Glass Effect Background -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-white/10 to-pink-50/5 backdrop-blur-xl rounded-3xl border border-white/30 shadow-2xl"></div>
+                    
+                    <!-- Decorative Elements -->
+                    <div class="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-pink-500/10 to-purple-500/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2"></div>
+                    <div class="absolute bottom-0 right-0 w-40 h-40 bg-gradient-to-tl from-purple-500/10 to-indigo-500/10 rounded-full blur-2xl translate-x-1/3 translate-y-1/3"></div>
+                    
+                    <!-- Content Container -->
+                    <div class="relative z-10">
+                        <div class="flex flex-col items-center text-center">
+                            <!-- Icon with Glass Effect -->
+                            <div class="relative mb-8">
+                                <!-- Outer Glow -->
+                                <div class="absolute inset-0 w-24 h-24 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse"></div>
+                                
+                                <!-- Glass Icon Circle -->
+                                <div class="w-20 h-20 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-white/30 to-white/10 border border-white/40 shadow-2xl flex items-center justify-center relative overflow-hidden">
+                                    <!-- Shimmer Effect -->
+                                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-shimmer"></div>
+                                    
+                                    <!-- Icon -->
+                                    <i class="fas fa-shield-alt text-3xl bg-gradient-to-r from-pink-500 to-purple-500 bg-clip-text text-transparent"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Title -->
+                            <h2 class="text-2xl font-bold mb-6">
+                                <span class="relative">
+                                    <span class="absolute inset-0 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 blur-xl opacity-30"></span>
+                                    <span class="relative bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                                        سیستم امنیتی Momentum
+                                    </span>
+                                </span>
+                            </h2>
+                            
+                            <!-- Message -->
+                            <div class="glass-message mb-8 p-6 rounded-2xl backdrop-blur-lg bg-gradient-to-br from-white/15 to-white/5 border border-white/20 shadow-lg">
+                                <p class="text-lg text-gray-700 leading-relaxed">
+                                    متأسفیم! شما مجوز دسترسی به این صفحه را ندارید.
+                                    این صفحه فقط برای کاربران مجاز قابل دسترسی است.
+                                </p>
+                            </div>
+                            
+                            <!-- Divider -->
+                            <div class="relative w-full h-px my-8">
+                                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-pink-300/30 to-transparent"></div>
+                                <div class="absolute inset-0 backdrop-blur-sm"></div>
+                            </div>
+                            
+                            <!-- Info List -->
+                            <div class="w-full space-y-4">
+                                <!-- Item 1 -->
+                                <div class="glass-info-item p-4 rounded-xl backdrop-blur-md bg-gradient-to-r from-white/10 to-white/5 border border-white/20 hover:border-pink-300/30 transition-all duration-300 hover:translate-x-2">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <span class="text-gray-700 font-medium">ممکن است نیاز به لاگین داشته باشید</span>
+                                        <div class="w-10 h-10 rounded-lg backdrop-blur-sm bg-gradient-to-br from-pink-500/20 to-pink-300/10 border border-pink-300/30 flex items-center justify-center">
+                                            <i class="fas fa-info-circle text-pink-500"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Item 2 -->
+                                <div class="glass-info-item p-4 rounded-xl backdrop-blur-md bg-gradient-to-r from-white/10 to-white/5 border border-white/20 hover:border-purple-300/30 transition-all duration-300 hover:translate-x-2">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <span class="text-gray-700 font-medium">دسترسی شما محدود شده است</span>
+                                        <div class="w-10 h-10 rounded-lg backdrop-blur-sm bg-gradient-to-br from-purple-500/20 to-purple-300/10 border border-purple-300/30 flex items-center justify-center">
+                                            <i class="fas fa-user-shield text-purple-500"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Item 3 -->
+                                <div class="glass-info-item p-4 rounded-xl backdrop-blur-md bg-gradient-to-r from-white/10 to-white/5 border border-white/20 hover:border-indigo-300/30 transition-all duration-300 hover:translate-x-2">
+                                    <div class="flex items-center justify-end gap-3">
+                                        <span class="text-gray-700 font-medium">صفحه مورد نظر وجود ندارد</span>
+                                        <div class="w-10 h-10 rounded-lg backdrop-blur-sm bg-gradient-to-br from-indigo-500/20 to-indigo-300/10 border border-indigo-300/30 flex items-center justify-center">
+                                            <i class="fas fa-exclamation-triangle text-indigo-500"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Corner Accents -->
+                    <div class="absolute top-4 right-4 w-3 h-3 bg-gradient-to-br from-pink-500 to-transparent rounded-full"></div>
+                    <div class="absolute top-4 left-4 w-3 h-3 bg-gradient-to-bl from-purple-500 to-transparent rounded-full"></div>
+                    <div class="absolute bottom-4 right-4 w-3 h-3 bg-gradient-to-tr from-indigo-500 to-transparent rounded-full"></div>
+                    <div class="absolute bottom-4 left-4 w-3 h-3 bg-gradient-to-tl from-pink-500 to-transparent rounded-full"></div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12 animate-fade-in-up" style="animation-delay: 0.4s">
+                    <a href="/" class="btn-gradient flex items-center justify-center gap-3">
+                        <i class="fas fa-home"></i>
+                        بازگشت به صفحه اصلی
+                    </a>
+                    <button onclick="goBack()" class="glass-card py-4 px-6 text-primary font-semibold hover:shadow-xl transition-all flex items-center justify-center gap-3">
+                        <i class="fas fa-arrow-right"></i>
+                        بازگشت به صفحه قبل
+                    </button>
+                </div>
+                
+                <!-- Footer Note -->
+                <div class="mt-8 text-sm text-secondary animate-fade-in-up" style="animation-delay: 0.6s">
+                    <div class="flex items-center justify-center gap-2">
+                        <i class="fas fa-copyright"></i>
+                        <span>Momentum Events Platform</span>
+                        <span class="mx-2">•</span>
+                        <span>کد خطا: 404</span>
+                        <span class="mx-2">•</span>
+                        <span id="timestamp"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Set current timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fa-IR');
+            const dateString = now.toLocaleDateString('fa-IR');
+            document.getElementById('timestamp').textContent = `${dateString} - ${timeString}`;
+        });
+        
+        // Go back function
+        function goBack() {
+            window.history.back();
+        }
+        
+        // Add some random particles for visual effect
+        document.addEventListener('mousemove', function(e) {
+            if (Math.random() > 0.98) {
+                createParticle(e.clientX, e.clientY);
+            }
+        });
+        
+        function createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.left = x + 'px';
+            particle.style.top = y + 'px';
+            particle.style.width = '4px';
+            particle.style.height = '4px';
+            particle.style.borderRadius = '50%';
+            particle.style.background = 'radial-gradient(circle, rgba(236,72,153,0.3), transparent)';
+            particle.style.pointerEvents = 'none';
+            particle.style.zIndex = '9999';
+            
+            document.body.appendChild(particle);
+            
+            // Animate particle
+            let size = 4;
+            let opacity = 0.3;
+            const animation = setInterval(() => {
+                size += 2;
+                opacity -= 0.05;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.opacity = opacity;
+                particle.style.transform = `translate(-50%, -50%)`;
+                
+                if (opacity <= 0) {
+                    clearInterval(animation);
+                    particle.remove();
+                }
+            }, 50);
+        }
+    </script>
+</body>
+</html>

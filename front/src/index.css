@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* اضافه کردن این بخش برای تیلویند نسخه 4 الزامی است */
+@theme {
+  --font-iransans: "IranSans", sans-serif;
+  --font-kook: "Kook", sans-serif;
+}
+
+/* --- فونت ایران‌سنس (IranSans) --- */
+/* وزن عادی (Regular) */
+@font-face {
+  font-family: 'IranSans';
+  src: url('./assets/fonts/kook/iransans-regular.woff') format('woff');
+  font-weight: normal; /* 400 */
+  font-style: normal;
+  font-display: swap;
+}
+
+/* وزن ضخیم (Bold) */
+@font-face {
+  font-family: 'IranSans';
+  src: url('./assets/fonts/kook/iransans-bold.woff') format('woff');
+  font-weight: bold; /* 700 */
+  font-style: normal;
+  font-display: swap;
+}
+
+/* وزن خیلی ضخیم (Black) */
+@font-face {
+  font-family: 'IranSans';
+  src: url('./assets/fonts/kook/iransans-black.woff') format('woff');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* --- فونت کوک (Kook) --- */
+@font-face {
+  font-family: 'Kook';
+  src: url('./assets/fonts/kook/Kook-ExtraBold.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}

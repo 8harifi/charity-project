@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت مکان جدید | دنیای رویدادها</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #fdf2f8 0%, #faf5ff 100%);
+            min-height: 100vh;
+            color: #4c0519;
+        }
+        
+        /* تم بنفش-صورتی مشابه داشبورد */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 207, 232, 0.4);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(236, 72, 153, 0.15);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            box-shadow: 0 30px 80px rgba(236, 72, 153, 0.25);
+            transform: translateY(-8px);
+            border-color: rgba(236, 72, 153, 0.6);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 20px rgba(236, 72, 153, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+        }
+        
+        .gradient-border {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, #ec4899, #a855f7) border-box;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #7c3aed;
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            border-color: rgba(236, 72, 153, 0.5);
+            background: white;
+        }
+        
+        .form-input {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            color: #4c0519;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.1);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #ec4899;
+            box-shadow: 0 12px 30px rgba(236, 72, 153, 0.2);
+            background: white;
+        }
+        
+        .form-label {
+            display: block;
+            color: #881337;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            font-size: 1.05rem;
+        }
+        
+        .required-star {
+            color: #dc2626;
+        }
+        
+        .feature-badge {
+            background: rgba(236, 72, 153, 0.1);
+            color: #db2777;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-align: center;
+        }
+        
+        .feature-badge:hover {
+            background: rgba(236, 72, 153, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.1);
+        }
+        
+        .feature-badge.selected {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.2);
+        }
+        
+        /* Floating elements */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        /* File upload area */
+        .file-upload-area {
+            border: 3px dashed rgba(236, 72, 153, 0.3);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.7);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #ec4899;
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(236, 72, 153, 0.1);
+        }
+        
+        /* Form sections */
+        .form-section {
+            border-bottom: 2px solid rgba(236, 72, 153, 0.1);
+            padding-bottom: 3rem;
+            margin-bottom: 3rem;
+        }
+        
+        .form-section-title {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            color: #db2777;
+        }
+        
+        .form-section-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #db2777;
+            font-size: 1.4rem;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.15);
+        }
+        
+        /* Progress Steps */
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        
+        .progress-steps::before {
+            content: '';
+            position: absolute;
+            top: 25px;
+            right: 10%;
+            left: 10%;
+            height: 3px;
+            background: rgba(236, 72, 153, 0.2);
+            z-index: 1;
+        }
+        
+        .step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .step-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid rgba(236, 72, 153, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-weight: 700;
+            color: #ec4899;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.1);
+        }
+        
+        .step.active .step-circle {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+            border-color: transparent;
+            transform: scale(1.1);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.3);
+        }
+        
+        .step-label {
+            font-weight: 600;
+            color: #881337;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active .step-label {
+            color: #ec4899;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(251, 207, 232, 0.3);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            border-radius: 10px;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Shimmer effect */
+        .shimmer {
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                transparent 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Status badges */
+        .status-badge {
+            padding: 0.5rem 1.2rem;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .status-active {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.1));
+            color: #db2777;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+        }
+        
+        /* Particles background */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: particle-float 20s infinite linear;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        /* Pricing card */
+        .pricing-card {
+            border: 2px solid rgba(236, 72, 153, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .pricing-card:hover {
+            border-color: #ec4899;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(236, 72, 153, 0.1);
+        }
+        
+        .pricing-card.selected {
+            border-color: #ec4899;
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.05), rgba(168, 85, 247, 0.05));
+            box-shadow: 0 15px 30px rgba(236, 72, 153, 0.2);
+        }
+        
+        /* Time slot */
+        .time-slot {
+            border: 2px solid rgba(236, 72, 153, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            background: white;
+        }
+        
+        .time-slot:hover {
+            border-color: #ec4899;
+            transform: translateY(-3px);
+        }
+        
+        .time-slot.selected {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.2);
+        }
+        
+        /* Map container */
+        .map-container {
+            height: 300px;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            background: linear-gradient(135deg, #fdf2f8, #faf5ff);
+        }
+        
+        /* Checkbox and radio custom */
+        input[type="checkbox"], input[type="radio"] {
+            accent-color: #ec4899;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6 relative overflow-x-hidden">
+    
+    <!-- Particles Background -->
+    <div class="particles-container" id="particles"></div>
+    
+    <!-- Floating Shapes -->
+    <div class="fixed top-1/4 right-10 w-64 h-64 rounded-full bg-gradient-to-r from-pink-500/10 to-purple-500/10 blur-3xl floating z-0"></div>
+    <div class="fixed bottom-1/3 left-10 w-48 h-48 rounded-full bg-gradient-to-r from-indigo-500/10 to-blue-500/10 blur-3xl floating z-0" style="animation-delay: 2s;"></div>
+
+    <!-- Main Container -->
+    <div class="max-w-6xl mx-auto relative z-10">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                <div>
+                    <h1 class="text-4xl md:text-5xl font-bold gradient-text mb-3">ثبت مکان جدید</h1>
+                    <p class="text-pink-700 text-lg">فرم جامع ثبت مکان برگزاری رویداد - دنیای رویدادها</p>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <a href="#" class="btn-secondary" onclick="history.back()">
+                        <i class="fas fa-arrow-right"></i> بازگشت به داشبورد
+                    </a>
+                    <div class="flex items-center gap-3 glass-card px-6 py-4">
+                        <div class="w-12 h-12 rounded-full gradient-bg flex items-center justify-center text-white font-bold">
+                            ص.م
+                        </div>
+                        <div class="text-right">
+                            <div class="font-bold text-pink-900 text-lg">صاحب مکان</div>
+                            <div class="text-sm text-pink-600">مدیریت مکان‌های برگزاری</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Steps -->
+            <div class="glass-card p-6 mb-8">
+                <div class="progress-steps">
+                    <div class="step active" data-step="1">
+                        <div class="step-circle">1</div>
+                        <div class="step-label">اطلاعات پایه</div>
+                    </div>
+                    <div class="step" data-step="2">
+                        <div class="step-circle">2</div>
+                        <div class="step-label">امکانات</div>
+                    </div>
+                    <div class="step" data-step="3">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">قیمت‌گذاری</div>
+                    </div>
+                    <div class="step" data-step="4">
+                        <div class="step-circle">4</div>
+                        <div class="step-label">زمان‌بندی</div>
+                    </div>
+                    <div class="step" data-step="5">
+                        <div class="step-circle">5</div>
+                        <div class="step-label">تایید نهایی</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-center gap-4 mt-6">
+                    <div class="glass-morphism p-4 rounded-xl border border-pink-100">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-info-circle text-pink-500 text-xl"></i>
+                            <span>فیلدهای ستاره‌دار (<span class="required-star">*</span>) اجباری هستند</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Form -->
+        <div class="glass-card p-8 mb-8">
+            <form id="venueRequestForm" class="space-y-10">
+                
+                <!-- Section 1: Basic Information -->
+                <div class="form-section" data-step="1">
+                    <div class="form-section-title">
+                        <div class="form-section-icon">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-pink-900">اطلاعات پایه مکان</h2>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <label class="form-label">
+                                نام مکان <span class="required-star">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="venueName"
+                                   required
+                                   placeholder="مثال: مرکز همایش‌های بین‌المللی تهران"
+                                   class="form-input"
+                                   maxlength="100">
+                            <div class="text-sm text-pink-500 mt-3 flex items-center gap-2">
+                                <i class="fas fa-info-circle"></i>
+                                <span>نام رسمی و کامل مکان را وارد کنید</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <label class="form-label">
+                                    نوع مکان <span class="required-star">*</span>
+                                </label>
+                                <select id="venueType" required class="form-input">
+                                    <option value="">انتخاب نوع مکان</option>
+                                    <option value="conference_hall">سالن همایش</option>
+                                    <option value="conference_center">مرکز همایش</option>
+                                    <option value="hotel">هتل</option>
+                                    <option value="university">دانشگاه</option>
+                                    <option value="museum">موزه</option>
+                                    <option value="gallery">گالری</option>
+                                    <option value="stadium">استادیوم</option>
+                                    <option value="park">پارک</option>
+                                    <option value="restaurant">رستوران</option>
+                                    <option value="cafe">کافه</option>
+                                    <option value="office">دفتر کار</option>
+                                    <option value="other">سایر</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">
+                                    ظرفیت کل <span class="required-star">*</span>
+                                </label>
+                                <input type="number" 
+                                       id="capacity"
+                                       required
+                                       min="1"
+                                       placeholder="تعداد نفرات"
+                                       class="form-input">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                توضیحات کامل <span class="required-star">*</span>
+                            </label>
+                            <textarea id="venueDescription" 
+                                      rows="4" 
+                                      required
+                                      placeholder="توضیحات کامل درباره مکان، تاریخچه، معماری، ویژگی‌های منحصر به فرد و..."
+                                      class="form-input resize-none"></textarea>
+                            <div class="flex justify-between items-center mt-3">
+                                <div class="text-sm text-pink-500 flex items-center gap-2">
+                                    <i class="fas fa-lightbulb"></i>
+                                    <span>توضیحات کامل شانس جذب رویداد را افزایش می‌دهد</span>
+                                </div>
+                                <div class="text-sm text-pink-500" id="charCount">0/2000 کاراکتر</div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <div>
+                                <label class="form-label">
+                                    استان <span class="required-star">*</span>
+                                </label>
+                                <select id="province" required class="form-input">
+                                    <option value="">انتخاب استان</option>
+                                    <option value="tehran">تهران</option>
+                                    <option value="isfahan">اصفهان</option>
+                                    <option value="khorasan">خراسان رضوی</option>
+                                    <option value="fars">فارس</option>
+                                    <option value="alborz">البرز</option>
+                                    <option value="qom">قم</option>
+                                    <option value="mazandaran">مازندران</option>
+                                    <option value="kerman">کرمان</option>
+                                    <option value="azarbaijan">آذربایجان شرقی</option>
+                                    <option value="khozestan">خوزستان</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">
+                                    شهر <span class="required-star">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="city"
+                                       required
+                                       placeholder="نام شهر"
+                                       class="form-input">
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">
+                                    منطقه
+                                </label>
+                                <input type="text" 
+                                       id="district"
+                                       placeholder="نام منطقه یا محله"
+                                       class="form-input">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                آدرس کامل <span class="required-star">*</span>
+                            </label>
+                            <textarea id="address" 
+                                      rows="2" 
+                                      required
+                                      placeholder="خیابان، کوچه، پلاک، طبقه، واحد"
+                                      class="form-input resize-none"></textarea>
+                        </div>
+                        
+                        <div class="map-container flex items-center justify-center">
+                            <div class="text-center">
+                                <i class="fas fa-map-marked-alt text-4xl text-pink-500 mb-4"></i>
+                                <p class="text-pink-700 font-medium">نقشه موقعیت مکان</p>
+                                <p class="text-pink-500 text-sm mt-2">(در نسخه کامل با Google Maps یکپارچه می‌شود)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 2: Facilities & Amenities -->
+                <div class="form-section" data-step="2">
+                    <div class="form-section-title">
+                        <div class="form-section-icon">
+                            <i class="fas fa-concierge-bell"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-pink-900">امکانات و تجهیزات</h2>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <label class="form-label mb-4">
+                                تجهیزات فنی موجود <span class="required-star">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="projector">
+                                    <i class="fas fa-video"></i> پروژکتور
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="sound_system">
+                                    <i class="fas fa-volume-up"></i> سیستم صوتی
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="wifi">
+                                    <i class="fas fa-wifi"></i> وای‌فای پرسرعت
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="microphone">
+                                    <i class="fas fa-microphone"></i> میکروفون
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="lighting">
+                                    <i class="fas fa-lightbulb"></i> سیستم نورپردازی
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="screen">
+                                    <i class="fas fa-tv"></i> صفحه نمایش بزرگ
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="computer">
+                                    <i class="fas fa-desktop"></i> کامپیوتر
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="printer">
+                                    <i class="fas fa-print"></i> پرینتر
+                                </div>
+                            </div>
+                            <input type="hidden" id="technicalFacilities" required>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label mb-4">
+                                امکانات رفاهی
+                            </label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="parking">
+                                    <i class="fas fa-parking"></i> پارکینگ
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="catering">
+                                    <i class="fas fa-utensils"></i> پذیرایی
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="restroom">
+                                    <i class="fas fa-restroom"></i> سرویس بهداشتی
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="elevator">
+                                    <i class="fas fa-elevator"></i> آسانسور
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="ac">
+                                    <i class="fas fa-wind"></i> سیستم تهویه
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="heating">
+                                    <i class="fas fa-temperature-high"></i> سیستم گرمایشی
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="security">
+                                    <i class="fas fa-shield-alt"></i> نگهبانی
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="medical">
+                                    <i class="fas fa-first-aid"></i> کمک‌های اولیه
+                                </div>
+                            </div>
+                            <input type="hidden" id="amenities">
+                        </div>
+                        
+                        <div>
+                            <label class="form-label mb-4">
+                                دسترسی برای افراد با نیازهای خاص
+                            </label>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="wheelchair">
+                                    <i class="fas fa-wheelchair"></i> دسترسی ویلچر
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="elevator_disabled">
+                                    <i class="fas fa-elevator"></i> آسانسور معلولین
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="ramp">
+                                    <i class="fas fa-ramp-loading"></i> رمپ
+                                </div>
+                                <div class="feature-badge" onclick="toggleFeature(this)" data-feature="braille">
+                                    <i class="fas fa-braille"></i> علائم بریل
+                                </div>
+                            </div>
+                            <input type="hidden" id="accessibility">
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                سالن‌ها و فضای قابل ارائه
+                            </label>
+                            <div class="space-y-4" id="hallsContainer">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
+                                    <input type="text" placeholder="نام سالن (مثال: سالن اصلی)" class="form-input">
+                                    <input type="number" placeholder="ظرفیت" min="1" class="form-input">
+                                    <input type="number" placeholder="متراژ (متر مربع)" min="1" class="form-input">
+                                    <select class="form-input">
+                                        <option value="">نوع چیدمان</option>
+                                        <option value="theater">تئاتری</option>
+                                        <option value="classroom">کلاسی</option>
+                                        <option value="u_shape">U شکل</option>
+                                        <option value="boardroom">اتاق جلسه</option>
+                                        <option value="banquet">ضیافت</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addHall()" class="btn-secondary mt-4">
+                                <i class="fas fa-plus"></i> افزودن سالن جدید
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 3: Pricing & Packages -->
+                <div class="form-section" data-step="3">
+                    <div class="form-section-title">
+                        <div class="form-section-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-pink-900">قیمت‌گذاری و پکیج‌ها</h2>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <label class="form-label mb-4">
+                                مدل قیمت‌گذاری <span class="required-star">*</span>
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div class="pricing-card" onclick="selectPricing(this)" data-type="hourly">
+                                    <div class="text-center mb-4">
+                                        <div class="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center mx-auto mb-3">
+                                            <i class="fas fa-clock text-white text-2xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-pink-900 text-xl">ساعتی</h4>
+                                    </div>
+                                    <p class="text-pink-600 text-sm text-center mb-4">
+                                        قیمت‌گذاری بر اساس ساعت استفاده
+                                    </p>
+                                    <div class="text-center">
+                                        <span class="text-2xl font-bold text-pink-900">ساعتی</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="pricing-card" onclick="selectPricing(this)" data-type="daily">
+                                    <div class="text-center mb-4">
+                                        <div class="w-16 h-16 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center mx-auto mb-3">
+                                            <i class="fas fa-sun text-white text-2xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-purple-900 text-xl">روزانه</h4>
+                                    </div>
+                                    <p class="text-purple-600 text-sm text-center mb-4">
+                                        قیمت ثابت برای یک روز کامل
+                                    </p>
+                                    <div class="text-center">
+                                        <span class="text-2xl font-bold text-purple-900">روزانه</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="pricing-card selected" onclick="selectPricing(this)" data-type="package">
+                                    <div class="text-center mb-4">
+                                        <div class="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 flex items-center justify-center mx-auto mb-3">
+                                            <i class="fas fa-box text-white text-2xl"></i>
+                                        </div>
+                                        <h4 class="font-bold text-indigo-900 text-xl">پکیج</h4>
+                                    </div>
+                                    <p class="text-indigo-600 text-sm text-center mb-4">
+                                        پکیج‌های مختلف با خدمات متنوع
+                                    </p>
+                                    <div class="text-center">
+                                        <span class="text-2xl font-bold text-indigo-900">پکیجی</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="pricingModel" value="package" required>
+                        </div>
+                        
+                        <div id="hourlyPricing" style="display: none;">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="form-label">
+                                        قیمت ساعتی عادی (تومان)
+                                    </label>
+                                    <input type="number" min="0" placeholder="مثال: 50000" class="form-input">
+                                </div>
+                                <div>
+                                    <label class="form-label">
+                                        قیمت ساعتی آخر هفته
+                                    </label>
+                                    <input type="number" min="0" placeholder="مثال: 75000" class="form-input">
+                                </div>
+                                <div>
+                                    <label class="form-label">
+                                        حداقل ساعت رزرو
+                                    </label>
+                                    <input type="number" min="1" placeholder="مثال: 4" class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="dailyPricing" style="display: none;">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="form-label">
+                                        قیمت روزانه عادی (تومان)
+                                    </label>
+                                    <input type="number" min="0" placeholder="مثال: 300000" class="form-input">
+                                </div>
+                                <div>
+                                    <label class="form-label">
+                                        قیمت روزانه آخر هفته
+                                    </label>
+                                    <input type="number" min="0" placeholder="مثال: 450000" class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="packagePricing">
+                            <div class="space-y-6" id="packagesContainer">
+                                <div class="p-6 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-200">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h4 class="font-bold text-pink-900 text-xl">پکیج پایه</h4>
+                                            <p class="text-pink-600 text-sm">مناسب برای جلسات کوچک</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold text-pink-900">۲۵۰,۰۰۰</div>
+                                            <div class="text-pink-500 text-sm">تومان / روز</div>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4 mb-4">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-pink-700">تا ۵۰ نفر</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-pink-700">پروژکتور</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-pink-700">سیستم صوتی</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-pink-700">وای‌فای</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="p-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h4 class="font-bold text-purple-900 text-xl">پکیج حرفه‌ای</h4>
+                                            <p class="text-purple-600 text-sm">مناسب برای همایش‌های متوسط</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-2xl font-bold text-purple-900">۵۰۰,۰۰۰</div>
+                                            <div class="text-purple-500 text-sm">تومان / روز</div>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4 mb-4">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-purple-700">تا ۱۵۰ نفر</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-purple-700">تمام امکانات پایه</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-purple-700">سیستم نورپردازی</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-check text-green-500"></i>
+                                            <span class="text-sm text-purple-700">پذیرایی ساده</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" onclick="addPackage()" class="btn-secondary mt-6">
+                                <i class="fas fa-plus"></i> افزودن پکیج جدید
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                شرایط پرداخت و کنسلی
+                            </label>
+                            <textarea id="paymentTerms" 
+                                      rows="3"
+                                      placeholder="شرایط پرداخت، پیش‌پرداخت، زمان کنسلی و جریمه‌ها"
+                                      class="form-input resize-none"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                مالیات و عوارض اضافی
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="ml-3 text-pink-600 w-5 h-5">
+                                        <span>مالیات بر ارزش افزوده (۹٪)</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="ml-3 text-pink-600 w-5 h-5">
+                                        <span>عوارض شهرداری</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" class="ml-3 text-pink-600 w-5 h-5">
+                                        <span>کارمزد سرویس</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 4: Availability & Scheduling -->
+                <div class="form-section" data-step="4">
+                    <div class="form-section-title">
+                        <div class="form-section-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-pink-900">زمان‌بندی و در دسترس بودن</h2>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div>
+                            <label class="form-label mb-4">
+                                روزهای فعال در هفته <span class="required-star">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 md:grid-cols-7 gap-4">
+                                <div class="time-slot" onclick="toggleDay(this)" data-day="saturday">
+                                    شنبه
+                                </div>
+                                <div class="time-slot" onclick="toggleDay(this)" data-day="sunday">
+                                    یکشنبه
+                                </div>
+                                <div class="time-slot selected" onclick="toggleDay(this)" data-day="monday">
+                                    دوشنبه
+                                </div>
+                                <div class="time-slot selected" onclick="toggleDay(this)" data-day="tuesday">
+                                    سه‌شنبه
+                                </div>
+                                <div class="time-slot selected" onclick="toggleDay(this)" data-day="wednesday">
+                                    چهارشنبه
+                                </div>
+                                <div class="time-slot selected" onclick="toggleDay(this)" data-day="thursday">
+                                    پنجشنبه
+                                </div>
+                                <div class="time-slot selected" onclick="toggleDay(this)" data-day="friday">
+                                    جمعه
+                                </div>
+                            </div>
+                            <input type="hidden" id="activeDays" value="monday,tuesday,wednesday,thursday,friday" required>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label mb-4">
+                                ساعات کاری <span class="required-star">*</span>
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="form-label">
+                                        ساعت شروع
+                                    </label>
+                                    <input type="time" id="startTime" value="08:00" class="form-input">
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label">
+                                        ساعت پایان
+                                    </label>
+                                    <input type="time" id="endTime" value="22:00" class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label mb-4">
+                                تعطیلات و روزهای غیرفعال
+                            </label>
+                            <div class="file-upload-area" onclick="document.getElementById('holidayFile').click()">
+                                <i class="fas fa-calendar-times text-4xl text-pink-500 mb-3"></i>
+                                <p class="text-pink-700 mb-1">آپلود فایل تقویم تعطیلات</p>
+                                <p class="text-pink-500 text-sm">فرمت‌های مجاز: PDF, Excel, CSV</p>
+                                <input type="file" 
+                                       id="holidayFile" 
+                                       accept=".pdf,.xlsx,.xls,.csv"
+                                       class="hidden">
+                            </div>
+                            <div class="text-sm text-pink-500 mt-3 flex items-center gap-2">
+                                <i class="fas fa-info-circle"></i>
+                                <span>یا می‌توانید تاریخ‌ها را در بخش زیر وارد کنید</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                تاریخ‌های غیرفعال خاص
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="blackoutDates">
+                                <div>
+                                    <input type="date" class="form-input" placeholder="انتخاب تاریخ">
+                                </div>
+                            </div>
+                            <button type="button" onclick="addBlackoutDate()" class="btn-secondary mt-4">
+                                <i class="fas fa-plus"></i> افزودن تاریخ غیرفعال
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                حداقل زمان رزرو از قبل
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="form-label">
+                                        برای رویدادهای کوچک
+                                    </label>
+                                    <input type="number" min="0" placeholder="تعداد روز" class="form-input">
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label">
+                                        برای رویدادهای متوسط
+                                    </label>
+                                    <input type="number" min="0" placeholder="تعداد روز" class="form-input">
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label">
+                                        برای رویدادهای بزرگ
+                                    </label>
+                                    <input type="number" min="0" placeholder="تعداد روز" class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Section 5: Media & Final -->
+                <div class="form-section" data-step="5">
+                    <div class="form-section-title">
+                        <div class="form-section-icon">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-pink-900">رسانه‌ها و تایید نهایی</h2>
+                    </div>
+                    
+                    <div class="space-y-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div>
+                                <label class="form-label">
+                                    عکس اصلی مکان
+                                </label>
+                                <div class="file-upload-area" onclick="document.getElementById('mainImage').click()">
+                                    <i class="fas fa-cloud-upload-alt text-5xl text-pink-500 mb-4"></i>
+                                    <p class="text-pink-700 font-medium mb-2">برای آپلود عکس کلیک کنید</p>
+                                    <p class="text-pink-500 text-sm">فرمت‌های مجاز: JPG, PNG (حداکثر ۱۰MB)</p>
+                                    <p class="text-pink-400 text-xs mt-3">سایز پیشنهادی: 1920×1080 پیکسل</p>
+                                    <input type="file" 
+                                           id="mainImage" 
+                                           accept="image/*"
+                                           class="hidden"
+                                           onchange="previewImage(this, 'previewImage')">
+                                </div>
+                                <div id="imagePreview" class="mt-6 hidden">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="font-medium text-pink-900">پیش‌نمایش عکس:</span>
+                                        <button onclick="removeImage('mainImage')" class="text-sm text-red-500 hover:text-red-700">
+                                            <i class="fas fa-trash ml-1"></i> حذف عکس
+                                        </button>
+                                    </div>
+                                    <img id="previewImage" class="w-full h-64 object-cover rounded-xl border-2 border-pink-200">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="form-label">
+                                    گالری تصاویر (حداقل ۳ تصویر)
+                                </label>
+                                <div class="file-upload-area" onclick="document.getElementById('galleryImages').click()">
+                                    <i class="fas fa-images text-4xl text-pink-500 mb-3"></i>
+                                    <p class="text-pink-700 mb-1">آپلود گالری تصاویر</p>
+                                    <p class="text-pink-500 text-sm">می‌توانید چندین تصویر انتخاب کنید (حداکثر ۱۰ تصویر)</p>
+                                    <input type="file" 
+                                           id="galleryImages" 
+                                           multiple
+                                           accept="image/*"
+                                           class="hidden"
+                                           onchange="updateGalleryCount(this)">
+                                </div>
+                                <div id="galleryCount" class="text-sm text-pink-600 mt-3 hidden">
+                                    <span id="selectedCount">0</span> تصویر انتخاب شده
+                                </div>
+                                
+                                <div class="mt-6">
+                                    <label class="form-label">
+                                        تور مجازی / ویدیو
+                                    </label>
+                                    <input type="url" 
+                                           id="virtualTour"
+                                           placeholder="لینک تور مجازی ۳۶۰ درجه یا ویدیو معرفی"
+                                           class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                اسناد و مجوزها
+                            </label>
+                            <div class="space-y-4">
+                                <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
+                                    <i class="fas fa-file-contract text-pink-500 text-2xl"></i>
+                                    <div class="flex-1">
+                                        <div class="font-medium text-pink-900">جواز کسب</div>
+                                        <div class="text-sm text-pink-500">بارگذاری تصویر جواز کسب</div>
+                                    </div>
+                                    <input type="file" class="hidden" id="businessLicense">
+                                    <button type="button" onclick="document.getElementById('businessLicense').click()" class="btn-secondary">
+                                        آپلود
+                                    </button>
+                                </div>
+                                
+                                <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+                                    <i class="fas fa-fire-extinguisher text-purple-500 text-2xl"></i>
+                                    <div class="flex-1">
+                                        <div class="font-medium text-purple-900">تاییدیه ایمنی</div>
+                                        <div class="text-sm text-purple-500">گواهی ایمنی و آتش‌نشانی</div>
+                                    </div>
+                                    <input type="file" class="hidden" id="safetyCertificate">
+                                    <button type="button" onclick="document.getElementById('safetyCertificate').click()" class="btn-secondary">
+                                        آپلود
+                                    </button>
+                                </div>
+                                
+                                <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl">
+                                    <i class="fas fa-id-card text-indigo-500 text-2xl"></i>
+                                    <div class="flex-1">
+                                        <div class="font-medium text-indigo-900">مدارک مالکیت</div>
+                                        <div class="text-sm text-indigo-500">سند مالکیت یا اجاره‌نامه</div>
+                                    </div>
+                                    <input type="file" class="hidden" id="ownershipDocs">
+                                    <button type="button" onclick="document.getElementById('ownershipDocs').click()" class="btn-secondary">
+                                        آپلود
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl border border-pink-100">
+                            <div class="flex items-start gap-4">
+                                <i class="fas fa-file-contract text-pink-500 text-3xl mt-1"></i>
+                                <div>
+                                    <h4 class="font-bold text-pink-900 text-xl mb-3">شرایط و قوانین پلتفرم</h4>
+                                    <ul class="space-y-3 text-pink-700">
+                                        <li class="flex items-start gap-2">
+                                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                            <span>پلتفرم ۱۵٪ از مبلغ رزرو را به عنوان کارمزد دریافت می‌کند.</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                            <span>پرداخت‌ها به صورت آنلاین و از طریق درگاه‌های امن انجام می‌شود.</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                            <span>حقوق مالکیت معنوی تصاویر برای صاحب مکان محفوظ است.</span>
+                                        </li>
+                                        <li class="flex items-start gap-2">
+                                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                                            <span>تعهد به ارائه خدمات با کیفیت مطابق با توضیحات ارائه شده الزامی است.</span>
+                                        </li>
+                                    </ul>
+                                    <div class="mt-4">
+                                        <label class="inline-flex items-center">
+                                            <input type="checkbox" id="acceptTerms" required class="ml-3 text-pink-600 w-5 h-5">
+                                            <span class="font-medium text-pink-900">با شرایط و قوانین پلتفرم موافقم <span class="required-star">*</span></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="form-label">
+                                اطلاعات تماس مدیر مکان <span class="required-star">*</span>
+                            </label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="form-label">
+                                        نام و نام خانوادگی
+                                    </label>
+                                    <input type="text" required placeholder="نام مدیر" class="form-input">
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label">
+                                        سمت
+                                    </label>
+                                    <input type="text" placeholder="مدیر، مسئول رویدادها و..." class="form-input">
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label">
+                                        تلفن همراه
+                                    </label>
+                                    <input type="tel" required placeholder="۰۹۱۲۱۲۳۴۵۶۷" class="form-input">
+                                </div>
+                                
+                                <div>
+                                    <label class="form-label">
+                                        ایمیل
+                                    </label>
+                                    <input type="email" required placeholder="manager@example.com" class="form-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Submit Section -->
+                <div class="pt-8 border-t border-pink-100">
+                    <div class="flex flex-col lg:flex-row gap-6 justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="status-badge status-active">
+                                <i class="fas fa-save"></i> ذخیره پیش‌نویس
+                            </div>
+                            <div class="text-pink-600">
+                                <i class="fas fa-info-circle ml-1"></i>
+                                اطلاعات محرمانه و امن باقی می‌ماند
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4">
+                            <button type="button" onclick="saveVenueDraft()" class="btn-secondary">
+                                <i class="fas fa-save"></i> ذخیره پیش‌نویس
+                            </button>
+                            <button type="button" onclick="previewVenue()" class="btn-secondary">
+                                <i class="fas fa-eye"></i> پیش‌نمایش
+                            </button>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-paper-plane"></i> ثبت درخواست
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 p-6 bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl border border-pink-100">
+                        <div class="flex items-start gap-4">
+                            <i class="fas fa-shield-alt text-pink-500 text-3xl mt-1"></i>
+                            <div>
+                                <h4 class="font-bold text-pink-900 text-xl mb-2">اطمینان از اطلاعات</h4>
+                                <p class="text-pink-700">
+                                    قبل از ارسال نهایی، لطفاً از صحت تمامی اطلاعات وارد شده اطمینان حاصل کنید.
+                                    اطلاعات تماس شما صرفاً برای هماهنگی‌های مربوط به رزرو استفاده خواهد شد.
+                                    پس از ثبت، درخواست شما توسط تیم ما بررسی و در صورت تایید، مکان شما در پلتفرم فعال خواهد شد.
+                                    زمان بررسی: حداکثر ۷۲ ساعت کاری
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-pink-600">
+            <p class="text-lg">© ۱۴۰۳ - Momentum - پلتفرم مدیریت رویدادها</p>
+            <p class="text-sm mt-2">پشتیبانی: 
+                <span class="font-bold">۰۲۱-۸۸۵۶۱۲۳۴</span> | 
+                <a href="mailto:venues@momentum.com" class="text-pink-500 hover:text-pink-700">venues@momentum.com</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // ایجاد ذرات پس‌زمینه
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 6 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 20}s`;
+                particle.style.animationDuration = `${Math.random() * 15 + 10}s`;
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // Toggle Features
+        function toggleFeature(element) {
+            element.classList.toggle('selected');
+            updateFeatures();
+        }
+        
+        function updateFeatures() {
+            const technicalFeatures = [];
+            const amenityFeatures = [];
+            const accessibilityFeatures = [];
+            
+            document.querySelectorAll('.feature-badge.selected').forEach(badge => {
+                const feature = badge.dataset.feature;
+                if (feature.includes('projector') || feature.includes('sound') || 
+                    feature.includes('wifi') || feature.includes('microphone') ||
+                    feature.includes('lighting') || feature.includes('screen') ||
+                    feature.includes('computer') || feature.includes('printer')) {
+                    technicalFeatures.push(feature);
+                } else if (feature.includes('parking') || feature.includes('catering') ||
+                          feature.includes('restroom') || feature.includes('elevator') ||
+                          feature.includes('ac') || feature.includes('heating') ||
+                          feature.includes('security') || feature.includes('medical')) {
+                    amenityFeatures.push(feature);
+                } else if (feature.includes('wheelchair') || feature.includes('disabled') ||
+                          feature.includes('ramp') || feature.includes('braille')) {
+                    accessibilityFeatures.push(feature);
+                }
+            });
+            
+            document.getElementById('technicalFacilities').value = technicalFeatures.join(',');
+            document.getElementById('amenities').value = amenityFeatures.join(',');
+            document.getElementById('accessibility').value = accessibilityFeatures.join(',');
+            
+            updateProgress(2);
+        }
+        
+        // Add Hall
+        function addHall() {
+            const container = document.getElementById('hallsContainer');
+            const hallDiv = document.createElement('div');
+            hallDiv.className = 'grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl mt-4';
+            hallDiv.innerHTML = `
+                <input type="text" placeholder="نام سالن" class="form-input">
+                <input type="number" placeholder="ظرفیت" min="1" class="form-input">
+                <input type="number" placeholder="متراژ (متر مربع)" min="1" class="form-input">
+                <select class="form-input">
+                    <option value="">نوع چیدمان</option>
+                    <option value="theater">تئاتری</option>
+                    <option value="classroom">کلاسی</option>
+                    <option value="u_shape">U شکل</option>
+                    <option value="boardroom">اتاق جلسه</option>
+                    <option value="banquet">ضیافت</option>
+                </select>
+            `;
+            container.appendChild(hallDiv);
+        }
+        
+        // Select Pricing Model
+        function selectPricing(element) {
+            document.querySelectorAll('.pricing-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            
+            const pricingType = element.dataset.type;
+            document.getElementById('pricingModel').value = pricingType;
+            
+            // Show/hide pricing sections
+            document.getElementById('hourlyPricing').style.display = 'none';
+            document.getElementById('dailyPricing').style.display = 'none';
+            document.getElementById('packagePricing').style.display = 'none';
+            
+            if (pricingType === 'hourly') {
+                document.getElementById('hourlyPricing').style.display = 'block';
+            } else if (pricingType === 'daily') {
+                document.getElementById('dailyPricing').style.display = 'block';
+            } else {
+                document.getElementById('packagePricing').style.display = 'block';
+            }
+            
+            updateProgress(3);
+        }
+        
+        // Add Package
+        function addPackage() {
+            const container = document.getElementById('packagesContainer');
+            const packageCount = container.children.length;
+            const colors = ['from-pink-50 to-purple-50 border-pink-200', 
+                           'from-purple-50 to-indigo-50 border-purple-200',
+                           'from-indigo-50 to-blue-50 border-indigo-200',
+                           'from-blue-50 to-green-50 border-blue-200'];
+            const color = colors[packageCount % colors.length];
+            
+            const packageDiv = document.createElement('div');
+            packageDiv.className = `p-6 bg-gradient-to-r ${color} rounded-xl border`;
+            packageDiv.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <input type="text" value="پکیج جدید ${packageCount + 1}" class="font-bold text-xl bg-transparent border-b border-dashed border-pink-300 focus:outline-none focus:border-pink-500">
+                        <input type="text" placeholder="توضیح کوتاه" class="text-sm bg-transparent border-b border-dashed border-pink-300 focus:outline-none focus:border-pink-500 mt-1 w-full">
+                    </div>
+                    <div class="text-right">
+                        <input type="number" value="100000" class="text-2xl font-bold bg-transparent border-b border-dashed border-pink-300 focus:outline-none focus:border-pink-500 text-right" style="width: 120px">
+                        <div class="text-pink-500 text-sm">تومان / روز</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <input type="text" placeholder="ویژگی ۱" class="text-sm bg-transparent border-b border-dashed border-pink-300 focus:outline-none focus:border-pink-500 w-full">
+                    </div>
+                    <div>
+                        <input type="text" placeholder="ویژگی ۲" class="text-sm bg-transparent border-b border-dashed border-pink-300 focus:outline-none focus:border-pink-500 w-full">
+                    </div>
+                    <div>
+                        <input type="text" placeholder="ویژگی ۳" class="text-sm bg-transparent border-b border-dashed border-pink-300 focus:outline-none focus:border-pink-500 w-full">
+                    </div>
+                    <div>
+                        <input type="text" placeholder="ویژگی ۴" class="text-sm bg-transparent border-b border-dashed border-pink-300 focus:outline-none focus:border-pink-500 w-full">
+                    </div>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="text-sm text-red-500 hover:text-red-700">
+                    <i class="fas fa-trash ml-1"></i> حذف پکیج
+                </button>
+            `;
+            container.appendChild(packageDiv);
+        }
+        
+        // Toggle Days
+        function toggleDay(element) {
+            element.classList.toggle('selected');
+            updateActiveDays();
+        }
+        
+        function updateActiveDays() {
+            const activeDays = [];
+            document.querySelectorAll('.time-slot.selected').forEach(day => {
+                activeDays.push(day.dataset.day);
+            });
+            document.getElementById('activeDays').value = activeDays.join(',');
+            updateProgress(4);
+        }
+        
+        // Add Blackout Date
+        function addBlackoutDate() {
+            const container = document.getElementById('blackoutDates');
+            const dateDiv = document.createElement('div');
+            dateDiv.innerHTML = `
+                <div class="flex gap-2">
+                    <input type="date" class="form-input flex-1">
+                    <button type="button" onclick="this.parentElement.remove()" class="px-4 py-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(dateDiv);
+        }
+        
+        // Image Preview
+        function previewImage(input, previewId) {
+            const preview = document.getElementById(previewId);
+            const previewContainer = document.getElementById('imagePreview');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        // Remove Image
+        function removeImage(inputId) {
+            const previewContainer = document.getElementById('imagePreview');
+            const fileInput = document.getElementById(inputId);
+            previewContainer.style.display = 'none';
+            if (fileInput) fileInput.value = '';
+        }
+        
+        // Gallery Count
+        function updateGalleryCount(input) {
+            const countElement = document.getElementById('selectedCount');
+            const container = document.getElementById('galleryCount');
+            countElement.textContent = input.files.length;
+            container.style.display = 'block';
+        }
+        
+        // Character Count
+        document.getElementById('venueDescription').addEventListener('input', function() {
+            const charCount = document.getElementById('charCount');
+            const currentLength = this.value.length;
+            charCount.textContent = `${currentLength}/2000 کاراکتر`;
+            
+            if (currentLength > 1800) {
+                charCount.style.color = '#dc2626';
+            } else if (currentLength > 1500) {
+                charCount.style.color = '#f59e0b';
+            } else {
+                charCount.style.color = '#ec4899';
+            }
+        });
+        
+        // Progress Steps Update
+        function updateProgress(stepNumber) {
+            const steps = document.querySelectorAll('.step');
+            steps.forEach(step => {
+                const stepData = parseInt(step.dataset.step);
+                if (stepData <= stepNumber) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+        }
+        
+        // Save Draft
+        function saveVenueDraft() {
+            const name = document.getElementById('venueName').value;
+            if (!name) {
+                showNotification('لطفاً حداقل نام مکان را وارد کنید', 'error');
+                return;
+            }
+            
+            showNotification('پیش‌نویس با موفقیت ذخیره شد', 'success');
+            
+            const formData = {
+                name: name,
+                timestamp: new Date().toLocaleString('fa-IR'),
+                status: 'draft'
+            };
+            localStorage.setItem('venueDraft', JSON.stringify(formData));
+        }
+        
+        // Preview Venue
+        function previewVenue() {
+            showNotification('در حال آماده‌سازی پیش‌نمایش مکان...', 'info');
+            setTimeout(() => {
+                showNotification('پیش‌نمایش در تب جدید باز می‌شود', 'success');
+            }, 1000);
+        }
+        
+        // Form Validation and Submission
+        document.getElementById('venueRequestForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!document.getElementById('acceptTerms').checked) {
+                showNotification('لطفاً شرایط و قوانین پلتفرم را تأیید کنید', 'error');
+                return;
+            }
+            
+            const requiredFields = this.querySelectorAll('[required]');
+            let isValid = true;
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    isValid = false;
+                    field.style.borderColor = '#dc2626';
+                    field.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.1)';
+                } else {
+                    field.style.borderColor = '';
+                    field.style.boxShadow = '';
+                }
+            });
+            
+            const technicalFacilities = document.getElementById('technicalFacilities').value;
+            if (!technicalFacilities) {
+                isValid = false;
+                showNotification('لطفاً حداقل یک تجهیز فنی را انتخاب کنید', 'error');
+            }
+            
+            if (isValid) {
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ثبت مکان...';
+                submitBtn.disabled = true;
+                
+                setTimeout(() => {
+                    const trackingCode = 'VEN-' + Math.floor(100000 + Math.random() * 900000);
+                    const venueId = Date.now();
+                    
+                    showSuccessModal(trackingCode, venueId);
+                    
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 3000);
+            } else {
+                showNotification('لطفاً تمام فیلدهای الزامی را پر کنید', 'error');
+            }
+        });
+        
+        // Success Modal
+        function showSuccessModal(trackingCode, venueId) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4';
+            modal.innerHTML = `
+                <div class="glass-card max-w-lg w-full p-8 animate-slideUp">
+                    <div class="text-center mb-8">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center mx-auto mb-6">
+                            <i class="fas fa-check text-white text-3xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-pink-900 mb-4">درخواست شما ثبت شد!</h3>
+                        <p class="text-pink-700 mb-6">
+                            درخواست ثبت مکان با موفقیت ثبت شد و در صف بررسی قرار گرفت.
+                        </p>
+                    </div>
+                    
+                    <div class="space-y-4 mb-8">
+                        <div class="flex justify-between items-center p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
+                            <span class="text-pink-700">شماره پیگیری:</span>
+                            <span class="font-bold text-xl text-pink-900">${trackingCode}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+                            <span class="text-purple-700">کد مکان:</span>
+                            <span class="font-bold text-xl text-purple-900">${venueId}</span>
+                        </div>
+                        <div class="flex justify-between items-center p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl">
+                            <span class="text-indigo-700">زمان بررسی:</span>
+                            <span class="font-bold text-xl text-indigo-900">۷۲ ساعت</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-4">
+                        <button onclick="window.location.href='/dashboard'" class="btn-primary flex-1">
+                            <i class="fas fa-tachometer-alt"></i> بازگشت به داشبورد
+                        </button>
+                        <button onclick="this.closest('div.fixed').remove()" class="btn-secondary flex-1">
+                            <i class="fas fa-times"></i> بستن
+                        </button>
+                    </div>
+                    
+                    <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                        <p class="text-green-700 text-sm text-center">
+                            <i class="fas fa-info-circle ml-1"></i>
+                            نتیجه بررسی به ایمیل و پیامک اطلاع‌رسانی خواهد شد.
+                        </p>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(50px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                .animate-slideUp {
+                    animation: slideUp 0.5s ease-out;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Notification Function
+        function showNotification(message, type = 'info') {
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-6 left-6 z-50 p-4 rounded-xl border backdrop-blur-lg notification animate-slideIn ${
+                type === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 text-green-800' :
+                type === 'error' ? 'bg-gradient-to-r from-red-50 to-rose-50 border-red-200 text-red-800' :
+                'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200 text-pink-800'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'success' ? 'check-circle text-green-500' : type === 'error' ? 'exclamation-circle text-red-500' : 'info-circle text-pink-500'} text-xl"></i>
+                    <span class="font-medium text-lg">${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.opacity = '0';
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            
+            // Load draft if exists
+            const savedDraft = localStorage.getItem('venueDraft');
+            if (savedDraft) {
+                try {
+                    const draft = JSON.parse(savedDraft);
+                    document.getElementById('venueName').value = draft.name || '';
+                    showNotification('پیش‌نویس ذخیره‌شده بازیابی شد', 'info');
+                } catch (e) {
+                    console.error('Error loading draft:', e);
+                }
+            }
+            
+            // Add input listeners for progress tracking
+            const inputs = document.querySelectorAll('input, textarea, select');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    const section = input.closest('.form-section');
+                    if (section) {
+                        const step = parseInt(section.dataset.step);
+                        updateProgress(step);
+                    }
+                });
+                
+                input.addEventListener('change', () => {
+                    const section = input.closest('.form-section');
+                    if (section) {
+                        const step = parseInt(section.dataset.step);
+                        updateProgress(step);
+                    }
+                });
+            });
+            
+            // Add animation style for notifications
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-100%);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+                .animate-slideIn {
+                    animation: slideIn 0.3s ease-out;
+                }
+            `;
+            document.head.appendChild(style);
+        });
+    </script>
+</body>
+</html>

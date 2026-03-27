@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ورود کاربر صاحب مکان - Momentum</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Shabnam Font -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/rastikerdar/shabnam-font@v5.0.0/dist/font-face.css">
+  
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Shabnam', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f3e7ff 0%, #fce4ec 50%, #e8eaf6 100%);
+    }
+    
+    .bg-gradient-blur {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+      backdrop-filter: blur(10px);
+    }
+    
+    .text-gradient {
+      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #6366f1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* Form styles */
+    .form-input {
+      transition: border-color 0.2s ease;
+      border: 2px solid #e5e7eb;
+    }
+    
+    .form-input:focus {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+    
+    .btn-gradient {
+      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #6366f1 100%);
+    }
+    
+    .btn-gradient:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+  
+  <!-- Simple background -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div class="absolute w-96 h-96 rounded-full bg-gradient-to-r from-pink-300/20 to-purple-300/20 top-1/4 -left-24"></div>
+    <div class="absolute w-80 h-80 rounded-full bg-gradient-to-r from-purple-300/15 to-indigo-300/15 bottom-1/4 -right-20"></div>
+    <div class="absolute inset-0 bg-gradient-to-bl from-pink-50/30 via-purple-50/30 to-indigo-50/30"></div>
+  </div>
+
+  <div class="container max-w-lg w-full">
+    <!-- Login Card -->
+    <div class="bg-gradient-blur border border-white/50 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-xl">
+      
+      <!-- Header with gradient -->
+      <div class="bg-gradient-to-l from-pink-500 via-purple-500 to-indigo-500 p-6 text-center">
+        <div class="flex items-center justify-center gap-3 mb-2">
+          <h1 class="text-2xl font-bold text-white">Momentum</h1>
+        </div>
+        <p class="text-white/90">برنامه‌ریزی رویدادهای فراموش‌نشدنی</p>
+      </div>
+      
+      <!-- Form container -->
+      <div class="p-8">
+        <!-- Title -->
+        <div class="text-center mb-8">
+          <h2 class="text-3xl font-bold text-gray-900 mb-2">ورود به حساب کاربری</h2>
+          <p class="text-gray-600">برای برنامه‌ریزی رویداد خود وارد شوید</p>
+        </div>
+        
+        <!-- Login form -->
+        <form action="/auth/user-login" method="POST" class="space-y-6">
+          <!-- Phone Number Input -->
+          <div class="space-y-2">
+            <label class="block text-gray-700 font-medium text-right">
+              <i class="fas fa-phone ml-2 text-pink-500"></i>
+              شماره تلفن
+            </label>
+            <div class="relative">
+              <input 
+                type="text" 
+                name="phoneNumber" 
+                placeholder="مثال: ۰۹۱۲۳۴۵۶۷۸۹" 
+                required
+                class="form-input w-full p-4 pr-12 rounded-xl bg-white/80 backdrop-blur-sm text-right text-gray-800 placeholder-gray-400 focus:outline-none"
+                dir="ltr"
+              >
+              <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <i class="fas fa-mobile-alt"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Password Input -->
+          <div class="space-y-2">
+            <label class="block text-gray-700 font-medium text-right">
+              <i class="fas fa-lock ml-2 text-purple-500"></i>
+              رمز عبور
+            </label>
+            <div class="relative">
+              <input 
+                type="password" 
+                name="password" 
+                placeholder="رمز عبور خود را وارد کنید" 
+                required
+                class="form-input w-full p-4 pr-12 rounded-xl bg-white/80 backdrop-blur-sm text-right text-gray-800 placeholder-gray-400 focus:outline-none"
+              >
+              <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <i class="fas fa-key"></i>
+              </div>
+              <button type="button" class="absolute left-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-500" id="togglePassword">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Remember me & Forgot password -->
+          <div class="flex flex-col sm:flex-row justify-between items-center text-sm">
+            <div class="flex items-center mb-4 sm:mb-0">
+              <input type="checkbox" id="remember" class="w-4 h-4 text-purple-500 rounded focus:ring-purple-400">
+              <label for="remember" class="mr-2 text-gray-600 cursor-pointer">مرا به خاطر بسپار</label>
+            </div>
+            <a href="#" class="text-purple-600 hover:text-purple-800 font-medium">
+              <i class="fas fa-question-circle ml-1"></i>
+              رمز عبور را فراموش کرده‌اید؟
+            </a>
+          </div>
+          
+          <!-- Submit Button -->
+          <button type="submit" class="btn-gradient w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2">
+            <i class="fas fa-sign-in-alt"></i>
+            ورود به حساب
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          <!-- Register Link -->
+          <div class="text-center">
+            <p class="text-gray-600">
+              حساب کاربری ندارید؟
+              <a href="/register" class="text-gradient font-bold hover:underline">
+                همین حالا ثبت‌نام کنید
+                <i class="fas fa-user-plus mr-1"></i>
+              </a>
+            </p>
+          </div>
+        </form>
+        
+        <!-- Back to home -->
+        <div class="mt-8 pt-6 border-t border-gray-200/50 text-center">
+          <a href="/" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium">
+            <i class="fas fa-chevron-right"></i>
+            بازگشت به صفحه اصلی
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle password visibility
+    document.getElementById('togglePassword').addEventListener('click', function() {
+      const passwordInput = document.querySelector('input[name="password"]');
+      const icon = this.querySelector('i');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    });
+    
+    // Form submission
+    document.querySelector('form').addEventListener('submit', function(e) {
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال ورود...';
+      submitBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>

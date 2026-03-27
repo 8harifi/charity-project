@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد صاحب مکان | دنیای رویدادها</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #fdf2f8 0%, #faf5ff 100%);
+            min-height: 100vh;
+            color: #4c0519;
+        }
+        
+        /* تم بنفش-صورتی مشابه داشبورد */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(251, 207, 232, 0.4);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(236, 72, 153, 0.15);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-card:hover {
+            box-shadow: 0 30px 80px rgba(236, 72, 153, 0.25);
+            transform: translateY(-8px);
+            border-color: rgba(236, 72, 153, 0.6);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 50%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 20px rgba(236, 72, 153, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+        }
+        
+        .gradient-border {
+            border: 2px solid transparent;
+            background: linear-gradient(white, white) padding-box,
+                        linear-gradient(135deg, #ec4899, #a855f7) border-box;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(236, 72, 153, 0.4);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #7c3aed;
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            border-color: rgba(236, 72, 153, 0.5);
+            background: white;
+        }
+        
+        .action-btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .btn-view {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .btn-edit {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.1));
+            color: #db2777;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+        }
+        
+        .btn-delete {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stat-card {
+            padding: 2rem;
+            border-radius: 24px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.15));
+            z-index: 1;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.02);
+        }
+        
+        .search-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .search-input {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid rgba(236, 72, 153, 0.3);
+            border-radius: 16px;
+            padding: 1rem 1rem 1rem 3.5rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            color: #4c0519;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.1);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #ec4899;
+            box-shadow: 0 12px 30px rgba(236, 72, 153, 0.2);
+            background: white;
+        }
+        
+        .search-icon {
+            position: absolute;
+            right: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ec4899;
+            z-index: 10;
+        }
+        
+        .tab-button {
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            background: transparent;
+            color: #881337;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(168, 85, 247, 0.1));
+            color: #db2777;
+            font-weight: 600;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.15);
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #ec4899, #a855f7);
+            border-radius: 3px;
+        }
+        
+        .venue-card, .request-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-bottom: 1px solid rgba(236, 72, 153, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .venue-card::before, .request-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(236, 72, 153, 0.05), transparent);
+            transition: 0.5s;
+        }
+        
+        .venue-card:hover::before, .request-card:hover::before {
+            right: 100%;
+        }
+        
+        .venue-card:hover, .request-card:hover {
+            background: linear-gradient(90deg, rgba(236, 72, 153, 0.05), transparent);
+            transform: translateX(-10px);
+        }
+        
+        .featured-badge {
+            background: linear-gradient(135deg, #f472b6, #ec4899);
+            color: white;
+            padding: 0.4rem 1rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(236, 72, 153, 0.5); }
+            100% { box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3); }
+        }
+        
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        
+        .floating {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        /* Particle effects */
+        .particles-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: particle-float 20s infinite linear;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 0.3;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+         ::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(251, 207, 232, 0.3);
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            border-radius: 10px;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+        }
+        /* Status badges */
+        .status-badge {
+            padding: 0.5rem 1.2rem;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .status-active {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1));
+            color: #16a34a;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .status-pending {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1));
+            color: #d97706;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+        
+        .status-rejected {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1));
+            color: #dc2626;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .status-draft {
+            background: linear-gradient(135deg, rgba(156, 163, 175, 0.2), rgba(107, 114, 128, 0.1));
+            color: #6b7280;
+            border: 1px solid rgba(156, 163, 175, 0.3);
+        }
+        
+        .status-rented {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.1));
+            color: #7c3aed;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        
+        /* Gradient backgrounds */
+        .gradient-pink-1 {
+            background: linear-gradient(135deg, #e495bc 0%, #e0bccc 100%);
+        }
+        
+        .gradient-purple-1 {
+            background: linear-gradient(135deg, #ba9cd5 0%, #9d83cc 100%);
+        }
+        
+        .gradient-indigo-1 {
+            background: linear-gradient(135deg, #9495b3 0%, #9894d7 100%);
+        }
+        
+        .gradient-mixed-1 {
+            background: linear-gradient(135deg, #ddaec6 0%, #bd9ed9 50%, #9c9ddd 100%);
+        }
+        
+        .gradient-teal-1 {
+            background: linear-gradient(135deg, #b8dcd7 0%, #bed1cf 100%);
+        }
+        
+        /* Hover effects for cards */
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .hover-lift:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Shimmer effect */
+        .shimmer {
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                transparent 100%
+            );
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        /* Glass morphism effect */
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Calendar styling */
+        .calendar-day {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .calendar-day:hover {
+            background: rgba(236, 72, 153, 0.1);
+        }
+        
+        .calendar-day.booked {
+            background: linear-gradient(135deg, #ec4899, #a855f7);
+            color: white;
+        }
+        
+        .calendar-day.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #d97706;
+        }
+        
+        /* Revenue chart */
+        .revenue-bar {
+            height: 150px;
+            background: linear-gradient(to top, rgba(236, 72, 153, 0.1), rgba(168, 85, 247, 0.1));
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .revenue-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, #ec4899, #a855f7);
+            border-radius: 8px 8px 0 0;
+            transition: height 0.5s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-6 relative overflow-x-hidden">
+    
+    <!-- Particles Background -->
+    <div class="particles-container" id="particles"></div>
+    
+    <!-- Floating Shapes -->
+    <div class="fixed top-1/4 right-10 w-64 h-64 rounded-full bg-gradient-to-r from-pink-500/10 to-purple-500/10 blur-3xl floating z-0"></div>
+    <div class="fixed bottom-1/3 left-10 w-48 h-48 rounded-full bg-gradient-to-r from-indigo-500/10 to-blue-500/10 blur-3xl floating z-0" style="animation-delay: 2s;"></div>
+    
+    <!-- Header -->
+    <header class="mb-8 pt-8 relative z-10">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            <div>
+                <h1 class="text-4xl md:text-5xl font-bold gradient-text mb-4 pt-12">داشبورد صاحب مکان</h1>
+                <p class="text-pink-700 text-lg">مدیریت حرفه‌ای مکان‌ها و رزروها</p>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div class="stat-card gradient-pink-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۴</div>
+                        <div class="text-xl opacity-90">مکان‌ها</div>
+                    </div>
+                    <i class="fas  text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">فعال: ۳ | غیرفعال: ۱</div>
+            </div>
+            
+            <div class="stat-card gradient-purple-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۱۲</div>
+                        <div class="text-xl opacity-90">رزروها</div>
+                    </div>
+                    <i class="fas  text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">این ماه</div>
+            </div>
+            
+            <div class="stat-card gradient-indigo-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۸۵%</div>
+                        <div class="text-xl opacity-90">اشغال</div>
+                    </div>
+                    <i class="fas  text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">میانگین ماهانه</div>
+            </div>
+            
+            <div class="stat-card gradient-teal-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۲۴.۵</div>
+                        <div class="text-xl opacity-90">میلیون</div>
+                    </div>
+                    <i class="fas text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">درآمد این ماه</div>
+            </div>
+            
+            <div class="stat-card gradient-mixed-1 hover-lift">
+                <div class="flex justify-between items-start relative z-10">
+                    <div>
+                        <div class="text-4xl font-bold mb-2">۳</div>
+                        <div class="text-xl opacity-90">درخواست</div>
+                    </div>
+                    <i class="fas  text-4xl opacity-80"></i>
+                </div>
+                <div class="mt-3 text-sm opacity-90 relative z-10 shimmer">در انتظار بررسی</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="relative z-10">
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap gap-4 mb-8">
+            <a href="#" onclick="createNewVenue()" class="btn-primary">
+                <i class="fas fa-plus"></i> ثبت مکان جدید
+            </a>
+            
+            <button onclick="showAllVenues()" class="btn-secondary">
+                <i class="fas fa-layer-group"></i> مشاهده همه مکان‌ها
+            </button>
+          
+            
+            <!-- جستجوی پیشرفته -->
+            <div class="search-container ml-auto">
+                <i class="fas  search-icon text-xl"></i>
+                <input type="text" 
+                       placeholder="جستجو در مکان‌ها، رزروها، تاریخ..." 
+                       class="search-input" 
+                       id="searchInput"
+                       oninput="filterContent()">
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-3 mb-8 border-b border-pink-100 pb-4">
+            <button class="tab-button active" onclick="switchTab('venues')" id="tab-venues">
+                <i class="fas fa-building ml-2"></i> مکان‌های من (۴)
+            </button>
+            <button class="tab-button" onclick="switchTab('requests')" id="tab-requests">
+                <i class="fas fa-clipboard-list ml-2"></i> درخواست‌های آتی
+            </button>
+            <button class="tab-button" onclick="switchTab('reservations')" id="tab-reservations">
+                <i class="fas fa-calendar-check ml-2"></i> رزروها (۱۲)
+            </button>
+            <button class="tab-button" onclick="switchTab('revenue')" id="tab-revenue">
+                <i class="fas fa-chart-bar ml-2"></i> درآمد و آمار
+            </button>
+            <button class="tab-button" onclick="switchTab('messages')" id="tab-messages">
+                <i class="fas fa-envelope ml-2"></i> پیام‌ها (۵)
+            </button>
+        </div>
+        
+        <!-- Tab Content - Venues -->
+        <div id="venues-content" class="tab-content active">
+            <!-- Venues Table -->
+            <div class="glass-card overflow-hidden hover-lift mb-8">
+                <!-- Table Header -->
+                <div class="p-6 border-b border-pink-100">
+                    <div class="grid grid-cols-12 gap-6 text-pink-700 font-bold text-lg">
+                        <div class="col-span-3">نام مکان</div>
+                        <div class="col-span-2">نوع مکان</div>
+                        <div class="col-span-2">ظرفیت / متراژ</div>
+                        <div class="col-span-2">وضعیت</div>
+                        <div class="col-span-3">عملیات</div>
+                    </div>
+                </div>
+                
+                <!-- Table Body -->
+                <div id="venues-container">
+                    <!-- مکان 1 -->
+                    <div class="p-6 border-b border-pink-50 venue-card" 
+                         data-search="مرکز همایش بین المللی تهران سالن اصلی ۵۰۰ نفر">
+                        <div class="grid grid-cols-12 gap-6 items-center">
+                            <div class="col-span-3">
+                                <div class="font-bold text-pink-900 text-xl mb-2">مرکز همایش بین‌المللی</div>
+                                <div class="flex items-center gap-3 mt-3">
+                                    <span class="text-sm text-pink-600 bg-pink-50 px-3 py-1 rounded-full">تهران، خیابان ولیعصر</span>
+                                    <span class="featured-badge">
+                                        <i class="fas fa-star"></i> ویژه
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">سالن همایش</div>
+                                <div class="text-sm text-pink-500 mt-1">کد: VEN-001</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">۵۰۰ نفر</div>
+                                <div class="text-sm text-pink-500 mt-1">۴۰۰ متر مربع</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <span class="status-badge status-active">
+                                    <i class="fas fa-check-circle"></i> فعال
+                                </span>
+                            </div>
+                            
+                            <div class="col-span-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="viewVenue(1)" class="action-btn btn-view">
+                                        <i class="fas fa-eye"></i> مشاهده
+                                    </button>
+                                    <button onclick="editVenue(1)" class="action-btn btn-edit">
+                                        <i class="fas fa-edit"></i> ویرایش
+                                    </button>
+                                    <button onclick="manageVenue(1)" class="action-btn" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.3);">
+                                        <i class="fas fa-cog"></i> مدیریت
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- مکان 2 -->
+                    <div class="p-6 border-b border-pink-50 venue-card" 
+                         data-search="تالار رودکی اصفهان سالن موسیقی ۳۰۰ نفر">
+                        <div class="grid grid-cols-12 gap-6 items-center">
+                            <div class="col-span-3">
+                                <div class="font-bold text-pink-900 text-xl mb-2">تالار رودکی اصفهان</div>
+                                <div class="text-sm text-pink-600 bg-pink-50 px-3 py-1 rounded-full mt-3">اصفهان، خیابان چهارباغ</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">تالار موسیقی</div>
+                                <div class="text-sm text-pink-500 mt-1">کد: VEN-002</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">۳۰۰ نفر</div>
+                                <div class="text-sm text-pink-500 mt-1">۲۵۰ متر مربع</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <span class="status-badge status-rented">
+                                    <i class="fas fa-calendar-check"></i> اجاره داده شده
+                                </span>
+                            </div>
+                            
+                            <div class="col-span-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="viewVenue(2)" class="action-btn btn-view">
+                                        <i class="fas fa-eye"></i> مشاهده
+                                    </button>
+                                    <button onclick="editVenue(2)" class="action-btn btn-edit">
+                                        <i class="fas fa-edit"></i> ویرایش
+                                    </button>
+                                    <button onclick="viewReservations(2)" class="action-btn btn-view">
+                                        <i class="fas fa-calendar"></i> رزروها
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- مکان 3 -->
+                    <div class="p-6 border-b border-pink-50 venue-card" 
+                         data-search="پارک علم فناوری مشهد سالن کنفرانس ۲۰۰ نفر">
+                        <div class="grid grid-cols-12 gap-6 items-center">
+                            <div class="col-span-3">
+                                <div class="font-bold text-pink-900 text-xl mb-2">پارک علم و فناوری مشهد</div>
+                                <div class="flex items-center gap-3 mt-3">
+                                    <span class="text-sm text-pink-600 bg-pink-50 px-3 py-1 rounded-full">مشهد، بلوار وکیل‌آباد</span>
+                                </div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">سالن کنفرانس</div>
+                                <div class="text-sm text-pink-500 mt-1">کد: VEN-003</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">۲۰۰ نفر</div>
+                                <div class="text-sm text-pink-500 mt-1">۱۸۰ متر مربع</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <span class="status-badge status-active">
+                                    <i class="fas fa-check-circle"></i> فعال
+                                </span>
+                            </div>
+                            
+                            <div class="col-span-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="viewVenue(3)" class="action-btn btn-view">
+                                        <i class="fas fa-eye"></i> مشاهده
+                                    </button>
+                                    <button onclick="editVenue(3)" class="action-btn btn-edit">
+                                        <i class="fas fa-edit"></i> ویرایش
+                                    </button>
+                                    <button onclick="deleteVenue(3)" class="action-btn btn-delete">
+                                        <i class="fas fa-trash"></i> حذف
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- مکان 4 -->
+                    <div class="p-6 border-b border-pink-50 venue-card" 
+                         data-search="هتل اسپیناس پالاس تهران سالن جشن ۴۰۰ نفر">
+                        <div class="grid grid-cols-12 gap-6 items-center">
+                            <div class="col-span-3">
+                                <div class="font-bold text-pink-900 text-xl mb-2">هتل اسپیناس پالاس</div>
+                                <div class="text-sm text-pink-600 bg-pink-50 px-3 py-1 rounded-full mt-3">تهران، خیابان شهید بهشتی</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">سالن جشن</div>
+                                <div class="text-sm text-pink-500 mt-1">کد: VEN-004</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <div class="font-medium text-pink-900 text-lg">۴۰۰ نفر</div>
+                                <div class="text-sm text-pink-500 mt-1">۳۵۰ متر مربع</div>
+                            </div>
+                            
+                            <div class="col-span-2">
+                                <span class="status-badge status-pending">
+                                    <i class="fas fa-clock"></i> در انتظار تایید
+                                </span>
+                            </div>
+                            
+                            <div class="col-span-3">
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="viewVenue(4)" class="action-btn btn-view">
+                                        <i class="fas fa-eye"></i> مشاهده
+                                    </button>
+                                    <button onclick="editVenue(4)" class="action-btn btn-edit">
+                                        <i class="fas fa-edit"></i> ویرایش
+                                    </button>
+                                    <button onclick="withdrawVenue(4)" class="action-btn btn-delete">
+                                        <i class="fas fa-times"></i> لغو درخواست
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Summary -->
+                <div class="p-6 border-t border-pink-100 flex justify-between items-center">
+                    <div class="text-pink-600">
+                        نمایش <span class="font-bold text-pink-700 text-xl">۴</span> مکان از <span class="font-bold text-xl">۴</span> مکان
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="exportVenues()" class="btn-secondary">
+                            <i class="fas fa-download"></i> خروجی گزارش
+                        </button>
+                        <button onclick="refreshVenues()" class="btn-secondary">
+                            <i class="fas fa-sync-alt"></i> بروزرسانی
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions for Venues -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Add New Venue -->
+                <div class="glass-card p-6 hover-lift">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white">
+                            <i class="fas fa-plus text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-pink-900 text-lg">ثبت مکان جدید</h4>
+                            <p class="text-pink-500 text-sm">افزودن مکان جدید به پلتفرم</p>
+                        </div>
+                    </div>
+                    <p class="text-pink-700 text-sm mb-4">
+                        با ثبت مکان جدید، می‌توانید آن را برای برگزاری رویدادها در اختیار مدیران رویداد قرار دهید.
+                    </p>
+                    <button onclick="createNewVenue()" class="btn-primary w-full">
+                        <i class="fas fa-building"></i> شروع ثبت مکان جدید
+                    </button>
+                </div>
+                
+                <!-- Manage Availability -->
+                <div class="glass-card p-6 hover-lift">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white">
+                            <i class="fas fa-calendar-alt text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-purple-900 text-lg">مدیریت زمان‌بندی</h4>
+                            <p class="text-purple-500 text-sm">تنظیم زمان‌های در دسترس</p>
+                        </div>
+                    </div>
+                    <p class="text-purple-700 text-sm mb-4">
+                        زمان‌های در دسترس برای رزرو را مشخص کنید و تقویم مکان خود را مدیریت نمایید.
+                    </p>
+                    <button onclick="manageCalendar()" class="btn-secondary w-full">
+                        <i class="fas fa-clock"></i> مدیریت زمان‌بندی
+                    </button>
+                </div>
+                
+                <!-- Pricing Management -->
+                <div class="glass-card p-6 hover-lift">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 flex items-center justify-center text-white">
+                            <i class="fas fa-money-bill-wave text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-indigo-900 text-lg">مدیریت قیمت‌ها</h4>
+                            <p class="text-indigo-500 text-sm">تنظیم قیمت و پکیج‌ها</p>
+                        </div>
+                    </div>
+                    <p class="text-indigo-700 text-sm mb-4">
+                        قیمت‌گذاری ساعتی، روزانه و پکیج‌های ویژه برای مکان خود را تنظیم کنید.
+                    </p>
+                    <button onclick="managePricing()" class="btn-secondary w-full">
+                        <i class="fas fa-tags"></i> مدیریت قیمت‌گذاری
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Content - Requests -->
+        <div id="requests-content" class="tab-content" style="display: none;">
+       
+                
+               
+            <!-- Upcoming Reservations -->
+            <div class="glass-card p-11 hover-lift mt-8">
+                <h3 class="text-2xl font-bold text-pink-900 mb-6">درخواست های آتی</h3>
+                
+                <div class="space-y-4">
+                    <div class="p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-pink-900 text-lg">همایش فناوری هوش مصنوعی</div>
+                                <div class="text-sm text-pink-600 mt-1">مرکز همایش بین‌المللی - ۱۴۰۳/۰۴/۱۵</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-pink-900 text-xl">۱۲,۵۰۰,۰۰۰</div>
+                                <div class="text-sm text-pink-500">تومان</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 mt-3">
+                            <span class="text-sm text-pink-600 bg-pink-50 px-3 py-1 rounded-full">تایید شده</span>
+                            <span class="text-sm text-pink-600">مدیر رویداد: آقای احمدی</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-purple-900 text-lg">کارگاه برنامه‌نویسی پایتون</div>
+                                <div class="text-sm text-purple-600 mt-1">پارک علم و فناوری - ۱۴۰۳/۰۴/۲۰</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-purple-900 text-xl">۸,۰۰۰,۰۰۰</div>
+                                <div class="text-sm text-purple-500">تومان</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 mt-3">
+                            <span class="text-sm text-purple-600 bg-purple-50 px-3 py-1 rounded-full">تایید شده</span>
+                            <span class="text-sm text-purple-600">دانشگاه تهران</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <div class="font-bold text-indigo-900 text-lg">فستیوال موسیقی کلاسیک</div>
+                                <div class="text-sm text-indigo-600 mt-1">تالار رودکی اصفهان - ۱۴۰۳/۰۵/۱۰</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-indigo-900 text-xl">۱۵,۰۰۰,۰۰۰</div>
+                                <div class="text-sm text-indigo-500">تومان</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 mt-3">
+                            <span class="text-sm text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">در انتظار تایید</span>
+                            <span class="text-sm text-indigo-600">خانم محمدی</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Content - Revenue -->
+        <div id="revenue-content" class="tab-content" style="display: none;">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Revenue Chart -->
+                <div class="glass-card p-8 hover-lift">
+                    <h3 class="text-2xl font-bold text-pink-900 mb-6">درآمد ماهانه</h3>
+                    
+                    <div class="flex items-end gap-4 h-64 mb-8">
+                        <div class="flex-1">
+                            <div class="revenue-bar">
+                                <div class="revenue-fill" style="height: 70%"></div>
+                            </div>
+                            <div class="text-center mt-2 text-pink-700">فروردین</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="revenue-bar">
+                                <div class="revenue-fill" style="height: 85%"></div>
+                            </div>
+                            <div class="text-center mt-2 text-pink-700">اردیبهشت</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="revenue-bar">
+                                <div class="revenue-fill" style="height: 90%"></div>
+                            </div>
+                            <div class="text-center mt-2 text-pink-700">خرداد</div>
+                        </div>
+                        <div class="flex-1">
+                            <div class="revenue-bar">
+                                <div class="revenue-fill" style="height: 75%"></div>
+                            </div>
+                            <div class="text-center mt-2 text-pink-700">تیر</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl">
+                            <div class="text-pink-700">میانگین درآمد ماهانه</div>
+                            <div class="text-2xl font-bold text-pink-900">۱۸.۷ میلیون</div>
+                        </div>
+                        <div class="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl">
+                            <div class="text-purple-700">رشد نسبت به ماه قبل</div>
+                            <div class="text-2xl font-bold text-purple-900">+۱۲%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Stats -->
+                <div class="glass-card p-8 hover-lift">
+                    <h3 class="text-2xl font-bold text-pink-900 mb-6">آمار عملکرد</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-pink-700">نرخ اشغال ماهانه</span>
+                                <span class="font-bold text-pink-900">۸۵%</span>
+                            </div>
+                            <div class="w-full bg-pink-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-pink-500 to-purple-500 h-2.5 rounded-full" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-purple-700">رضایت مشتریان</span>
+                                <span class="font-bold text-purple-900">۴.۸/۵</span>
+                            </div>
+                            <div class="w-full bg-purple-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-purple-500 to-indigo-500 h-2.5 rounded-full" style="width: 96%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-indigo-700">میانگین قیمت رزرو</span>
+                                <span class="font-bold text-indigo-900">۱۰.۲ میلیون</span>
+                            </div>
+                            <div class="w-full bg-indigo-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-indigo-500 to-blue-500 h-2.5 rounded-full" style="width: 82%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-blue-700">تکرار رزرو</span>
+                                <span class="font-bold text-blue-900">۴۵%</span>
+                            </div>
+                            <div class="w-full bg-blue-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-blue-500 to-cyan-500 h-2.5 rounded-full" style="width: 45%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-chart-line text-green-500 text-xl"></i>
+                            <div>
+                                <div class="font-bold text-green-900">عملکرد عالی!</div>
+                                <div class="text-green-700 text-sm">نرخ اشغال شما ۱۵٪ بالاتر از میانگین پلتفرم است.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Venue Performance Comparison -->
+            <div class="glass-card p-8 mt-8 hover-lift">
+                <h3 class="text-2xl font-bold text-pink-900 mb-6">مقایسه عملکرد مکان‌ها</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-pink-100">
+                                <th class="text-right p-4 text-pink-700">نام مکان</th>
+                                <th class="text-right p-4 text-pink-700">تعداد رزرو</th>
+                                <th class="text-right p-4 text-pink-700">درآمد کل</th>
+                                <th class="text-right p-4 text-pink-700">میانگین قیمت</th>
+                                <th class="text-right p-4 text-pink-700">نرخ اشغال</th>
+                                <th class="text-right p-4 text-pink-700">رضایت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-pink-50">
+                                <td class="p-4">
+                                    <div class="font-medium text-pink-900">مرکز همایش بین‌المللی</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-pink-900">۸</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-pink-900">۶۵,۵۰۰,۰۰۰</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-pink-900">۸,۱۸۷,۵۰۰</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-pink-900">۹۲%</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-pink-900">۴.۹/۵</div>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-pink-50">
+                                <td class="p-4">
+                                    <div class="font-medium text-purple-900">تالار رودکی اصفهان</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-purple-900">۵</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-purple-900">۴۲,۰۰۰,۰۰۰</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-purple-900">۸,۴۰۰,۰۰۰</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-purple-900">۷۸%</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-purple-900">۴.۷/۵</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="p-4">
+                                    <div class="font-medium text-indigo-900">پارک علم و فناوری</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-indigo-900">۳</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-indigo-900">۲۴,۰۰۰,۰۰۰</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-indigo-900">۸,۰۰۰,۰۰۰</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-indigo-900">۶۵%</div>
+                                </td>
+                                <td class="p-4">
+                                    <div class="font-bold text-indigo-900">۴.۶/۵</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Content - Messages -->
+        <div id="messages-content" class="tab-content" style="display: none;">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Inbox -->
+                <div class="glass-card p-8 hover-lift lg:col-span-2">
+                    <h3 class="text-2xl font-bold text-pink-900 mb-6">صندوق پیام‌ها</h3>
+                    
+                    <div class="space-y-4">
+                        <div class="p-4 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                        م.ر
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-pink-900">مدیریت رویدادها</div>
+                                        <div class="text-sm text-pink-600 mt-1">درخواست رزرو جدید برای مرکز همایش بین‌المللی</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-pink-500">۲ ساعت پیش</div>
+                                    <span class="inline-block w-3 h-3 rounded-full bg-pink-500 mt-2"></span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                        ع.م
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-purple-900">علی محمدی</div>
+                                        <div class="text-sm text-purple-600 mt-1">سوال درباره امکانات تالار رودکی</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-purple-500">دیروز</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border border-indigo-100 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 flex items-center justify-center text-white font-bold">
+                                        پ.س
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-indigo-900">پشتیبانی پلتفرم</div>
+                                        <div class="text-sm text-indigo-600 mt-1">به روزرسانی شرایط و قوانین پلتفرم</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-indigo-500">۲ روز پیش</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                                        ف.ح
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-blue-900">فروغ حسینی</div>
+                                        <div class="text-sm text-blue-600 mt-1">تایید پرداخت رزرو کارگاه برنامه‌نویسی</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-blue-500">۳ روز پیش</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                                        م.ک
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-green-900">مریم کریمی</div>
+                                        <div class="text-sm text-green-600 mt-1">تشکر از خدمات عالی در رویداد هفته گذشته</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm text-green-500">۱ هفته پیش</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+               
+               
+                    
+                    <!-- Quick Contacts -->
+                    <div class="glass-card p-8 hover-lift">
+                        <h3 class="text-xl font-bold text-pink-900 mb-4">مخاطبین پرکاربرد</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gradient-to-r from-pink-50 to-transparent rounded-xl cursor-pointer hover:shadow-md">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                                        م.ر
+                                    </div>
+                                    <span class="text-pink-900">مدیریت رویدادها</span>
+                                </div>
+                                <i class="fas fa-comment text-pink-500"></i>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-transparent rounded-xl cursor-pointer hover:shadow-md">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold">
+                                        پ.س
+                                    </div>
+                                    <span class="text-purple-900">پشتیبانی</span>
+                                </div>
+                                <i class="fas fa-comment text-purple-500"></i>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gradient-to-r from-indigo-50 to-transparent rounded-xl cursor-pointer hover:shadow-md">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-500 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
+                                        م.ک
+                                    </div>
+                                    <span class="text-indigo-900">مریم کریمی</span>
+                                </div>
+                                <i class="fas fa-comment text-indigo-500"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
+                        <!-- Top Venues -->
+ <div class="glass-card p-8 hover:scale-105 hover:shadow-2xl transition-transform duration-300 relative overflow-hidden">
+    <!-- افکت گرادیانت کارت -->
+    <div class="absolute inset-0 bg-gradient-to-tr from-pink-50 to-purple-50 opacity-30 rounded-xl pointer-events-none"></div>
+
+    <h3 class="font-bold text-2xl mb-8 text-pink-900 flex items-center gap-4 relative z-10">
+        <i class="fas fa-envelope-open-text text-pink-500 text-3xl"></i>
+        درخواست‌های برگزارکنندگان
+    </h3>
+
+    <!-- دکمه بزرگ و جذاب -->
+    <div class="flex justify-center relative z-10">
+        <button id="showRequestsBtn" 
+                class="w-full md:w-auto bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 
+                       hover:from-pink-600 hover:via-purple-600 hover:to-indigo-600
+                       text-white font-bold py-4 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300
+                       flex items-center gap-3 justify-center text-lg">
+            <i class="fas "></i>
+            مشاهده همه درخواست‌ها
+        </button>
+    </div>
+</div>
+
+<script>
+    const btn = document.getElementById('showRequestsBtn');
+
+    btn.addEventListener('click', () => {
+        alert("درخواست‌ها نمایش داده می‌شوند!");
+    });
+</script>
+
+
+            
+            <!-- Upcoming Reservations -->
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="font-bold text-xl mb-6 text-pink-900 flex items-center gap-3">
+                    <i class="fas fa-calendar-day text-pink-500 text-2xl"></i>
+                    رزروهای پیش‌رو
+                </h3>
+                <div class="space-y-5">
+                    <div class="p-4 bg-gradient-to-l from-pink-50 to-transparent rounded-xl border border-pink-100">
+                        <div class="font-medium text-pink-900">همایش هوش مصنوعی</div>
+                        <div class="text-sm text-pink-600 mt-2">۱۵ اردیبهشت - ۲ روز دیگر</div>
+                        <div class="flex items-center gap-3 mt-3">
+                            <div class="w-full bg-pink-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-pink-500 to-purple-500 h-2.5 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <span class="text-xs text-pink-600 font-bold">تایید شده</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 bg-gradient-to-l from-purple-50 to-transparent rounded-xl border border-purple-100">
+                        <div class="font-medium text-purple-900">کارگاه برنامه‌نویسی</div>
+                        <div class="text-sm text-purple-600 mt-2">۲۰ اردیبهشت - ۷ روز دیگر</div>
+                        <div class="flex items-center gap-3 mt-3">
+                            <div class="w-full bg-purple-100 rounded-full h-2.5">
+                                <div class="bg-gradient-to-r from-purple-500 to-indigo-500 h-2.5 rounded-full" style="width: 100%"></div>
+                            </div>
+                            <span class="text-xs text-purple-600 font-bold">تایید شده</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="glass-card p-8 hover-lift">
+                <h3 class="font-bold text-xl mb-6 text-pink-900 flex items-center gap-3">
+                    <i class="fas fa-bolt text-pink-500 text-2xl"></i>
+                    دسترسی سریع
+                </h3>
+                <div class="space-y-4">
+                    <button onclick="createNewVenue()" class="w-full p-4 text-right bg-gradient-to-r from-pink-500/10 to-purple-500/10 text-pink-700 border-2 border-pink-200 rounded-xl hover:shadow-xl transition-all hover:border-pink-300 hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20">
+                        <i class="fas fa-plus ml-2"></i> ثبت مکان جدید
+                    </button>
+                    
+                    <button onclick="manageCalendar()" class="w-full p-4 text-right bg-gradient-to-r from-purple-500/10 to-indigo-500/10 text-purple-700 border-2 border-purple-200 rounded-xl hover:shadow-xl transition-all hover:border-purple-300 hover:bg-gradient-to-r hover:from-purple-500/20 hover:to-indigo-500/20">
+                        <i class="fas fa-calendar-alt ml-2"></i> مدیریت تقویم
+                    </button>
+                    
+                    <button onclick="viewFinancialReports()" class="w-full p-4 text-right bg-gradient-to-r from-indigo-500/10 to-blue-500/10 text-indigo-700 border-2 border-indigo-200 rounded-xl hover:shadow-xl transition-all hover:border-indigo-300 hover:bg-gradient-to-r hover:from-indigo-500/20 hover:to-blue-500/20">
+                        <i class="fas fa-chart-bar ml-2"></i> گزارش مالی
+                    </button>
+                    
+                    <button onclick="contactSupport()" class="w-full p-4 text-right bg-gradient-to-r from-blue-500/10 to-cyan-500/10 text-blue-700 border-2 border-blue-200 rounded-xl hover:shadow-xl transition-all hover:border-blue-300 hover:bg-gradient-to-r hover:from-blue-500/20 hover:to-cyan-500/20">
+                        <i class="fas fa-headset ml-2"></i> تماس با پشتیبانی
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- JavaScript -->
+    <script>
+        // ایجاد ذرات پس‌زمینه
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                const size = Math.random() * 6 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 20}s`;
+                particle.style.animationDuration = `${Math.random() * 15 + 10}s`;
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // متغیرها
+        let currentTab = 'venues';
+        
+        // Tab Switching
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // Show/hide tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+                content.classList.remove('active');
+            });
+            document.getElementById(`${tabName}-content`).style.display = 'block';
+            document.getElementById(`${tabName}-content`).classList.add('active');
+            
+            // Filter content
+            filterContent();
+        }
+        
+        // Search Functionality
+        function filterContent() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (currentTab === 'venues') {
+                const venues = document.querySelectorAll('.venue-card');
+                venues.forEach(venue => {
+                    const searchData = venue.getAttribute('data-search');
+                    if (searchData.includes(searchTerm)) {
+                        venue.style.display = 'block';
+                    } else {
+                        venue.style.display = 'none';
+                    }
+                });
+            }
+            // Add filtering for other tabs as needed
+        }
+        
+        // Venue Actions
+        function viewVenue(venueId) {
+            showNotification(`مشاهده مکان شماره ${venueId}`, 'success');
+            // In real app: window.location.href = `/venue/${venueId}`;
+        }
+        
+        function editVenue(venueId) {
+            showNotification(`ویرایش مکان شماره ${venueId}`, 'info');
+            // In real app: window.location.href = `/venue/${venueId}/edit`;
+        }
+        
+        function manageVenue(venueId) {
+            showNotification(`مدیریت مکان شماره ${venueId}`, 'info');
+            // In real app: window.location.href = `/venue/${venueId}/manage`;
+        }
+        
+        function deleteVenue(venueId) {
+            if (confirm('آیا از حذف این مکان اطمینان دارید؟ این عمل قابل بازگشت نیست.')) {
+                showNotification(`مکان شماره ${venueId} حذف شد`, 'success');
+                // In real app: API call to delete venue
+            }
+        }
+        
+        function withdrawVenue(venueId) {
+            if (confirm('آیا از لغو درخواست ثبت این مکان اطمینان دارید؟')) {
+                showNotification(`درخواست ثبت مکان شماره ${venueId} لغو شد`, 'success');
+                // In real app: API call to withdraw venue request
+            }
+        }
+        
+        function viewReservations(venueId) {
+            showNotification(`مشاهده رزروهای مکان شماره ${venueId}`, 'info');
+            switchTab('reservations');
+        }
+        
+        // Request Actions
+        function viewRequest(requestId) {
+            showNotification(`مشاهده درخواست شماره ${requestId}`, 'success');
+        }
+        
+        function approveRequest(requestId) {
+            if (confirm('آیا از تایید این درخواست اطمینان دارید؟')) {
+                showNotification(`درخواست شماره ${requestId} تایید شد`, 'success');
+                // In real app: API call to approve request
+            }
+        }
+        
+        function rejectRequest(requestId) {
+            const reason = prompt('لطفاً دلیل رد درخواست را وارد کنید:');
+            if (reason) {
+                showNotification(`درخواست شماره ${requestId} رد شد`, 'error');
+                // In real app: API call to reject request with reason
+            }
+        }
+        
+        function contactRequester(requestId) {
+            showNotification(`تماس با درخواست‌دهنده شماره ${requestId}`, 'info');
+        }
+        
+        function reconsiderRequest(requestId) {
+            showNotification(`بازبینی درخواست شماره ${requestId}`, 'info');
+        }
+        
+        // Calendar Navigation
+        function prevMonth() {
+            showNotification('ماه قبل', 'info');
+        }
+        
+        function nextMonth() {
+            showNotification('ماه بعد', 'info');
+        }
+        
+        // Other Actions
+        function createNewVenue() {
+            showNotification('ثبت مکان جدید', 'info');
+            // In real app: window.location.href = '/venue/new';
+        }
+        
+        function showAllVenues() {
+            switchTab('venues');
+            document.getElementById('searchInput').value = '';
+            filterContent();
+        }
+        
+        function showCalendar() {
+            switchTab('reservations');
+        }
+        
+        function manageCalendar() {
+            showNotification('مدیریت تقویم', 'info');
+            // In real app: window.location.href = '/calendar/manage';
+        }
+        
+        function managePricing() {
+            showNotification('مدیریت قیمت‌گذاری', 'info');
+            // In real app: window.location.href = '/pricing/manage';
+        }
+        
+        function exportVenues() {
+            showNotification('گزارش مکان‌ها در حال آماده‌سازی...', 'info');
+            setTimeout(() => {
+                showNotification('گزارش با موفقیت دانلود شد', 'success');
+            }, 2000);
+        }
+        
+        function refreshVenues() {
+            showNotification('بروزرسانی مکان‌ها...', 'info');
+            setTimeout(() => {
+                showNotification('مکان‌ها با موفقیت بروزرسانی شدند', 'success');
+            }, 1000);
+        }
+        
+        function viewFinancialReports() {
+            switchTab('revenue');
+        }
+        
+        function contactSupport() {
+            showNotification('تماس با پشتیبانی', 'info');
+        }
+        
+        // Notification Function
+        function showNotification(message, type = 'info') {
+            document.querySelectorAll('.notification').forEach(n => n.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `fixed top-6 left-6 z-50 p-4 rounded-xl border backdrop-blur-lg ${
+                type === 'success' ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 text-green-800' :
+                type === 'error' ? 'bg-gradient-to-r from-red-50 to-rose-50 border-red-200 text-red-800' :
+                'bg-gradient-to-r from-pink-50 to-purple-50 border-pink-200 text-pink-800'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'success' ? 'check-circle text-green-500' : type === 'error' ? 'exclamation-circle text-red-500' : 'info-circle text-pink-500'} text-xl"></i>
+                    <span class="font-medium text-lg">${message}</span>
+                </div>
+            `;
+            
+            notification.classList.add('notification');
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            
+            // User menu toggle
+            document.getElementById('user-menu').addEventListener('click', function() {
+                showNotification('پروفایل کاربر', 'info');
+            });
+            
+            // Add ripple effect to buttons
+            document.querySelectorAll('.btn-primary, .btn-secondary').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const ripple = document.createElement('span');
+                    const rect = this.getBoundingClientRect();
+                    const size = Math.max(rect.width, rect.height);
+                    const x = e.clientX - rect.left - size / 2;
+                    const y = e.clientY - rect.top - size / 2;
+                    
+                    ripple.style.cssText = `
+                        position: absolute;
+                        border-radius: 50%;
+                        background: rgba(255, 255, 255, 0.7);
+                        transform: scale(0);
+                        animation: ripple 0.6s linear;
+                        width: ${size}px;
+                        height: ${size}px;
+                        top: ${y}px;
+                        left: ${x}px;
+                        pointer-events: none;
+                    `;
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+            
+            // Add CSS for ripple animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes ripple {
+                    to {
+                        transform: scale(4);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Initialize calendar days click events
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                day.addEventListener('click', function() {
+                    const dayNumber = this.textContent.split(' ')[0];
+                    if (dayNumber && !isNaN(dayNumber)) {
+                        showNotification(`انتخاب روز ${dayNumber} اردیبهشت`, 'info');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
