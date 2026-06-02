@@ -1,0 +1,1552 @@
+{
+  "info": {
+    "name": "Project API - Full",
+    "_postman_id": "11111111-2222-3333-4444-555555555555",
+    "description": "Complete API collection for frontend team (JWT auth, patients, benefactors, doctors, organizations, global search, etc.).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Auth - Sign In",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"test\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/sign-in/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sign-in",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Auth - Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"REFRESH_TOKEN\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/token/refresh/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "token",
+                "refresh",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Utility",
+      "item": [
+        {
+          "name": "Hello (Auth Test)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/hello/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "hello",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Global Search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/global-search/?q={{q}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "global-search",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "علی",
+                  "description": "Search term (minimum 2 characters)."
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patients",
+      "item": [
+        {
+          "name": "List Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/patients/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search on first_name, last_name, national_code, phone_number"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"national_code\": 1,\n  \"fatherName\": \"علی\",\n  \"age\": 35,\n  \"maritalStatus\": \"متاهل\",\n  \"headHouseHold\": true,\n  \"numberDependents\": 3,\n  \"familyStatus\": \"متوسط\",\n  \"jobStatus\": \"شاغل\",\n  \"skill\": \"خیاطی\",\n  \"homeStatus\": \"استیجاری\",\n  \"lineNumber\": \"123456\",\n  \"organ\": \"کبد\",\n  \"bankCardNumber\": \"6037991234567890\",\n  \"insurance\": \"تامین اجتماعی\",\n  \"sicknessDescription\": \"توضیحات بیماری\",\n  \"presenterNationalCode\": \"0012345678\",\n  \"presenterFirstName\": \"رضا\",\n  \"presenterLastName\": \"احمدی\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retrieve Patient by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/patients/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Patient (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"national_code\": 1,\n  \"fatherName\": \"علی\",\n  \"age\": 36\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Partial Update Patient (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"age\": 37\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patients/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Patient",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/patients/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Patient by National Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/patients/by-national-code/0012345678/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patients",
+                "by-national-code",
+                "0012345678",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Benefactors",
+      "item": [
+        {
+          "name": "List Benefactors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/benefactors/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "benefactors",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Benefactor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"national_code\": 2,\n  \"landLineNumber\": \"02112345678\",\n  \"contribution\": \"حمایت مالی\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/benefactors/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "benefactors",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retrieve Benefactor by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/benefactors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "benefactors",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Benefactor (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"national_code\": 2,\n  \"landLineNumber\": \"02187654321\",\n  \"contribution\": \"حمایت دارویی\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/benefactors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "benefactors",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Partial Update Benefactor (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contribution\": \"حمایت مالی و دارویی\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/benefactors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "benefactors",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Benefactor",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/benefactors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "benefactors",
+                "1",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Doctors",
+      "item": [
+        {
+          "name": "List Doctors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"national_code\": 3,\n  \"fatherName\": \"حسین\",\n  \"medicalCode\": \"12345\",\n  \"secPhoneNumber\": \"09120000000\",\n  \"specialty\": \"قلب و عروق\",\n  \"services\": \"ویزیت رایگان\",\n  \"collabType\": \"پاره وقت\",\n  \"contribution\": \"حمایت تخصصی\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retrieve Doctor by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Doctor (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"national_code\": 3,\n  \"fatherName\": \"حسین\",\n  \"medicalCode\": \"12345\",\n  \"secPhoneNumber\": \"09121111111\",\n  \"specialty\": \"قلب و عروق\",\n  \"services\": \"ویزیت رایگان\",\n  \"collabType\": \"تمام وقت\",\n  \"contribution\": \"حمایت تخصصی\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Partial Update Doctor (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"collabType\": \"پاره وقت\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/doctors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Doctor",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/doctors/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "doctors",
+                "1",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Private Companies",
+      "item": [
+        {
+          "name": "List Private Companies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/private-companies/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "private-companies",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Private Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"شرکت الف\",\n  \"nameCeo\": \"مدیرعامل\",\n  \"yearFound\": 1390,\n  \"license\": \"شماره مجوز\",\n  \"activity\": \"فعالیت شرکت\",\n  \"city\": \"تهران\",\n  \"state\": \"تهران\",\n  \"address\": \"آدرس\",\n  \"phoneNumber\": \"02111111111\",\n  \"email\": \"company@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/private-companies/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "private-companies",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retrieve Private Company by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/private-companies/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "private-companies",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Private Company (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"شرکت الف آپدیت شده\",\n  \"nameCeo\": \"مدیرعامل جدید\",\n  \"yearFound\": 1391,\n  \"license\": \"مجوز جدید\",\n  \"activity\": \"فعالیت جدید\",\n  \"city\": \"تهران\",\n  \"state\": \"تهران\",\n  \"address\": \"آدرس جدید\",\n  \"phoneNumber\": \"02122222222\",\n  \"email\": \"new@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/private-companies/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "private-companies",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Partial Update Private Company (PATCH)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activity\": \"فعالیت به‌روزشده\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/private-companies/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "private-companies",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Private Company",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/private-companies/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "private-companies",
+                "1",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Charity Centers",
+      "item": [
+        {
+          "name": "List Charity Centers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charity-centers/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charity-centers",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Charity Center",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"مرکز نیکوکاری الف\",\n  \"mainActivityArea\": \"حمایت مالی\",\n  \"city\": \"تهران\",\n  \"state\": \"تهران\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/charity-centers/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charity-centers",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retrieve Charity Center by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charity-centers/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charity-centers",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Charity Center (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"مرکز نیکوکاری الف (آپدیت)\",\n  \"mainActivityArea\": \"حمایت مالی و پزشکی\",\n  \"city\": \"تهران\",\n  \"state\": \"تهران\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/charity-centers/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charity-centers",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Charity Center",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charity-centers/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "charity-centers",
+                "1",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Government Organizations",
+      "item": [
+        {
+          "name": "List Government Organizations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/government-organizations/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "government-organizations",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Government Organization",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"سازمان دولتی الف\",\n  \"type\": \"وزارت\",\n  \"activityArea\": \"حوزه سلامت\",\n  \"city\": \"تهران\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/government-organizations/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "government-organizations",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retrieve Government Organization by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/government-organizations/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "government-organizations",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Government Organization (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"سازمان دولتی الف (آپدیت)\",\n  \"type\": \"معاونت\",\n  \"activityArea\": \"حوزه سلامت و رفاه\",\n  \"city\": \"تهران\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/government-organizations/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "government-organizations",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Government Organization",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/government-organizations/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "government-organizations",
+                "1",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Associations",
+      "item": [
+        {
+          "name": "List Associations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/associations/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "associations",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Association",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"تشکل الف\",\n  \"type\": \"NGO\",\n  \"mainActivityArea\": \"حوزه بیماران خاص\",\n  \"city\": \"تهران\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/associations/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "associations",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Retrieve Association by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/associations/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "associations",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Association (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"تشکل الف (آپدیت)\",\n  \"type\": \"NGO\",\n  \"mainActivityArea\": \"حوزه بیماران خاص و نیازمندان\",\n  \"city\": \"تهران\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/associations/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "associations",
+                "1",
+                ""
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Association",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/associations/1/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "associations",
+                "1",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Presenters",
+      "item": [
+        {
+          "name": "Get Presenter by National Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/presenters/0012345678/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "presenters",
+                "0012345678",
+                ""
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health Assists",
+      "item": [
+        {
+          "name": "List Health Assists",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health-assists/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health-assists",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patient Service Requests",
+      "item": [
+        {
+          "name": "List Patient Service Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/patient-service-requests/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "patient-service-requests",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Service Centers",
+      "item": [
+        {
+          "name": "List Service Centers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/service-centers/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "service-centers",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Medical Centers",
+      "item": [
+        {
+          "name": "List Medical Centers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/medical-centers/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "medical-centers",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Consultation Requests",
+      "item": [
+        {
+          "name": "List Consultation Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/consultation-requests/?search=&page=1&page_size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "consultation-requests",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
