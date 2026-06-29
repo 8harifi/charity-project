@@ -1,0 +1,7 @@
+{
+    "app":"charity-center",
+    "port":8000,
+    "build":{
+        "location":"iran"
+    }
+}
