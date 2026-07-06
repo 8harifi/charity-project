@@ -17,6 +17,10 @@ class WalletServiceError(Exception):
     pass
 
 
+class DonationHoldError(Exception):
+    pass
+
+
 def _to_decimal(amount) -> Decimal:
     try:
         value = Decimal(str(amount))
@@ -31,6 +35,16 @@ def get_or_create_benefactor_wallet(user) -> Wallet:
     wallet, _ = Wallet.objects.get_or_create(
         owner_user=user,
         wallet_type="benefactor",
+        defaults={"cached_balance": Decimal("0")},
+    )
+    return wallet
+
+
+def get_or_create_staff_payout_wallet(user) -> Wallet:
+    """Wallet where HA/doctor fund recipients receive released donation holds."""
+    wallet, _ = Wallet.objects.get_or_create(
+        owner_user=user,
+        wallet_type="staff_payout",
         defaults={"cached_balance": Decimal("0")},
     )
     return wallet
@@ -184,3 +198,128 @@ def transfer_between_wallets(
             created_by=created_by,
         )
         return debit_tx, credit_tx
+
+
+def hold_amount(
+    wallet: Wallet,
+    amount,
+    *,
+    reference_type: str = "",
+    reference_id=None,
+    description: str = "",
+    created_by=None,
+) -> WalletTransaction:
+    """Move money from free balance to held_balance (frozen pledge).
+    The money stays in the benefactor wallet but is no longer spendable."""
+    amt = _to_decimal(amount)
+    with transaction.atomic():
+        locked = _lock_wallet(wallet.pk)
+        if locked.cached_balance < amt:
+            raise InsufficientBalanceError(msg.INSUFFICIENT_WALLET_BALANCE)
+        Wallet.objects.filter(pk=locked.pk).update(
+            cached_balance=F("cached_balance") - amt,
+            held_balance=F("held_balance") + amt,
+        )
+        locked.refresh_from_db(fields=["cached_balance", "held_balance"])
+        return WalletTransaction.objects.create(
+            wallet=locked,
+            entry_type="debit",
+            amount=amt,
+            kind="pledge_hold",
+            reference_type=reference_type,
+            reference_id=reference_id,
+            description=description,
+            created_by=created_by,
+        )
+
+
+def release_hold(
+    wallet: Wallet,
+    amount,
+    *,
+    to_wallet: Wallet = None,
+    reference_type: str = "",
+    reference_id=None,
+    description: str = "",
+    created_by=None,
+) -> tuple[WalletTransaction, WalletTransaction]:
+    """Finalize held money: decrement held_balance, transfer to destination wallet
+    (defaults to the platform wallet if no destination is given)."""
+    amt = _to_decimal(amount)
+    with transaction.atomic():
+        locked = _lock_wallet(wallet.pk)
+        if locked.held_balance < amt:
+            raise DonationHoldError("Held balance insufficient for release")
+        destination = to_wallet or get_or_create_platform_wallet()
+        first_id, second_id = sorted([locked.pk, destination.pk])
+        wallets = {
+            w.pk: w
+            for w in Wallet.objects.select_for_update().filter(
+                pk__in=[first_id, second_id]
+            )
+        }
+        benefactor = wallets[locked.pk]
+        dest = wallets[destination.pk]
+
+        Wallet.objects.filter(pk=benefactor.pk).update(
+            held_balance=F("held_balance") - amt,
+        )
+        Wallet.objects.filter(pk=dest.pk).update(
+            cached_balance=F("cached_balance") + amt,
+        )
+
+        debit_tx = WalletTransaction.objects.create(
+            wallet=benefactor,
+            entry_type="debit",
+            amount=amt,
+            kind="pledge_release",
+            reference_type=reference_type,
+            reference_id=reference_id,
+            counterparty_wallet=dest,
+            description=description,
+            created_by=created_by,
+        )
+        credit_tx = WalletTransaction.objects.create(
+            wallet=dest,
+            entry_type="credit",
+            amount=amt,
+            kind="pledge_release",
+            reference_type=reference_type,
+            reference_id=reference_id,
+            counterparty_wallet=benefactor,
+            description=description,
+            created_by=created_by,
+        )
+        return debit_tx, credit_tx
+
+
+def refund_hold(
+    wallet: Wallet,
+    amount,
+    *,
+    reference_type: str = "",
+    reference_id=None,
+    description: str = "",
+    created_by=None,
+) -> WalletTransaction:
+    """Cancel held money: decrement held_balance, credit back to free balance."""
+    amt = _to_decimal(amount)
+    with transaction.atomic():
+        locked = _lock_wallet(wallet.pk)
+        if locked.held_balance < amt:
+            raise DonationHoldError("Held balance insufficient for refund")
+        Wallet.objects.filter(pk=locked.pk).update(
+            held_balance=F("held_balance") - amt,
+            cached_balance=F("cached_balance") + amt,
+        )
+        locked.refresh_from_db(fields=["cached_balance", "held_balance"])
+        return WalletTransaction.objects.create(
+            wallet=locked,
+            entry_type="credit",
+            amount=amt,
+            kind="pledge_refund",
+            reference_type=reference_type,
+            reference_id=reference_id,
+            description=description,
+            created_by=created_by,
+        )

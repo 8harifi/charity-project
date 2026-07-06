@@ -8,7 +8,6 @@ from .user import CustomUser
 
 class ConsultationRequest(models.Model):
     CONSULTATION_TYPES = [
-        ("آنلاین", "آنلاین"),
         ("حضوری", "حضوری"),
         ("تلفنی", "تلفنی"),
     ]
@@ -58,12 +57,11 @@ class PatientServiceRequest(models.Model):
 
 class NetworkRequest(models.Model):
     REQUEST_TYPES = [
-        ("consultation", "مشاوره پزشکی"),
+        ("consultation", "درخواست پزشکی"),
         ("financial", "حمایت مالی"),
         ("service", "دریافت خدمات"),
     ]
     CONSULTATION_MODES = [
-        ("آنلاین", "آنلاین"),
         ("حضوری", "حضوری"),
         ("تلفنی", "تلفنی"),
     ]
@@ -73,6 +71,7 @@ class NetworkRequest(models.Model):
         ("rejected", "رد شده"),
         ("in_progress", "در حال انجام"),
         ("completed", "تکمیل شده"),
+        ("cancelled", "لغو شده"),
     ]
 
     request_type = models.CharField(max_length=20, choices=REQUEST_TYPES)
@@ -85,6 +84,14 @@ class NetworkRequest(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="created_network_requests",
+    )
+    fund_recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fund_recipient_requests",
+        help_text="HA or doctor who receives the collected funds (financial requests only).",
     )
     specialty = models.ForeignKey(
         Specialty,
@@ -100,6 +107,11 @@ class NetworkRequest(models.Model):
         null=True,
         blank=True,
     )
+    collected_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=0,
+        default=0,
+    )
     consultation_mode = models.CharField(
         max_length=20,
         choices=CONSULTATION_MODES,
@@ -108,6 +120,11 @@ class NetworkRequest(models.Model):
     )
     preferred_date = models.CharField(max_length=20, blank=True, default="")
     preferred_time = models.CharField(max_length=20, blank=True, default="")
+    appointment_date = models.CharField(max_length=20, blank=True, default="")
+    appointment_time = models.CharField(max_length=20, blank=True, default="")
+    appointment_place = models.CharField(max_length=255, blank=True, default="")
+    appointment_phone = models.CharField(max_length=20, blank=True, default="")
+    confirmation_message = models.TextField(blank=True, default="")
     needed_service = models.CharField(max_length=512, blank=True, default="")
     status = models.CharField(
         max_length=20,

@@ -9,6 +9,7 @@ class Wallet(models.Model):
         ("benefactor", "Benefactor"),
         ("patient_escrow", "Patient Escrow"),
         ("platform", "Platform"),
+        ("staff_payout", "Staff Payout"),
     ]
 
     owner_user = models.ForeignKey(
@@ -27,6 +28,7 @@ class Wallet(models.Model):
     )
     wallet_type = models.CharField(max_length=20, choices=WALLET_TYPES)
     cached_balance = models.DecimalField(max_digits=14, decimal_places=0, default=0)
+    held_balance = models.DecimalField(max_digits=14, decimal_places=0, default=0)
     currency = models.CharField(max_length=3, default="IRR")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -38,6 +40,11 @@ class Wallet(models.Model):
                 fields=["owner_user"],
                 condition=models.Q(wallet_type="benefactor"),
                 name="unique_benefactor_wallet_per_user",
+            ),
+            models.UniqueConstraint(
+                fields=["owner_user"],
+                condition=models.Q(wallet_type="staff_payout"),
+                name="unique_staff_payout_wallet_per_user",
             ),
         ]
 
@@ -61,12 +68,16 @@ class WalletTransaction(models.Model):
         ("disbursement", "Disbursement"),
         ("refund", "Refund"),
         ("adjustment", "Adjustment"),
+        ("pledge_hold", "Pledge Hold"),
+        ("pledge_release", "Pledge Release"),
+        ("pledge_refund", "Pledge Refund"),
     ]
     REFERENCE_TYPES = [
         ("gateway_payment", "Gateway Payment"),
         ("donation", "Donation"),
         ("network_request", "Network Request"),
         ("disbursement", "Disbursement"),
+        ("admin_adjustment", "Admin Adjustment"),
     ]
 
     wallet = models.ForeignKey(
@@ -183,3 +194,66 @@ class PatientDisbursement(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class DonationHold(models.Model):
+    """Temporary hold: benefactor pledged money to a financial request.
+    held = money frozen in benefactor's held_balance, not yet finalized.
+    released = confirmed -> transferred to platform wallet, need fulfilled.
+    refunded = cancelled -> returned to benefactor's free balance."""
+
+    HOLD_STATUSES = [
+        ("held", "Held"),
+        ("released", "Released"),
+        ("refunded", "Refunded"),
+    ]
+
+    benefactor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="donation_holds",
+    )
+    network_request = models.ForeignKey(
+        "NetworkRequest",
+        on_delete=models.CASCADE,
+        related_name="donation_holds",
+    )
+    amount = models.DecimalField(max_digits=14, decimal_places=0)
+    status = models.CharField(max_length=20, choices=HOLD_STATUSES, default="held")
+    debit_transaction = models.ForeignKey(
+        "WalletTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hold_debits",
+    )
+    release_transaction = models.ForeignKey(
+        "WalletTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hold_releases",
+    )
+    refund_transaction = models.ForeignKey(
+        "WalletTransaction",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="hold_refunds",
+    )
+    closed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="holds_closed",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["network_request", "status"]),
+            models.Index(fields=["benefactor", "status"]),
+        ]
