@@ -9,6 +9,11 @@ import { lookupApi } from "../../API/lookupApi";
 import { useMultipleLookups, findLookupOption } from "../../hooks/useLookupOptions";
 import { HEAD_OF_FAMILY_OPTIONS } from "../../data/staticSignupOptions";
 import { validatePatientStep1 } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const PATIENT_SIGNUP_STEPS = ["اطلاعات فردی", "آدرس و تماس", "بیمه و مدارک", "رمز عبور"];
 
 const PatientSignup1 = () => {
   const [firstName, setFirstName] = useState("");
@@ -26,6 +31,7 @@ const PatientSignup1 = () => {
   const [organ, setOrgan] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [number, setNumber] = useState("");
+  const [healthAssistantCode, setHealthAssistantCode] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [leaving, setLeaving] = useState(false);
@@ -90,6 +96,7 @@ useEffect(() => {
   );
   setPhoneNumber(data.phone_number || data.mobile || "");
   setNumber(data.landline_number || data.phone || "");
+  setHealthAssistantCode(data.health_assistant_code || "");
 
   setGender(findLookupOption(genders, data.gender));
   setMarriageStatus(
@@ -218,7 +225,8 @@ const handleSignup = async () => {
     covered_organization: organ?.value,
 
     phone_number: phoneNumber,
-    landline_number: number
+    landline_number: number,
+    health_assistant_code: healthAssistantCode.trim(),
   };
 
   try {
@@ -234,7 +242,7 @@ const handleSignup = async () => {
   }
 };
 
-
+  const onEnterSubmit = useEnterSubmit(handleSignup);
 
   return (
     <motion.div
@@ -334,6 +342,7 @@ const handleSignup = async () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}
@@ -433,7 +442,7 @@ const handleSignup = async () => {
                 exit="exit"
                 className="h-full flex flex-col justify-center"
               >
-                <div className="mb-10">
+                <div className="mb-6">
                   <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
                     عضویت بیماران در شبکه
                   </h1>
@@ -442,17 +451,14 @@ const handleSignup = async () => {
                   </p>
                 </div>
 
+                <SignupStepProgress steps={PATIENT_SIGNUP_STEPS} currentStep={1} />
+
                 <div className="space-y-5 sm:space-y-7">
                   {/* signup page */}
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                       <div className="relative">
-                        <label
-                          htmlFor="first_name"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          نام
-                        </label>
+                        <RequiredLabel htmlFor="first_name" className="mb-2 text-sm sm:text-base text-blue-700">نام</RequiredLabel>
                         <input
                           id="first_name"
                           type="text"
@@ -467,12 +473,7 @@ const handleSignup = async () => {
                         />
                       </div>
                       <div className="relative">
-                        <label
-                          htmlFor="last_name"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          نام خانوادگی
-                        </label>
+                        <RequiredLabel htmlFor="last_name" className="mb-2 text-sm sm:text-base text-blue-700">نام خانوادگی</RequiredLabel>
                         <input
                           id="last_name"
                           type="text"
@@ -489,12 +490,7 @@ const handleSignup = async () => {
 
                       {/* نام پدر */}
                       <div className="relative">
-                        <label
-                          htmlFor="father"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          نام پدر
-                        </label>
+                        <RequiredLabel htmlFor="father" className="mb-2 text-sm sm:text-base text-blue-700">نام پدر</RequiredLabel>
                         <input
                           id="father"
                           type="text"
@@ -519,17 +515,13 @@ const handleSignup = async () => {
                           placeholder="انتخاب جنسیت"
                           label="جنسیت"
                           loading={lookupsLoading}
+                          required
                         />
                       </div>
 
                       {/* کد ملی */}
                       <div className="relative">
-                        <label
-                          htmlFor="code"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          کد ملی
-                        </label>
+                        <RequiredLabel htmlFor="code" className="mb-2 text-sm sm:text-base text-blue-700">کد ملی</RequiredLabel>
                         <input
                           id="code"
                           type="text"
@@ -551,12 +543,7 @@ const handleSignup = async () => {
 
                       {/* سن */}
                       <div className="relative">
-                        <label
-                          htmlFor="age"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          سن
-                        </label>
+                        <RequiredLabel htmlFor="age" className="mb-2 text-sm sm:text-base text-blue-700">سن</RequiredLabel>
                         <input
                           id="age"
                           type="number"
@@ -593,6 +580,7 @@ const handleSignup = async () => {
                         placeholder="وضعیت تاهل"
                         label="وضعیت تاهل"
                         loading={lookupsLoading}
+                        required
                       />
                       <RenderDropdown
                         value={headOfFamily}
@@ -601,16 +589,11 @@ const handleSignup = async () => {
                         name="headOfFamily"
                         placeholder="سرپرست خانواده"
                         label="سرپرست خانواده"
+                        required
                       />
 
-                      {/* تعداد افراد تحت تکفل */}
                       <div className="relative">
-                        <label
-                          htmlFor="members"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          تعداد افراد تحت تکفل
-                        </label>
+                        <RequiredLabel htmlFor="members" required={false} className="mb-2 text-sm sm:text-base text-blue-700">تعداد افراد تحت تکفل</RequiredLabel>
                         <input
                           id="members"
                           type="number"
@@ -635,6 +618,7 @@ const handleSignup = async () => {
                         placeholder="سطح تحصیلات"
                         label="سطح تحصیلات"
                         loading={lookupsLoading}
+                        required
                       />
                       <RenderDropdown
                         value={jobStatus}
@@ -644,6 +628,7 @@ const handleSignup = async () => {
                         placeholder="وضعیت شغلی"
                         label="وضعیت شغلی"
                         loading={lookupsLoading}
+                        required
                       />
                       <RenderDropdown
                         value={houseStatus}
@@ -653,6 +638,7 @@ const handleSignup = async () => {
                         placeholder="وضعیت مسکن"
                         label="وضعیت مسکن"
                         loading={lookupsLoading}
+                        required
                       />
                       <RenderDropdown
                         value={organ}
@@ -662,16 +648,11 @@ const handleSignup = async () => {
                         placeholder="ارگان تحت پوشش"
                         label="ارگان تحت پوشش"
                         loading={lookupsLoading}
+                        required
                       />
 
-                      {/* تلفن همراه */}
                       <div className="relative">
-                        <label
-                          htmlFor="phone"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          تلفن همراه
-                        </label>
+                        <RequiredLabel htmlFor="phone" className="mb-2 text-sm sm:text-base text-blue-700">تلفن همراه</RequiredLabel>
                         <input
                           id="phone"
                           type="tel"
@@ -689,14 +670,8 @@ const handleSignup = async () => {
                         />
                       </div>
 
-                      {/* تلفن ثابت */}
                       <div className="relative">
-                        <label
-                          htmlFor="num"
-                          className="block mb-2 text-sm sm:text-base text-blue-700"
-                        >
-                          تلفن ثابت
-                        </label>
+                        <RequiredLabel htmlFor="num" required={false} className="mb-2 text-sm sm:text-base text-blue-700">تلفن ثابت</RequiredLabel>
                         <input
                           id="num"
                           type="tel"
@@ -711,6 +686,24 @@ const handleSignup = async () => {
                           className="w-full p-3 sm:p-4 bg-blue-50/50 text-blue-950 rounded-xl sm:rounded-2xl
           border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300
           text-right placeholder-blue-400 text-sm sm:text-lg transition-all"
+                        />
+                      </div>
+
+                      <div className="relative sm:col-span-2">
+                        <RequiredLabel htmlFor="ha_code" required={false} className="mb-2 text-sm sm:text-base text-blue-700">
+                          کد سلامتیار معرف (اختیاری)
+                        </RequiredLabel>
+                        <input
+                          id="ha_code"
+                          type="text"
+                          value={healthAssistantCode}
+                          onChange={(e) => setHealthAssistantCode(e.target.value)}
+                          placeholder="در صورتی که سلامتیاری شما را معرفی کرده، کد او را وارد کنید"
+                          className="
+            w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl
+            border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300
+            text-right placeholder-blue-400 text-sm sm:text-lg text-blue-950 transition-all
+          "
                         />
                       </div>
                     </div>

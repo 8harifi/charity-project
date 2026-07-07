@@ -11,12 +11,16 @@ import { joinFullName, splitFullName } from "./utils/nameFields";
 import {
   validatePatientStep2,
 } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const PATIENT_SIGNUP_STEPS = ["اطلاعات فردی", "آدرس و تماس", "بیمه و مدارک", "رمز عبور"];
 
 
 const PatientSignup2 = () => {
   const [loading, setLoading] = useState(false);
 
-  const [creditCard, setCreditCard] = useState("");
   const [province, setProvince] = useState(null);
   const [town, setTown] = useState("");
   const [address, setAddress] = useState("");
@@ -46,7 +50,6 @@ const PatientSignup2 = () => {
     const data = loadStep("patient", "step2");
 
     if (data) {
-      setCreditCard(data.bank_card_number || data.creditCard || "");
       const pr = provinces.find((p) => p.value === data.province);
       setProvince(pr || null);
 
@@ -115,7 +118,6 @@ const PatientSignup2 = () => {
       province: province?.value,
       city: city?.value,
       address,
-      bank_card_number: creditCard,
     });
   };
 
@@ -127,7 +129,6 @@ const PatientSignup2 = () => {
     if (errorMessage) return setError(errorMessage);
 
     const payload = {
-      bank_card_number: creditCard.replace(/\s/g, ""),
       province: province?.value,
       town,
       city: city?.value,
@@ -179,6 +180,7 @@ const PatientSignup2 = () => {
 
   }, [province]);
 
+  const onEnterSubmit = useEnterSubmit(handleSignup);
 
   return (
     <motion.div
@@ -278,6 +280,7 @@ const PatientSignup2 = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}
@@ -380,7 +383,7 @@ const PatientSignup2 = () => {
                 exit="exit"
                 className="h-full flex flex-col justify-center"
               >
-                <div className="mb-10">
+                <div className="mb-6">
                   <h1
                     className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
                     عضویت بیماران در شبکه
@@ -389,6 +392,7 @@ const PatientSignup2 = () => {
                     اطلاعات خود را برای ثبت‌نام وارد کنید
                   </p>
                 </div>
+                <SignupStepProgress steps={PATIENT_SIGNUP_STEPS} currentStep={2} />
                 <div className="space-y-5 sm:space-y-7">
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
@@ -404,6 +408,7 @@ const PatientSignup2 = () => {
                         name="province"
                         placeholder="انتخاب استان"
                         label="استان"
+                        required
                       />
 
                       {/* city */}
@@ -415,14 +420,13 @@ const PatientSignup2 = () => {
                           name="city"
                           placeholder="انتخاب شهر"
                           label="شهر"
+                          required
                         />
                       </div>
 
                       {/* address */}
                       <div className="sm:col-span-2">
-                        <label className="block mb-2 text-blue-700 text-sm sm:text-base">
-                          آدرس
-                        </label>
+                        <RequiredLabel className="mb-2 text-blue-700 text-sm sm:text-base">آدرس</RequiredLabel>
                         <input
                           type="text"
                           value={address}
@@ -476,32 +480,6 @@ const PatientSignup2 = () => {
                           value={illness}
                           onChange={(e) => setIllNess(e.target.value)}
                           placeholder="شرح حال بیماری"
-                          className="w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl
-          border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300
-          text-right placeholder-blue-400 text-sm sm:text-lg text-blue-950"
-                        />
-                      </div>
-
-                      {/* credit card */}
-                      <div className="sm:col-span-2">
-                        <label className="block mb-2 text-blue-700 text-sm sm:text-base">
-                          شماره کارت بانکی <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={creditCard}
-                          onChange={(e) => {
-                            let raw = e.target.value.replace(/\D/g, "");
-                            if (raw.length > 16) raw = raw.slice(0, 16);
-                            const formatted = raw.replace(
-                              /(\d{4})(?=\d)/g,
-                              "$1 "
-                            );
-                            setCreditCard(formatted);
-                          }}
-                          maxLength={19}
-                          inputMode="numeric"
-                          placeholder="شماره کارت بانکی"
                           className="w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl
           border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300
           text-right placeholder-blue-400 text-sm sm:text-lg text-blue-950"

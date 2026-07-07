@@ -19,7 +19,7 @@ function resolveLookupId(raw) {
   return raw;
 }
 
-export function buildPatientFormFromDraft(steps, username, password) {
+export function buildPatientFormFromDraft(steps, password) {
   const s1 = steps.step1 || {};
   const s2 = steps.step2 || {};
   const s3 = steps.step3 || {};
@@ -40,7 +40,6 @@ export function buildPatientFormFromDraft(steps, username, password) {
     national_code: (s1.national_code || "").trim(),
     phone_number: (s1.phone_number || s1.mobile || "").trim(),
     password: password || "",
-    username: username || "",
     first_name: s1.first_name || "",
     last_name: s1.last_name || "",
     father_name: s1.father_name || "",
@@ -58,10 +57,10 @@ export function buildPatientFormFromDraft(steps, username, password) {
       s1.covered_organization ?? s1.supported_organ
     ),
     landline_number: s1.landline_number || s1.phone || "",
+    health_assistant_code: (s1.health_assistant_code || "").trim(),
     province: s2.province || "",
     city: s2.city || "",
     address,
-    bank_card_number: (s2.bank_card_number || "").replace(/\s/g, ""),
     contact1_full_name: s2.contact1_full_name || "",
     contact1_phone_number: s2.contact1_phone_number || "",
     contact2_full_name: s2.contact2_full_name || "",
@@ -79,7 +78,6 @@ export async function registerPatient(form) {
   fd.append("national_code", form.national_code || "");
   fd.append("phone_number", form.phone_number || "");
   fd.append("password", form.password || "");
-  fd.append("username", form.username || "");
   fd.append("first_name", form.first_name);
   fd.append("last_name", form.last_name);
   fd.append("father_name", form.father_name || "");
@@ -95,10 +93,10 @@ export async function registerPatient(form) {
   fd.append("housing_status", String(form.housing_status ?? ""));
   fd.append("covered_organization", String(form.covered_organization ?? ""));
   fd.append("landline_number", form.landline_number || "");
+  fd.append("health_assistant_code", form.health_assistant_code || "");
   fd.append("province", form.province || "");
   fd.append("city", form.city || "");
   fd.append("address", form.address || "");
-  fd.append("bank_card_number", form.bank_card_number || "");
   fd.append("contact1_full_name", form.contact1_full_name || "");
   fd.append("contact1_phone_number", form.contact1_phone_number || "");
   fd.append("contact2_full_name", form.contact2_full_name || "");

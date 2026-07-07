@@ -9,6 +9,11 @@ import { patientService } from "../../Services/patientService";
 import { lookupApi } from "../../API/lookupApi";
 import { useLookupOptions, findLookupOption } from "../../hooks/useLookupOptions";
 import { validatePatientStep3 } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const PATIENT_SIGNUP_STEPS = ["اطلاعات فردی", "آدرس و تماس", "بیمه و مدارک", "رمز عبور"];
 
 const PatientSignup3 = () => {
   const [insurance, setInsurance] = useState(null);
@@ -72,9 +77,9 @@ const PatientSignup3 = () => {
     if (err) return setError(err);
 
     const step1 = loadStep("patient", "step1");
-    if (!step1?.national_code) {
+    if (!step1?.phone_number && !step1?.mobile) {
       return setError(
-        "کد ملی در مراحل قبل پیدا نشد. لطفاً مراحل قبل را دوباره تکمیل کنید."
+        "اطلاعات مراحل قبل ناقص است. لطفاً از مرحله اول دوباره شروع کنید."
       );
     }
 
@@ -99,6 +104,8 @@ const PatientSignup3 = () => {
     }
   };
 
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <motion.div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -111,6 +118,7 @@ const PatientSignup3 = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         <motion.div
@@ -119,7 +127,7 @@ const PatientSignup3 = () => {
           animate="visible"
           className="lg:w-full p-10 lg:p-14 bg-white"
         >
-          <motion.div className="mb-10">
+          <motion.div className="mb-6">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
               عضویت بیماران در شبکه
             </h1>
@@ -127,6 +135,7 @@ const PatientSignup3 = () => {
               بیمه و مدارک شناسایی
             </p>
           </motion.div>
+          <SignupStepProgress steps={PATIENT_SIGNUP_STEPS} currentStep={3} />
 
           <motion.div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <RenderDropdown
@@ -137,6 +146,7 @@ const PatientSignup3 = () => {
               placeholder="نوع بیمه"
               label="نوع بیمه"
               loading={insuranceLoading}
+              required
             />
 
             <FileUpload
