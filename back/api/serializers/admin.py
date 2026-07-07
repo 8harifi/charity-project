@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from ..models import (
+    AdminProfile,
     Benefactor,
     CoveredOrganization,
     CustomUser,
@@ -17,18 +18,21 @@ from ..models import (
     Patient,
     Specialty,
 )
+from ..admin_user_filters import user_profile_phone
 from .auth import ProfileSerializer
 from .lookup_utils import resolve_lookup
 
 
 class AdminUserListSerializer(serializers.ModelSerializer):
     display_name = serializers.SerializerMethodField()
+    phone = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
         fields = [
             "id",
             "username",
+            "phone",
             "email",
             "role",
             "state",
@@ -36,6 +40,9 @@ class AdminUserListSerializer(serializers.ModelSerializer):
             "date_joined",
             "display_name",
         ]
+
+    def get_phone(self, obj):
+        return user_profile_phone(obj)
 
     def get_display_name(self, obj):
         role = obj.role
@@ -57,6 +64,9 @@ class AdminUserListSerializer(serializers.ModelSerializer):
                 except IndividualHealthAssistant.DoesNotExist:
                     org = ha.organization_profile
                     return org.name.strip()
+            if role == "admin":
+                a = obj.admin_profile
+                return f"{a.first_name} {a.last_name}".strip()
         except Exception:
             pass
         name = f"{obj.first_name} {obj.last_name}".strip()
@@ -95,7 +105,6 @@ class AdminPatientProfileSerializer(serializers.ModelSerializer):
             "province",
             "city",
             "address",
-            "bank_card_number",
             "sickness_description",
             "contact1_full_name",
             "contact1_phone_number",
