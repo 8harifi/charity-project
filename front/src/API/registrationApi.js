@@ -36,7 +36,7 @@ function splitName(full) {
   return [p.slice(0, -1).join(" "), p[p.length - 1]];
 }
 
-function buildBenefactorBody(draft, username, password) {
+function buildBenefactorBody(draft, password) {
   const step = draft.step1 || draft;
   let first_name = step.first_name || "";
   let last_name = step.last_name || "";
@@ -44,7 +44,6 @@ function buildBenefactorBody(draft, username, password) {
     [first_name, last_name] = splitName(step.name);
   }
   return {
-    username,
     password,
     first_name: first_name || "خیر",
     last_name: last_name || "-",
@@ -54,10 +53,9 @@ function buildBenefactorBody(draft, username, password) {
   };
 }
 
-function buildDoctorBody(draft, username, password) {
+function buildDoctorBody(draft, password) {
   const step = draft.step1 || draft;
   return {
-    username,
     password,
     first_name: step.first_name,
     last_name: step.last_name,
@@ -74,7 +72,7 @@ function buildDoctorBody(draft, username, password) {
   };
 }
 
-function buildHealthAssistantBody(draft, username, password) {
+function buildHealthAssistantBody(draft, password) {
   const s1 = draft[1] || draft.step1 || {};
   const s2 = draft[2] || draft.step2 || {};
   const profileType =
@@ -88,7 +86,6 @@ function buildHealthAssistantBody(draft, username, password) {
     s2.collaborationType;
 
   const body = {
-    username,
     password,
     profile_type: profileType,
     cooperation_type: coop,
@@ -130,11 +127,34 @@ function buildHealthAssistantBody(draft, username, password) {
   return body;
 }
 
+export function loginPhoneFromDraft(role, draft) {
+  if (role === "patient") {
+    const s1 = draft?.step1 || draft?.[1] || {};
+    return s1.phone_number || s1.mobile || s1.phoneNumber || "";
+  }
+  if (role === "doctor") {
+    const s1 = draft?.step1 || draft || {};
+    return s1.phone_number || "";
+  }
+  if (role === "charitable") {
+    const s1 = draft?.step1 || draft || {};
+    return s1.phone_number || s1.phoneNumber || "";
+  }
+  const s1 = draft?.[1] || draft?.step1 || {};
+  const profileType =
+    s1.profile_type ||
+    (s1.referrerType === "legal" ? "organization" : "individual");
+  if (profileType === "organization") {
+    return s1.director_phone_number || "";
+  }
+  return s1.phone_number || s1.phoneNumber || "";
+}
+
 export async function submitRoleRegistration(role, body) {
-  const { username, password, draft } = body;
+  const { password, draft } = body;
 
   if (role === "patient") {
-    const result = await patientService.registerFromDraft(username, password);
+    const result = await patientService.registerFromDraft(password);
     if (!result.success) {
       const err = new Error(result.error || "خطا در ثبت‌نام بیمار");
       err.response = { data: { detail: result.error } };
@@ -145,14 +165,14 @@ export async function submitRoleRegistration(role, body) {
 
   if (role === "doctor") {
     const merged = loadRoleDraft("doctor");
-    return doctorApi.signup(buildDoctorBody(merged, username, password));
+    return doctorApi.signup(buildDoctorBody(merged, password));
   }
 
   if (role === "charitable") {
     const merged = loadRoleDraft("charitable");
     return axios.post(
       `${API_BASE_URL}/${ROLE_PATH.charitable}`,
-      buildBenefactorBody(merged, username, password),
+      buildBenefactorBody(merged, password),
       { headers: { "Content-Type": "application/json" } }
     );
   }
@@ -162,13 +182,10 @@ export async function submitRoleRegistration(role, body) {
     throw new Error("نقش ثبت‌نام پشتیبانی نمی‌شود");
   }
 
-  let payload = { username, password, draft };
-  if (
-    role === "salamtyaran" ||
-    role === "SalamtyaranSignup"
-  ) {
+  let payload = { password, draft };
+  if (role === "salamtyaran" || role === "SalamtyaranSignup") {
     const merged = loadRoleDraft("salamtyaran");
-    payload = buildHealthAssistantBody(merged, username, password);
+    payload = buildHealthAssistantBody(merged, password);
   }
 
   return axios.post(`${API_BASE_URL}/${path}`, payload, {

@@ -1,8 +1,23 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
+import { jwtDecode } from "jwt-decode";
 import { authService } from "../Services/authService";
 
 const AuthContext = createContext(null);
+
+function decodeUserFromToken(access) {
+  if (!access) return null;
+  try {
+    const decoded = jwtDecode(access);
+    return {
+      role: decoded.role,
+      username: decoded.username,
+      id: decoded.id,
+      name: decoded.username,
+    };
+  } catch {
+    return null;
+  }
+}
 
 export const AuthProvider = ({ children }) => {
   const [access, setAccess] = useState(null);
@@ -10,10 +25,9 @@ export const AuthProvider = ({ children }) => {
   const [isLogin, setIsLogin] = useState(false);
   const [error, setError] = useState(null);
 
-  // Load saved login
   useEffect(() => {
-    const savedAccess= localStorage.getItem('access');
-    const savedRefresh = localStorage.getItem('refresh');
+    const savedAccess = localStorage.getItem("access");
+    const savedRefresh = localStorage.getItem("refresh");
 
     if (savedAccess && savedRefresh) {
       setAccess(savedAccess);
@@ -22,28 +36,27 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Login (Universal for all roles)
+  const user = useMemo(() => decodeUserFromToken(access), [access]);
+
   const login = async (credentials) => {
     setError(null);
 
     try {
-      // Make sure returned format = { user, token }
       const resp = await authService.login(credentials);
-      const { access, refresh } = resp.data;
+      const { access: newAccess, refresh: newRefresh } = resp.data;
 
-      if (!access || !refresh) {
+      if (!newAccess || !newRefresh) {
         throw new Error("داده لاگین معتبر نیست");
       }
 
-      // Save
-      localStorage.setItem('access', access);
-      localStorage.setItem('refresh', refresh);
+      localStorage.setItem("access", newAccess);
+      localStorage.setItem("refresh", newRefresh);
 
-      setAccess(access);
-      setRefresh(refresh);
+      setAccess(newAccess);
+      setRefresh(newRefresh);
       setIsLogin(true);
 
-      return { success: true, access, refresh };
+      return { success: true, access: newAccess, refresh: newRefresh };
     } catch (err) {
       console.log("LOGIN ERROR:", err);
       const apiMsg =
@@ -60,8 +73,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('access');
-    localStorage.removeItem('refresh');
+    localStorage.removeItem("access");
+    localStorage.removeItem("refresh");
 
     setAccess(null);
     setRefresh(null);
@@ -70,7 +83,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ access, refresh, isLogin, error, login, logout }}>
+    <AuthContext.Provider
+      value={{ access, refresh, isLogin, user, error, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
