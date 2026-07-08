@@ -7,6 +7,7 @@ import { saveStep, loadStep } from "./utils/signupStorage";
 import { lookupApi } from "../../API/lookupApi";
 import { useMultipleLookups, findLookupOption } from "../../hooks/useLookupOptions";
 import { IRAN_PROVINCES } from "../../data/staticSignupOptions";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
 
 const SalamtyaranSignup2 = () => {
   const [name, setName] = useState("");
@@ -183,6 +184,9 @@ const SalamtyaranSignup2 = () => {
     }, 800);
   };
 
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <motion.div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -281,6 +285,7 @@ const SalamtyaranSignup2 = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}

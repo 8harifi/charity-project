@@ -5,6 +5,11 @@ import {saveStep, loadStep} from "./utils/signupStorage";
 import {lookupApi} from "../../API/lookupApi";
 import {useLookupOptions, findLookupOption, useMultipleLookups} from "../../hooks/useLookupOptions";
 import { validateHealthAssistantStep1 } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const HA_SIGNUP_STEPS = ["نوع همکاری", "اطلاعات و مدارک", "رمز عبور"];
 
 const SalamtyaranSignup = () => {
   const [profileType, setProfileType] = useState("individual");
@@ -14,7 +19,6 @@ const SalamtyaranSignup = () => {
   const [lastName, setLastName] = useState("");
   const [gender, setGender] = useState("");
   const [nationalCode, setNationalCode] = useState("");
-  const [fatherName, setFatherName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
 
   const [organizationType, setOrganizationType] = useState(null);
@@ -45,7 +49,6 @@ const SalamtyaranSignup = () => {
     setFirstName(saved.first_name || "");
     setLastName(saved.last_name || "");
     setNationalCode(saved.national_code || saved.nationalCode || "");
-    setFatherName(saved.father_name || "");
     setPhoneNumber(saved.phone_number || saved.phoneNumber || "");
     setOrgName(saved.org_name || saved.legalName || "");
     setDirectorFirstName(saved.director_first_name || "");
@@ -92,7 +95,6 @@ const SalamtyaranSignup = () => {
       last_name: lastName.trim(),
       gender: gender?.value ?? gender,
       national_code: nationalCode,
-      father_name: fatherName.trim(),
       phone_number: phoneNumber,
 
       organization_type: organizationType?.value ?? organizationType,
@@ -111,14 +113,19 @@ const SalamtyaranSignup = () => {
     }
   };
 
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4">
-      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-10 border border-blue-100">
+      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-2xl p-10 border border-blue-100" onKeyDown={onEnterSubmit}>
         <h1 className="text-3xl font-bold text-right text-blue-900 mb-2">
           عضویت سلامتیار / مددکار
         </h1>
-        <p className="text-blue-600 text-right mb-8">نوع ثبت‌نام را انتخاب کنید</p>
+        <p className="text-blue-600 text-right mb-6">نوع ثبت‌نام را انتخاب کنید</p>
+
+        <SignupStepProgress steps={HA_SIGNUP_STEPS} currentStep={1} />
 
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
           <label className="flex items-center gap-2 cursor-pointer">
@@ -153,7 +160,7 @@ const SalamtyaranSignup = () => {
               loading={orgTypesLoading}
             />
             <div>
-              <label className="block mb-2 text-blue-700">نام مجموعه</label>
+              <RequiredLabel className="block mb-2 text-blue-700">نام مجموعه</RequiredLabel>
               <input
                 type="text"
                 value={orgName}
@@ -163,7 +170,7 @@ const SalamtyaranSignup = () => {
               />
             </div>
             <div>
-              <label className="block mb-2 text-blue-700">نام رئیس مجموعه</label>
+              <RequiredLabel required={false} className="block mb-2 text-blue-700">نام رئیس مجموعه</RequiredLabel>
               <input
                 type="text"
                 value={directorFirstName}
@@ -173,7 +180,7 @@ const SalamtyaranSignup = () => {
               />
             </div>
             <div>
-              <label className="block mb-2 text-blue-700">نام خانوادگی رئیس مجموعه</label>
+              <RequiredLabel required={false} className="block mb-2 text-blue-700">نام خانوادگی رئیس مجموعه</RequiredLabel>
               <input
                 type="text"
                 value={directorLastName}
@@ -183,7 +190,7 @@ const SalamtyaranSignup = () => {
               />
             </div>
             <div>
-              <label className="block mb-2 text-blue-700">شماره تلفن همراه رئیس مجموعه</label>
+              <RequiredLabel className="block mb-2 text-blue-700">شماره تلفن همراه رئیس مجموعه</RequiredLabel>
               <input
                 type="text"
                 value={directorPhoneNumber}
@@ -209,12 +216,7 @@ const SalamtyaranSignup = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* نام */}
             <div className="relative">
-              <label
-                className="block text-blue-700 mb-2 text-sm sm:text-base"
-                htmlFor="first_name"
-              >
-                نام
-              </label>
+              <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="first_name">نام</RequiredLabel>
               <input
                 id="first_name"
                 type="text"
@@ -227,12 +229,7 @@ const SalamtyaranSignup = () => {
 
             {/* نام خانوادگی */}
             <div className="relative">
-              <label
-                className="block text-blue-700 mb-2 text-sm sm:text-base"
-                htmlFor="last_name"
-              >
-                نام خانوادگی
-              </label>
+              <RequiredLabel required={false} className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="last_name">نام خانوادگی</RequiredLabel>
               <input
                 id="last_name"
                 type="text"
@@ -253,17 +250,13 @@ const SalamtyaranSignup = () => {
                 placeholder="انتخاب جنسیت"
                 label="جنسیت"
                 loading={lookupsLoading}
+                required
               />
             </div>
 
             {/* کد ملی */}
             <div className="relative">
-              <label
-                className="block text-blue-700 mb-2 text-sm sm:text-base"
-                htmlFor="code"
-              >
-                کد ملی
-              </label>
+              <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="code">کد ملی</RequiredLabel>
               <input
                 id="code"
                 type="text"
@@ -280,32 +273,8 @@ const SalamtyaranSignup = () => {
               />
             </div>
 
-            {/* نام پدر */}
             <div className="relative">
-              <label
-                className="block text-blue-700 mb-2 text-sm sm:text-base"
-                htmlFor="father"
-              >
-                نام پدر
-              </label>
-              <input
-                id="father"
-                type="text"
-                value={fatherName}
-                onChange={(e) => setFatherName(e.target.value)}
-                placeholder="نام پدر را وارد کنید"
-                className="w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl border border-blue-200 focus:outline-none focus:ring-2 sm:focus:ring-3 focus:ring-blue-300 focus:border-transparent text-right placeholder-blue-400 text-sm sm:text-base text-blue-950 transition-all"
-              />
-            </div>
-
-            {/* تلفن همراه */}
-            <div className="relative">
-              <label
-                className="block text-blue-700 mb-2 text-sm sm:text-base"
-                htmlFor="phone"
-              >
-                تلفن همراه
-              </label>
+              <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="phone">تلفن همراه</RequiredLabel>
               <input
                 id="phone"
                 type="tel"

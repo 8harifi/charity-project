@@ -8,6 +8,12 @@ import {lookupApi} from "../../API/lookupApi";
 import {useMultipleLookups, findLookupOption} from "../../hooks/useLookupOptions";
 import {IRAN_PROVINCES} from "../../data/staticSignupOptions";
 import {citiesByProvince} from "../../data/iranCities.js";
+import { validateHealthAssistantIndividualStep2 } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const HA_SIGNUP_STEPS = ["نوع همکاری", "اطلاعات و مدارک", "رمز عبور"];
 
 const SalamatyaranSignupIndividual = () => {
   const [education, setEducation] = useState(null);
@@ -125,19 +131,14 @@ const SalamatyaranSignupIndividual = () => {
   };
 
   const validateForm = () => {
-    if (!education) return "سطح تحصیلات را انتخاب کنید.";
-
-    if (!job.trim()) return "شغل خود را وارد کنید.";
-
-    if (!province) return "استان محل سکونت را انتخاب کنید.";
-
-    if (!city) return "شهر را وارد کنید.";
-
-    if (!address.trim()) return "آدرس را وارد کنید.";
-
-    if (!collaborationType) return "نوع همکاری را انتخاب کنید.";
-
-    return "";
+    return validateHealthAssistantIndividualStep2({
+      education,
+      job,
+      province: province?.value ?? province,
+      city: city?.value ?? city,
+      address,
+      collaborationType,
+    });
   };
 
   const handleSignup = async () => {
@@ -173,6 +174,9 @@ const SalamatyaranSignupIndividual = () => {
       });
     }, 800);
   };
+
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
 
   return (
     <motion.div
@@ -272,6 +276,7 @@ const SalamatyaranSignupIndividual = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}
@@ -374,7 +379,7 @@ const SalamatyaranSignupIndividual = () => {
                 exit="exit"
                 className="h-full flex flex-col justify-center"
               >
-                <div className="mb-10">
+                <div className="mb-6">
                   <h1
                     className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
                     عضویت سلامتیارن و مددکاران در شبکه
@@ -383,6 +388,8 @@ const SalamatyaranSignupIndividual = () => {
                     اطلاعات خود را برای ثبت‌نام وارد کنید
                   </p>
                 </div>
+
+                <SignupStepProgress steps={HA_SIGNUP_STEPS} currentStep={2} />
 
                 <div className="space-y-7">
                   {/* signup page */}
@@ -397,14 +404,13 @@ const SalamatyaranSignupIndividual = () => {
                         placeholder="سطح تحصیلات"
                         label="سطح تحصیلات"
                         loading={lookupsLoading}
+                        required
                       />
                     </div>
 
                     {/* job */}
                     <div className="relative">
-                      <label className="text-blue-700 p-3" htmlFor="job">
-                        شغل
-                      </label>
+                      <RequiredLabel className="text-blue-700 p-3" htmlFor="job">شغل</RequiredLabel>
                       <input
                         id="job"
                         type="text"
@@ -430,6 +436,7 @@ const SalamatyaranSignupIndividual = () => {
                         name="province"
                         placeholder="انتخاب استان"
                         label="استان"
+                        required
                       />
 
                       {/* شهر */}
@@ -441,11 +448,12 @@ const SalamatyaranSignupIndividual = () => {
                           name="city"
                           placeholder="انتخاب شهر"
                           label="شهر"
+                          required
                         />
                       </div>
                       {/* full address */}
                       <div className="col-span-1 md:col-span-2">
-                        <label className="text-blue-700 p-3 block">آدرس</label>
+                        <RequiredLabel className="text-blue-700 p-3 block">آدرس</RequiredLabel>
                         <input
                           type="text"
                           value={address}
@@ -485,6 +493,7 @@ const SalamatyaranSignupIndividual = () => {
                         placeholder="نوع همکاری"
                         label="نوع همکاری"
                         loading={lookupsLoading}
+                        required
                       />
 
                       <label htmlFor="exp" className="text-blue-700">

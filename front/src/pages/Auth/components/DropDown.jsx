@@ -48,6 +48,7 @@ const RenderDropdown = ({
   label,
   loading = false,
   disabled = false,
+  required = false,
 }) => {
   const [openDropdownName, setOpenDropdownName] = useState(null);
   const [menuStyle, setMenuStyle] = useState(null);
@@ -146,6 +147,7 @@ const RenderDropdown = ({
     <motion.div ref={rootRef} className="relative text-right w-full">
       {label && (
         <label className="block mb-2 text-sm sm:text-base text-blue-700">
+          {required && <span className="text-red-500 ml-1">*</span>}
           {label}
         </label>
       )}

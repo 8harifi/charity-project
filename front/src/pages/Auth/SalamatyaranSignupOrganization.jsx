@@ -8,6 +8,12 @@ import { lookupApi } from "../../API/lookupApi";
 import { useMultipleLookups, findLookupOption } from "../../hooks/useLookupOptions";
 import { IRAN_PROVINCES } from "../../data/staticSignupOptions";
 import { citiesByProvince } from "../../data/iranCities.js";
+import { validateHealthAssistantOrganizationStep2 } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const HA_SIGNUP_STEPS = ["نوع همکاری", "اطلاعات و مدارک", "رمز عبور"];
 
 const SalamatyaranSignupOrganization = () => {
   const [province, setProvince] = useState(null);
@@ -110,17 +116,15 @@ const SalamatyaranSignupOrganization = () => {
   };
 
   const validateForm = () => {
-    if (!province) return "استان را انتخاب کنید.";
-    if (!city) return "شهر را انتخاب کنید.";
-    if (!address.trim()) return "آدرس را وارد کنید.";
-    if (!socialHeadFirstName.trim()) return "نام رئیس واحد مددکاری اجتماعی را وارد کنید.";
-    if (!socialHeadLastName.trim()) return "نام خانوادگی رئیس واحد مددکاری اجتماعی را وارد کنید.";
-    if (!socialHeadPhone.trim()) return "شماره تلفن همراه رئیس واحد را وارد کنید.";
-    if (!/^09\d{9}$/.test(socialHeadPhone)) {
-      return "شماره تلفن همراه رئیس واحد معتبر نیست.";
-    }
-    if (!collaborationType) return "نوع همکاری را انتخاب کنید.";
-    return "";
+    return validateHealthAssistantOrganizationStep2({
+      province: province?.value ?? province,
+      city: city?.value ?? city,
+      address,
+      social_unit_head_first_name: socialHeadFirstName,
+      social_unit_head_last_name: socialHeadLastName,
+      social_unit_head_phone_number: socialHeadPhone,
+      collaborationType,
+    });
   };
 
   const handleSignup = () => {
@@ -157,6 +161,9 @@ const SalamatyaranSignupOrganization = () => {
     }, 800);
   };
 
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <motion.div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -186,6 +193,7 @@ const SalamatyaranSignupOrganization = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         <div className="lg:w-1/2 relative bg-gradient-to-br from-blue-500 via-blue-600 to-emerald-600 p-10 lg:p-16 flex flex-col justify-center items-center text-white">
@@ -209,7 +217,7 @@ const SalamatyaranSignupOrganization = () => {
               animate="visible"
               exit="exit"
             >
-              <div className="mb-10">
+              <div className="mb-6">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
                   عضویت سلامتیار (شخص حقوقی)
                 </h1>
@@ -217,6 +225,8 @@ const SalamatyaranSignupOrganization = () => {
                   آدرس مجموعه، رئیس واحد مددکاری اجتماعی و نوع همکاری
                 </p>
               </div>
+
+              <SignupStepProgress steps={HA_SIGNUP_STEPS} currentStep={2} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-1 md:col-span-2">
@@ -230,6 +240,7 @@ const SalamatyaranSignupOrganization = () => {
                   name="province"
                   placeholder="انتخاب استان"
                   label="استان"
+                  required
                 />
 
                 <RenderDropdown
@@ -239,10 +250,11 @@ const SalamatyaranSignupOrganization = () => {
                   name="city"
                   placeholder="انتخاب شهر"
                   label="شهر"
+                  required
                 />
 
                 <div className="col-span-1 md:col-span-2">
-                  <label className="text-blue-700 p-3 block">آدرس</label>
+                  <RequiredLabel className="text-blue-700 p-3 block">آدرس</RequiredLabel>
                   <input
                     type="text"
                     value={address}
@@ -259,9 +271,7 @@ const SalamatyaranSignupOrganization = () => {
                 </div>
 
                 <div>
-                  <label className="text-blue-700 p-3 block" htmlFor="social_head_first">
-                    نام
-                  </label>
+                  <RequiredLabel className="text-blue-700 p-3 block" htmlFor="social_head_first">نام</RequiredLabel>
                   <input
                     id="social_head_first"
                     type="text"
@@ -273,9 +283,7 @@ const SalamatyaranSignupOrganization = () => {
                 </div>
 
                 <div>
-                  <label className="text-blue-700 p-3 block" htmlFor="social_head_last">
-                    نام خانوادگی
-                  </label>
+                  <RequiredLabel className="text-blue-700 p-3 block" htmlFor="social_head_last">نام خانوادگی</RequiredLabel>
                   <input
                     id="social_head_last"
                     type="text"
@@ -287,7 +295,7 @@ const SalamatyaranSignupOrganization = () => {
                 </div>
 
                 <div>
-                  <label className="text-blue-700 p-3 block">تلفن همراه</label>
+                  <RequiredLabel className="text-blue-700 p-3 block">تلفن همراه</RequiredLabel>
                   <input
                     type="tel"
                     value={socialHeadPhone}
@@ -321,6 +329,7 @@ const SalamatyaranSignupOrganization = () => {
                     placeholder="نوع همکاری"
                     label="نوع همکاری"
                     loading={lookupsLoading}
+                    required
                   />
 
                   <label htmlFor="exp" className="text-blue-700">

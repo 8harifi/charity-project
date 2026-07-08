@@ -5,10 +5,11 @@ import {motion, AnimatePresence} from "framer-motion";
 import {Heart, HandHeart, Users, Sparkles, Phone} from "lucide-react";
 import {Link, useNavigate} from "react-router-dom";
 import {useAuth} from "../../context/AuthContext";
+import {getDashboardRoute} from "../../Configs/dashboardRoutes";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import { sanitizePhone } from "./utils/signupValidation";
 
 const LoginPage = () => {
-  const [userName, setUserName] = useState("");
-
   const [password, setPassword] = useState("");
   const [forgotPassword, setForgotPassword] = useState(false);
   const [error, setError] = useState("");
@@ -71,20 +72,21 @@ const LoginPage = () => {
       return "";
     }
 
-    if (!password || !userName) {
-      return "لطفاً تمام بخش‌های فرم را تکمیل کنید.";
+    if (!phoneNumber.trim()) {
+      return "شماره موبایل را وارد کنید.";
     }
-
-    // if (password.length < 8) {
-    //   return "رمز عبور باید حداقل ۸ کاراکتر باشد";
-    // }
+    if (!isValidPhoneNumber(phoneNumber)) {
+      return "شماره موبایل معتبر نیست.";
+    }
+    if (!password) {
+      return "لطفاً رمز عبور را وارد کنید.";
+    }
 
     return "";
   };
 
-  const isValidPhoneNumber = (phone) => {
-    return /^09\d{9}$/.test(phone);
-  };
+  const isValidPhoneNumber = (phone) =>
+    /^09\d{9}$/.test(sanitizePhone(phone));
 
   const handleForget = async () => {
     setError("");
@@ -95,7 +97,7 @@ const LoginPage = () => {
     }
 
     setSuccess("کد تایید ارسال شد");
-    setTimer(120); // شروع تایمر ۲ دقیقه‌ای
+    setTimer(120);
   };
 
   const handleVerifyCode = () => {
@@ -133,7 +135,7 @@ const LoginPage = () => {
     }
 
     const result = await login({
-      username: userName.trim() || phoneNumber,
+      username: sanitizePhone(phoneNumber),
       password,
     });
 
@@ -143,21 +145,9 @@ const LoginPage = () => {
       // ✅ decode token
       const decoded = jwtDecode(access);
 
-      const role = decoded.role;   // ✅ extract role from payload
-      console.log(role)
+      const role = decoded.role;
 
-      const roleRoutes = {
-        doctor: "/doctor/dashboard",
-        patient: "/patient/dashboard",
-        benefactor: "/charitable/dashboard",
-        health_assistant: "/salamatyar/dashboard",
-        service_center: "/loginpage",
-        charity_center: "/loginpage",
-        social_work_unit: "/loginpage",
-        admin: "/admin/dashboard",
-      };
-
-      const target = roleRoutes[role] || "/dashboard";
+      const target = getDashboardRoute(role);
 
       setSuccess("ورود با موفقیت انجام شد");
 
@@ -192,6 +182,8 @@ const LoginPage = () => {
       (remainder >= 2 && check === 11 - remainder)
     );
   };
+
+  const onEnterSubmit = useEnterSubmit(handleLogin);
 
   return (
     <motion.div
@@ -561,6 +553,7 @@ const LoginPage = () => {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
+                  onKeyDown={onEnterSubmit}
                   className="h-full flex flex-col justify-center"
                 >
                   <div className="mb-10">
@@ -576,32 +569,26 @@ const LoginPage = () => {
                   <div className="space-y-7">
                     {/* login page */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                      {/* username */}
+                      {/* phone */}
                       <div className="relative sm:col-span-2">
                         <div className="absolute right-3 sm:right-4 top-[68%] -translate-y-1/2">
-                          <svg
-                            className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500"
-                            fill="none"
-                            stroke="currentColor"
-                          >
-                            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                          </svg>
+                          <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
                         </div>
 
                         <label
-                          htmlFor="uname"
+                          htmlFor="login-phone"
                           className="block mb-2 text-sm sm:text-base text-blue-700"
                         >
-                          نام کاربری
+                          <span className="text-red-500 ml-1">*</span>
+                          شماره موبایل
                         </label>
 
                         <input
-                          id="uname"
-                          type="text"
-                          value={userName}
-                          onChange={(e) => setUserName(e.target.value)}
-                          placeholder="نام کاربری خود را وارد کنید"
+                          id="login-phone"
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="09xxxxxxxxx"
                           className="
         w-full p-3 sm:p-4 pr-10 sm:pr-12 mt-1
         bg-blue-50/50 rounded-xl sm:rounded-2xl
