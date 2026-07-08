@@ -100,19 +100,13 @@ class Patient(models.Model):
     city = models.CharField(max_length=100)
     address = models.TextField()
 
-    # financial
-    bank_card_number = models.CharField(
-        max_length=20,
-        blank=True
-    )
-
     # insurance & medical
     insurance = models.ForeignKey(
         Insurance,
         on_delete=models.SET_NULL,
         null=True
     )
-    sickness_description = models.TextField()
+    sickness_description = models.TextField(blank=True, default="")
 
     # acquaintances
     contact1_full_name = models.CharField(max_length=100, blank=True)
@@ -139,6 +133,11 @@ class Patient(models.Model):
         on_delete=models.SET_NULL,
         null=True
     )
+
+    # approval workflow: self-registered patients with an introducer need
+    # BOTH admin approval and introducer HA approval before activation.
+    admin_approved = models.BooleanField(default=False)
+    ha_approved = models.BooleanField(default=False)
 
     # meta
     created_at = models.DateTimeField(auto_now_add=True)
