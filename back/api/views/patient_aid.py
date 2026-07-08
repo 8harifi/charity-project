@@ -2,13 +2,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Patient, PatientDisbursement, WalletTransaction
+from ..models import NetworkRequest, Patient
 from ..permissions import IsPatient
-from ..serializers.wallet import PatientDisbursementSerializer
-from ..services.wallet_service import get_or_create_patient_escrow_wallet
 
 
 class PatientAidSummaryView(APIView):
+    """Patient's received support — read-only summary of financial needs and pledges."""
+
     permission_classes = [IsAuthenticated, IsPatient]
 
     def get(self, request):
@@ -17,43 +17,33 @@ class PatientAidSummaryView(APIView):
         except Patient.DoesNotExist:
             return Response(
                 {
-                    "balance": "0",
-                    "total_received": "0",
-                    "total_disbursed": "0",
-                    "disbursements": [],
-                    "recent_credits": [],
+                    "needs": [],
+                    "total_needed": "0",
+                    "total_collected": "0",
                 }
             )
 
-        wallet = get_or_create_patient_escrow_wallet(patient)
-        credits = WalletTransaction.objects.filter(
-            wallet=wallet, entry_type="credit"
-        ).order_by("-created_at")[:20]
+        needs = NetworkRequest.objects.filter(
+            patient=patient, request_type="financial"
+        ).order_by("-created_at")
 
-        disbursements = PatientDisbursement.objects.filter(
-            patient_wallet=wallet, status="completed"
-        ).order_by("-created_at")[:20]
-
-        total_disbursed = sum(d.amount for d in disbursements)
+        total_needed = sum(n.amount_needed or 0 for n in needs)
+        total_collected = sum(n.collected_amount or 0 for n in needs)
 
         return Response(
             {
-                "balance": str(wallet.cached_balance),
-                "total_received": str(
-                    sum(t.amount for t in credits if t.kind == "donation_in")
-                ),
-                "total_disbursed": str(total_disbursed),
-                "disbursements": PatientDisbursementSerializer(
-                    disbursements, many=True
-                ).data,
-                "recent_credits": [
+                "needs": [
                     {
-                        "id": t.pk,
-                        "amount": str(t.amount),
-                        "description": t.description,
-                        "created_at": t.created_at.isoformat(),
+                        "id": n.pk,
+                        "subject": n.subject,
+                        "amount_needed": str(n.amount_needed or 0),
+                        "collected_amount": str(n.collected_amount or 0),
+                        "status": n.get_status_display(),
+                        "created_at": n.created_at.isoformat(),
                     }
-                    for t in credits
+                    for n in needs
                 ],
+                "total_needed": str(total_needed),
+                "total_collected": str(total_collected),
             }
         )

@@ -9,6 +9,59 @@ from ..serializers import HealthAssistantSerializer, HealthAssistantSignupSerial
 from .pagination import StandardResultsSetPagination
 
 
+class PublicHealthAssistantsView(APIView):
+    """Public, non-sensitive listing of approved health assistants for the
+    landing page map: name, code, province, city. No contact/financial data."""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        search = request.query_params.get("search", "").strip()
+        province = request.query_params.get("province", "").strip()
+        city = request.query_params.get("city", "").strip()
+
+        qs = HealthAssistant.objects.filter(user__state=True).select_related(
+            "individual_profile", "organization_profile"
+        )
+
+        results = []
+        for ha in qs:
+            name = ""
+            ha_province = ""
+            ha_city = ""
+            if getattr(ha, "individual_profile", None):
+                ind = ha.individual_profile
+                name = f"{ind.first_name} {ind.last_name}".strip()
+                ha_province = ind.province
+                ha_city = ind.city
+            elif getattr(ha, "organization_profile", None):
+                org = ha.organization_profile
+                name = org.name
+                ha_province = org.province
+                ha_city = org.city
+            else:
+                continue
+
+            if province and province != ha_province:
+                continue
+            if city and city != ha_city:
+                continue
+            if search and search.lower() not in f"{name} {ha.health_assistance_code}".lower():
+                continue
+
+            results.append(
+                {
+                    "id": ha.pk,
+                    "code": ha.health_assistance_code,
+                    "name": name,
+                    "province": ha_province,
+                    "city": ha_city,
+                }
+            )
+
+        return Response(results)
+
+
 class HealthAssistantSignupView(APIView):
     permission_classes = [AllowAny]
 

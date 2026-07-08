@@ -68,6 +68,7 @@ urlpatterns = [
     path("admin/reject-user/<int:user_id>/", views.reject_user, name="reject_user"),
     path("admin/stats/", views.AdminStatsView.as_view(), name="admin_stats"),
     path("admin/users/", views.AdminUsersView.as_view(), name="admin_users"),
+    path("admin/users/export/", views.AdminUsersExportView.as_view(), name="admin_users_export"),
     path("admin/users/<int:user_id>/", views.AdminUserDetailView.as_view(), name="admin_user_detail"),
     path(
         "admin/users/<int:user_id>/requests/",
@@ -112,6 +113,11 @@ urlpatterns = [
     ),
     path("doctor/my-cases/", views.DoctorMyCasesView.as_view(), name="doctor_my_cases"),
     path(
+        "patients/<int:patient_id>/workflow/",
+        views.PatientWorkflowView.as_view(),
+        name="patient_workflow",
+    ),
+    path(
         "benefactor/incoming-requests/",
         views.BenefactorIncomingRequestsView.as_view(),
         name="benefactor_incoming_requests",
@@ -125,6 +131,26 @@ urlpatterns = [
         "health-assistant/patients/",
         views.HealthAssistantPatientsView.as_view(),
         name="health_assistant_patients",
+    ),
+    path(
+        "health-assistant/patients/register/",
+        views.HealthAssistantPatientSignupView.as_view(),
+        name="health_assistant_patient_register",
+    ),
+    path(
+        "health-assistant/patients/<int:pk>/approve/",
+        views.HealthAssistantApprovePatientView.as_view(),
+        name="health_assistant_patient_approve",
+    ),
+    path(
+        "requests/fund-recipients/",
+        views.FundRecipientOptionsView.as_view(),
+        name="fund_recipient_options",
+    ),
+    path(
+        "health-assistants/public/",
+        views.PublicHealthAssistantsView.as_view(),
+        name="public_health_assistants",
     ),
     path("wallet/", views.WalletDetailView.as_view(), name="wallet_detail"),
     path("wallet/transactions/", views.WalletTransactionsView.as_view(), name="wallet_transactions"),
@@ -142,14 +168,19 @@ urlpatterns = [
         name="admin_wallet_payments",
     ),
     path(
-        "admin/disbursements/",
-        views.AdminDisbursementListCreateView.as_view(),
-        name="admin_disbursements",
+        "admin/wallets/",
+        views.AdminWalletsView.as_view(),
+        name="admin_wallets",
     ),
     path(
-        "admin/disbursements/<int:pk>/",
-        views.AdminDisbursementDetailView.as_view(),
-        name="admin_disbursement_detail",
+        "admin/wallet/adjust/",
+        views.AdminWalletAdjustView.as_view(),
+        name="admin_wallet_adjust",
+    ),
+    path(
+        "admin/wallet/pledges/",
+        views.AdminPledgesView.as_view(),
+        name="admin_wallet_pledges",
     ),
     path("", include(router.urls)),
 ]
