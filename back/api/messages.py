@@ -108,3 +108,7 @@ def payment_verification_failed(detail):
 INSUFFICIENT_PATIENT_ESCROW = "موجودی سپرده بیمار کافی نیست."
 INVALID_STATUS = "وضعیت نامعتبر است."
 NETWORK_REQUEST_NOT_FOUND = "درخواست شبکه یافت نشد."
+HOLD_NOT_FOUND = "تعهد مالی یافت نشد."
+HOLD_ALREADY_CLOSED = "این تعهد قبلاً بسته شده است."
+ALREADY_CLOSED = "این درخواست قبلاً بسته شده است."
+FINANCIAL_PATIENT_RESTRICTED = "بیمار نمی‌تواند درخواست مالی ثبت کند."

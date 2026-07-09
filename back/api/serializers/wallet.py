@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from ..models import BenefactorDonation, GatewayPayment, PatientDisbursement, WalletTransaction
+from ..models import BenefactorDonation, DonationHold, GatewayPayment, Wallet, WalletTransaction
 
 
 class WalletTransactionSerializer(serializers.ModelSerializer):
@@ -20,6 +20,7 @@ class WalletTransactionSerializer(serializers.ModelSerializer):
 
 class WalletSummarySerializer(serializers.Serializer):
     balance = serializers.DecimalField(max_digits=14, decimal_places=0)
+    held_balance = serializers.DecimalField(max_digits=14, decimal_places=0, required=False)
     currency = serializers.CharField()
     payment_mode = serializers.CharField(required=False)
     recent_transactions = WalletTransactionSerializer(many=True)
@@ -32,10 +33,9 @@ class TopUpSerializer(serializers.Serializer):
 class DonateSerializer(serializers.Serializer):
     amount = serializers.DecimalField(max_digits=14, decimal_places=0, min_value=1)
     destination_type = serializers.ChoiceField(
-        choices=["campaign", "patient", "request", "general"]
+        choices=["campaign", "request", "general"]
     )
     campaign_id = serializers.IntegerField(required=False, allow_null=True)
-    patient_id = serializers.IntegerField(required=False, allow_null=True)
     network_request_id = serializers.IntegerField(required=False, allow_null=True)
     title = serializers.CharField(required=False, allow_blank=True, default="")
     description = serializers.CharField(required=False, allow_blank=True, default="")
@@ -99,21 +99,70 @@ class GatewayPaymentSerializer(serializers.ModelSerializer):
         ]
 
 
-class PatientDisbursementSerializer(serializers.ModelSerializer):
+class AdminWalletSerializer(serializers.ModelSerializer):
+    owner_username = serializers.CharField(source="owner_user.username", read_only=True)
+    owner_role = serializers.CharField(source="owner_user.role", read_only=True)
+
     class Meta:
-        model = PatientDisbursement
+        model = Wallet
         fields = [
             "id",
-            "amount",
-            "payee_description",
-            "status",
-            "network_request",
-            "created_at",
+            "owner_username",
+            "owner_role",
+            "wallet_type",
+            "cached_balance",
+            "held_balance",
+            "currency",
+            "is_active",
         ]
 
 
-class CreateDisbursementSerializer(serializers.Serializer):
-    patient_id = serializers.IntegerField()
+class AdminWalletAdjustSerializer(serializers.Serializer):
+    phone_number = serializers.CharField()
+    direction = serializers.ChoiceField(choices=["credit", "debit"])
     amount = serializers.DecimalField(max_digits=14, decimal_places=0, min_value=1)
-    network_request_id = serializers.IntegerField(required=False, allow_null=True)
-    payee_description = serializers.CharField(required=False, allow_blank=True, default="")
+    reason = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_phone_number(self, value):
+        from ..utils import normalize_phone
+
+        phone = normalize_phone(value)
+        if not phone:
+            raise serializers.ValidationError("شماره موبایل الزامی است.")
+        if not phone.startswith("09") or len(phone) != 11:
+            raise serializers.ValidationError("شماره موبایل معتبر نیست.")
+        return phone
+
+
+class DonationHoldSerializer(serializers.ModelSerializer):
+    benefactor_name = serializers.SerializerMethodField()
+    request_subject = serializers.SerializerMethodField()
+    patient_name = serializers.SerializerMethodField()
+    request_id = serializers.IntegerField(source="network_request_id", read_only=True)
+
+    class Meta:
+        model = DonationHold
+        fields = [
+            "id",
+            "benefactor",
+            "benefactor_name",
+            "request_id",
+            "request_subject",
+            "patient_name",
+            "amount",
+            "status",
+            "created_at",
+            "closed_at",
+        ]
+
+    def get_benefactor_name(self, obj):
+        return obj.benefactor.username if obj.benefactor else ""
+
+    def get_request_subject(self, obj):
+        return obj.network_request.subject if obj.network_request else ""
+
+    def get_patient_name(self, obj):
+        if not obj.network_request:
+            return ""
+        p = obj.network_request.patient
+        return f"{p.first_name} {p.last_name}".strip()
