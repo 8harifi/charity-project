@@ -10,8 +10,15 @@ export const requestService = {
   create(data) {
     return apiClient.post("/requests/", data);
   },
-  updateStatus(id, action, note = "") {
-    return apiClient.patch(`/requests/${id}/status/`, { action, note });
+  updateStatus(id, actionOrPayload, note = "") {
+    const payload =
+      typeof actionOrPayload === "object"
+        ? actionOrPayload
+        : { action: actionOrPayload, note };
+    return apiClient.patch(`/requests/${id}/status/`, payload);
+  },
+  patientWorkflow(patientId) {
+    return apiClient.get(`/patients/${patientId}/workflow/`);
   },
   doctorIncoming() {
     return apiClient.get("/doctor/incoming-requests/");
@@ -19,14 +26,20 @@ export const requestService = {
   doctorMyCases(scope = "active") {
     return apiClient.get("/doctor/my-cases/", { params: { scope } });
   },
-  benefactorIncoming() {
-    return apiClient.get("/benefactor/incoming-requests/");
+  benefactorIncoming(filters = {}) {
+    return apiClient.get("/benefactor/incoming-requests/", { params: filters });
   },
   benefactorMyCases(scope = "active") {
     return apiClient.get("/benefactor/my-cases/", { params: { scope } });
   },
   healthAssistantPatients() {
     return apiClient.get("/health-assistant/patients/");
+  },
+  approveIntroducedPatient(patientId) {
+    return apiClient.post(`/health-assistant/patients/${patientId}/approve/`);
+  },
+  fundRecipientOptions() {
+    return apiClient.get("/requests/fund-recipients/");
   },
 };
 

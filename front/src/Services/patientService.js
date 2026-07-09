@@ -11,10 +11,10 @@ export const patientService = {
   signupStep2: ok,
   signupStep3: ok,
 
-  async registerFromDraft(username, password) {
+  async registerFromDraft(password) {
     try {
       const draft = loadRoleDraft("patient");
-      const form = buildPatientFormFromDraft(draft, username, password);
+      const form = buildPatientFormFromDraft(draft, password);
       await patientApi.registerPatient(form);
       return { success: true };
     } catch (err) {

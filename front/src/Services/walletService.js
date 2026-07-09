@@ -22,13 +22,14 @@ export const adminWalletService = {
   listGatewayPayments(params = {}) {
     return apiClient.get("/admin/wallet/payments/", { params });
   },
-  listDisbursements() {
-    return apiClient.get("/admin/disbursements/");
+  listWallets(search = "") {
+    return apiClient.get("/admin/wallets/", { params: { search } });
   },
-  createDisbursement(data) {
-    return apiClient.post("/admin/disbursements/", data);
+  adjustBalance(data) {
+    // data: { phone_number, direction: "credit"|"debit", amount, reason }
+    return apiClient.post("/admin/wallet/adjust/", data);
   },
-  updateDisbursement(id, data) {
-    return apiClient.patch(`/admin/disbursements/${id}/`, data);
+  listPledges(params = {}) {
+    return apiClient.get("/admin/wallet/pledges/", { params });
   },
 };
