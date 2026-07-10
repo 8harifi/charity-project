@@ -3,11 +3,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, HandHeart, Users, Sparkles } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { loadRoleDraft, clearRoleDraft } from "./utils/signupStorage";
-import { submitRoleRegistration } from "../../API/registrationApi";
-import { validateDraftForRole } from "./utils/signupValidation";
+import { submitRoleRegistration, loginPhoneFromDraft } from "../../API/registrationApi";
+import { validatePasswordStep } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const SIGNUP_STEPS_BY_ROLE = {
+  patient: ["اطلاعات فردی", "آدرس و تماس", "بیمه و مدارک", "رمز عبور"],
+  doctor: ["اطلاعات پزشک", "رمز عبور"],
+  benefactor: ["اطلاعات فردی", "رمز عبور"],
+  SalamtyaranSignup: ["نوع همکاری", "اطلاعات و مدارک", "رمز عبور"],
+};
 
 const LastSignup = () => {
-  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,6 +28,7 @@ const LastSignup = () => {
   const location = useLocation();
   const originForm =
     location.state?.originForm || localStorage.getItem("signupRole");
+  const stepLabels = SIGNUP_STEPS_BY_ROLE[originForm];
 
   useEffect(() => {
     if (location.state?.originForm) {
@@ -69,43 +79,31 @@ const LastSignup = () => {
   useEffect(() => {
     if (!success) return;
 
-    const username = userName.trim();
-    sessionStorage.setItem("signupSuccessUsername", username);
+    const draft = originForm ? loadRoleDraft(originForm) : {};
+    const draftRole =
+      originForm === "SalamtyaranSignup" ? "salamtyaran" : originForm;
+    const phone = loginPhoneFromDraft(draftRole, draft);
+    sessionStorage.setItem("signupSuccessUsername", phone);
 
     const timer = setTimeout(() => {
       setLeaving(true);
       setTimeout(() => {
         navigate("/authpatientFinal", {
-          state: { username },
+          state: { username: phone },
           replace: true,
         });
       }, 500);
     }, 1200);
 
     return () => clearTimeout(timer);
-  }, [success, navigate, userName]);
+  }, [success, navigate, originForm]);
 
   const validateForm = () => {
-    if (!userName || !password || !confirmPassword) {
-      return "لطفاً تمام بخش‌های فرم را تکمیل کنید.";
-    }
-
-    if (password.length < 8) {
-      return "رمز عبور باید حداقل ۸ کاراکتر باشد";
-    }
-
-    if (password !== confirmPassword) {
-      return "رمز عبور و تکرار آن یکسان نیستند";
-    }
+    const pwdErr = validatePasswordStep(password, confirmPassword);
+    if (pwdErr) return pwdErr;
 
     if (!originForm) {
       return "فرم قبلی مشخص نیست.";
-    }
-
-    const draft = loadRoleDraft(originForm);
-    const draftError = validateDraftForRole(originForm, draft);
-    if (draftError) {
-      return `اطلاعات مراحل قبل ناقص است: ${draftError}`;
     }
 
     return "";
@@ -127,14 +125,14 @@ const LastSignup = () => {
 
     try {
       await submitRoleRegistration(originForm, {
-        username: userName,
         password,
         draft,
       });
       const draftRole =
         originForm === "SalamtyaranSignup" ? "salamtyaran" : originForm;
+      const phone = loginPhoneFromDraft(draftRole, draft);
+      sessionStorage.setItem("signupSuccessUsername", phone);
       clearRoleDraft(draftRole);
-      sessionStorage.setItem("signupSuccessUsername", userName.trim());
       setSuccess("ثبت‌نام با موفقیت انجام شد");
     } catch (err) {
       console.error(err);
@@ -150,6 +148,8 @@ const LastSignup = () => {
       setSignupLoading(false);
     }
   };
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
 
   return (
     <motion.div
@@ -249,6 +249,7 @@ const LastSignup = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}
@@ -349,7 +350,7 @@ const LastSignup = () => {
                 exit="exit"
                 className="h-full flex flex-col justify-center"
               >
-                <div className="mb-10">
+                <div className="mb-6">
                   <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
                     عضویت در شبکه
                   </h1>
@@ -357,47 +358,15 @@ const LastSignup = () => {
                     اطلاعات خود را برای ثبت‌نام وارد کنید
                   </p>
                 </div>
+                {stepLabels && (
+                  <SignupStepProgress steps={stepLabels} currentStep={stepLabels.length} />
+                )}
                 <div className="space-y-5 sm:space-y-7">
+                  <p className="text-sm text-blue-700 bg-blue-50 rounded-xl p-4 text-right">
+                    ورود به سامانه با <strong>شماره موبایلی</strong> که در مراحل قبل وارد کردید انجام می‌شود.
+                    فقط رمز عبور را تعیین کنید.
+                  </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                    {/* username */}
-                    <div className="relative">
-                      <div className="absolute right-3 sm:right-4 top-[68%] -translate-y-1/2">
-                        <svg
-                          className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                      </div>
-
-                      <label
-                        htmlFor="uname"
-                        className="block mb-2 text-sm sm:text-base text-blue-700"
-                      >
-                        نام کاربری
-                      </label>
-
-                      <input
-                        id="uname"
-                        type="text"
-                        value={userName}
-                        onChange={(e) => setUserName(e.target.value)}
-                        placeholder="نام کاربری خود را وارد کنید"
-                        className="
-          w-full p-3 sm:p-4 pr-10 sm:pr-12
-          bg-blue-50/50 rounded-xl sm:rounded-2xl
-          border border-blue-200
-          focus:outline-none focus:ring-2 focus:ring-blue-300
-          text-sm sm:text-base
-          placeholder-blue-400 text-right
-        "
-                      />
-                    </div>
-
                     {/* password */}
                     <div className="relative">
                       <div className="absolute right-3 sm:right-4 top-[68%] -translate-y-1/2">
@@ -415,9 +384,7 @@ const LastSignup = () => {
                         </svg>
                       </div>
 
-                      <label className="block mb-2 text-sm sm:text-base text-blue-700">
-                        رمز عبور
-                      </label>
+                      <RequiredLabel className="mb-2 text-sm sm:text-base text-blue-700">رمز عبور</RequiredLabel>
 
                       <input
                         type="password"
@@ -453,9 +420,7 @@ const LastSignup = () => {
                         </svg>
                       </div>
 
-                      <label className="block mb-2 text-sm sm:text-base text-blue-700">
-                        تکرار رمز عبور
-                      </label>
+                      <RequiredLabel className="mb-2 text-sm sm:text-base text-blue-700">تکرار رمز عبور</RequiredLabel>
 
                       <input
                         type="password"

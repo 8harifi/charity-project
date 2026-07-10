@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Heart, HandHeart, Users, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import RenderDropdown from "./components/DropDown";
-import { saveStep, loadStep } from "./utils/signupStorage";  
+import { saveStep, loadStep } from "./utils/signupStorage";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";  
 
 const CharityCenter = () => {
   const [name, setName] = useState("");
@@ -151,6 +152,9 @@ const CharityCenter = () => {
       },
     });
   };
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <motion.div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -249,6 +253,7 @@ const CharityCenter = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}

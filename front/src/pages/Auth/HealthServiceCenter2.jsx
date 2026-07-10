@@ -4,6 +4,7 @@ import { Heart, HandHeart, Users, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import RenderDropdown from "./components/DropDown";
 import { saveStep, loadStep } from "./utils/signupStorage";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
 
 
 const HealthServiceCenter2 = () => {
@@ -181,6 +182,7 @@ const HealthServiceCenter2 = () => {
   }, 800);
 };
 
+  const onEnterSubmit = useEnterSubmit(handleSignup);
 
   return (
     <motion.div
@@ -280,6 +282,7 @@ const HealthServiceCenter2 = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}

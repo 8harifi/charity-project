@@ -1,4 +1,4 @@
-/** Validation helpers aligned with backend signup serializers. */
+/** Client-side validation aligned with backend signup serializers. */
 
 export function convertToEnglishDigits(str = "") {
   return str.replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d));
@@ -10,180 +10,183 @@ export function lookupValue(field) {
   return field;
 }
 
-export function isValidNationalCode(code) {
-  const c = convertToEnglishDigits(String(code || "").trim());
-  if (!/^\d{10}$/.test(c)) return false;
-  const check = +c[9];
-  const sum =
-    c
-      .split("")
-      .slice(0, 9)
-      .reduce((acc, x, i) => acc + +x * (10 - i), 0) % 11;
-  return sum < 2 ? check === sum : check === 11 - sum;
-}
-
-export function isValidMobile(phone) {
-  const p = convertToEnglishDigits(String(phone || "").replace(/\s+/g, ""));
-  return /^09\d{9}$/.test(p);
-}
-
-export function isValidLandline(phone) {
-  const p = convertToEnglishDigits(String(phone || "").replace(/\s+/g, ""));
-  if (!p) return true;
-  return /^0\d{10}$/.test(p);
-}
-
 export function sanitizePhone(phone = "") {
   return convertToEnglishDigits(phone).replace(/\s+/g, "");
 }
 
-export function isValidBankCard(card) {
-  const digits = convertToEnglishDigits(String(card || "").replace(/\s/g, ""));
-  return /^\d{16}$/.test(digits);
-}
-
-export function validatePatientStep1(data) {
-  if (!data.first_name?.trim()) return "نام را وارد کنید.";
-  if (!data.last_name?.trim()) return "نام خانوادگی را وارد کنید.";
-  if (!data.father_name?.trim()) return "نام پدر را وارد کنید.";
-  if (!lookupValue(data.gender)) return "جنسیت را انتخاب کنید.";
-  if (!data.phone_number?.trim()) return "شماره تلفن همراه را وارد کنید.";
-  if (!isValidMobile(data.phone_number)) return "شماره موبایل معتبر نیست.";
-  if (data.landline_number && !isValidLandline(data.landline_number)) {
-    return "شماره تلفن ثابت معتبر نیست.";
+function firstError(...checks) {
+  for (const msg of checks) {
+    if (msg) return msg;
   }
-  if (!data.age && data.age !== 0) return "سن را وارد کنید.";
-  if (Number(data.age) < 1 || Number(data.age) > 120) return "سن وارد شده معتبر نیست.";
-  if (!lookupValue(data.marital_status)) return "وضعیت تأهل را انتخاب کنید.";
-  if (data.head_household === undefined || data.head_household === null || data.head_household === "") {
-    return "وضعیت سرپرست خانواده را انتخاب کنید.";
-  }
-  if (Number(data.number_dependents) < 0) {
-    return "تعداد افراد تحت تکفل نمی‌تواند منفی باشد.";
-  }
-  if (!lookupValue(data.education)) return "سطح تحصیلات را انتخاب کنید.";
-  if (!lookupValue(data.job_status)) return "وضعیت شغلی را انتخاب کنید.";
-  if (!lookupValue(data.housing_status)) return "وضعیت مسکن را انتخاب کنید.";
-  if (!lookupValue(data.covered_organization)) return "ارگان تحت پوشش را انتخاب کنید.";
   return "";
 }
 
-export function validatePatientStep2(data) {
-  if (!data.province?.trim?.() && !lookupValue(data.province)) {
-    return "استان محل سکونت را انتخاب کنید.";
-  }
-  if (!data.city?.trim?.() && !lookupValue(data.city)) {
-    return "شهر را انتخاب کنید.";
-  }
-  if (!String(data.address || "").trim()) return "آدرس را وارد کنید.";
-  const card = data.bank_card_number || data.creditCard || "";
-  if (!String(card).replace(/\s/g, "")) return "شماره کارت بانکی را وارد کنید.";
-  if (!isValidBankCard(card)) return "شماره کارت باید ۱۶ رقم باشد.";
+function requireText(value, message) {
+  if (!String(value ?? "").trim()) return message;
   return "";
 }
 
-export function validatePatientStep3(data) {
-  if (!lookupValue(data.insurance)) return "نوع بیمه را انتخاب کنید.";
+function requireLookup(value, message) {
+  const v = lookupValue(value);
+  if (v === "" || v == null) return message;
   return "";
 }
 
-export function validatePatientDraft(draft) {
-  const s1 = draft.step1 || draft[1] || {};
-  const s2 = draft.step2 || draft[2] || {};
-  const s3 = draft.step3 || draft[3] || {};
-  return (
-    validatePatientStep1(s1) ||
-    validatePatientStep2(s2) ||
-    validatePatientStep3(s3) ||
-    ""
+function requirePhone(value) {
+  const phone = sanitizePhone(value);
+  if (!phone) return "شماره موبایل را وارد کنید.";
+  if (!/^09\d{9}$/.test(phone)) {
+    return "شماره موبایل معتبر نیست (۱۱ رقم، با ۰۹).";
+  }
+  return "";
+}
+
+function requireNationalCode(value) {
+  const nc = convertToEnglishDigits(String(value ?? "")).trim();
+  if (!nc) return "کد ملی را وارد کنید.";
+  if (!/^\d{10}$/.test(nc)) return "کد ملی باید ۱۰ رقم باشد.";
+  return "";
+}
+
+function requireAge(value) {
+  if (value === "" || value == null) return "سن را وارد کنید.";
+  const age = Number(value);
+  if (!Number.isFinite(age) || age < 1 || age > 130) return "سن معتبر نیست.";
+  return "";
+}
+
+function requireHeadOfHousehold(value) {
+  const v = lookupValue(value);
+  if (v === "" || v == null) return "سرپرست خانواده را انتخاب کنید.";
+  return "";
+}
+
+export function validatePatientStep1(data = {}) {
+  return firstError(
+    requireText(data.first_name, "نام را وارد کنید."),
+    requireText(data.last_name, "نام خانوادگی را وارد کنید."),
+    requireText(data.father_name, "نام پدر را وارد کنید."),
+    requireNationalCode(data.national_code),
+    requireLookup(data.gender, "جنسیت را انتخاب کنید."),
+    requireAge(data.age),
+    requireLookup(data.marital_status, "وضعیت تأهل را انتخاب کنید."),
+    requireHeadOfHousehold(data.head_household),
+    requireLookup(data.education, "تحصیلات را انتخاب کنید."),
+    requireLookup(data.job_status, "وضعیت شغلی را انتخاب کنید."),
+    requireLookup(data.housing_status, "وضعیت مسکن را انتخاب کنید."),
+    requireLookup(data.covered_organization, "ارگان تحت پوشش را انتخاب کنید."),
+    requirePhone(data.phone_number)
   );
 }
 
-export function validateDoctorForm(data) {
-  if (!data.first_name?.trim()) return "نام را وارد کنید.";
-  if (!data.last_name?.trim()) return "نام خانوادگی را وارد کنید.";
-  if (!lookupValue(data.gender)) return "جنسیت را انتخاب کنید.";
-  if (!data.national_code?.trim()) return "کد ملی را وارد کنید.";
-  if (!isValidNationalCode(data.national_code)) return "کد ملی معتبر نیست.";
-  if (!data.medical_system_code?.trim()) return "شماره نظام پزشکی را وارد کنید.";
-  if (!data.father_name?.trim()) return "نام پدر را وارد کنید.";
-  if (!data.phone_number?.trim()) return "شماره تلفن همراه را وارد کنید.";
-  if (!isValidMobile(data.phone_number)) return "شماره تلفن همراه معتبر نیست.";
-  if (!lookupValue(data.specialty)) return "تخصص را انتخاب کنید.";
-  if (!lookupValue(data.province)) return "استان محل سکونت را انتخاب کنید.";
-  if (!lookupValue(data.city)) return "شهر را انتخاب کنید.";
-  if (!String(data.address || "").trim()) return "آدرس را وارد کنید.";
-  return "";
+export function validatePatientStep2(data = {}) {
+  return firstError(
+    requireText(data.province, "استان را انتخاب کنید."),
+    requireText(data.city, "شهر را انتخاب کنید."),
+    requireText(data.address, "آدرس را وارد کنید.")
+  );
 }
 
-export function validateBenefactorForm(data) {
-  if (!data.first_name?.trim()) return "نام را وارد کنید.";
-  if (!data.last_name?.trim()) return "نام خانوادگی را وارد کنید.";
-  if (!lookupValue(data.gender)) return "جنسیت را انتخاب کنید.";
-  if (!data.national_code?.trim()) return "کد ملی را وارد کنید.";
-  if (!isValidNationalCode(data.national_code)) return "کد ملی معتبر نیست.";
-  if (!data.phone_number?.trim()) return "شماره تلفن همراه را وارد کنید.";
-  if (!isValidMobile(data.phone_number)) return "شماره تلفن همراه معتبر نیست.";
-  return "";
+export function validatePatientStep3(data = {}) {
+  return requireLookup(data.insurance, "نوع بیمه را انتخاب کنید.");
 }
 
-export function validateHealthAssistantStep1(data, profileType) {
+export function validatePatientDraft(steps = {}) {
+  const s1 = steps.step1 || {};
+  const s2 = steps.step2 || {};
+  const s3 = steps.step3 || {};
+  return firstError(
+    validatePatientStep1({
+      ...s1,
+      head_household: s1.head_household ?? s1.head_of_family,
+      marital_status: s1.marital_status ?? s1.marriage_status,
+      housing_status: s1.housing_status ?? s1.house_status,
+      covered_organization: s1.covered_organization ?? s1.supported_organ,
+      phone_number: s1.phone_number ?? s1.mobile,
+    }),
+    validatePatientStep2({
+      province: s2.province,
+      city: s2.city?.value ?? s2.city,
+      address: s2.address,
+    }),
+    validatePatientStep3({
+      insurance: s3.insurance ?? s3.insuranceType,
+    })
+  );
+}
+
+export function validateDoctorForm(data = {}) {
+  return firstError(
+    requireText(data.first_name, "نام را وارد کنید."),
+    requireText(data.last_name, "نام خانوادگی را وارد کنید."),
+    requireText(data.father_name, "نام پدر را وارد کنید."),
+    requireLookup(data.gender, "جنسیت را انتخاب کنید."),
+    requireNationalCode(data.national_code),
+    requireText(data.medical_system_code, "کد نظام پزشکی را وارد کنید."),
+    requirePhone(data.phone_number),
+    requireLookup(data.specialty, "تخصص را انتخاب کنید."),
+    requireText(data.province, "استان را انتخاب کنید."),
+    requireText(data.city, "شهر را انتخاب کنید."),
+    requireText(data.address, "آدرس را وارد کنید.")
+  );
+}
+
+export function validateBenefactorForm(data = {}) {
+  return firstError(
+    requireText(data.first_name, "نام را وارد کنید."),
+    requireText(data.last_name, "نام خانوادگی را وارد کنید."),
+    requireLookup(data.gender, "جنسیت را انتخاب کنید."),
+    requireNationalCode(data.national_code),
+    requirePhone(data.phone_number)
+  );
+}
+
+export function validateHealthAssistantStep1(data = {}, profileType = "individual") {
   if (profileType === "organization") {
-    if (!lookupValue(data.organization_type)) return "نوع مجموعه را انتخاب کنید.";
-    if (!data.org_name?.trim()) return "نام مجموعه را وارد کنید.";
-    if (!data.director_first_name?.trim()) return "نام رئیس مجموعه را وارد کنید.";
-    if (!data.director_last_name?.trim()) return "نام خانوادگی رئیس مجموعه را وارد کنید.";
-    if (!data.director_phone_number?.trim()) {
-      return "شماره تلفن رئیس مجموعه را وارد کنید.";
-    }
-    if (!isValidMobile(data.director_phone_number)) {
-      return "شماره تلفن رئیس مجموعه معتبر نیست.";
-    }
-    return "";
+    return firstError(
+      requireText(data.org_name, "نام مجموعه را وارد کنید."),
+      requirePhone(data.director_phone_number)
+    );
   }
+  return firstError(
+    requireText(data.first_name, "نام را وارد کنید."),
+    requireLookup(data.gender, "جنسیت را انتخاب کنید."),
+    requireNationalCode(data.national_code),
+    requirePhone(data.phone_number)
+  );
+}
 
-  if (!data.first_name?.trim()) return "نام را وارد کنید.";
-  if (!lookupValue(data.gender)) return "جنسیت را انتخاب کنید.";
-  if (!data.national_code?.trim()) return "کد ملی را وارد کنید.";
-  if (!isValidNationalCode(data.national_code)) return "کد ملی معتبر نیست.";
-  if (!data.phone_number?.trim()) return "شماره تلفن را وارد کنید.";
-  if (!isValidMobile(data.phone_number)) return "شماره تلفن معتبر نیست.";
+export function validateHealthAssistantIndividualStep2(data = {}) {
+  return firstError(
+    requireLookup(data.education, "تحصیلات را انتخاب کنید."),
+    requireText(data.job, "شغل را وارد کنید."),
+    requireText(data.province, "استان را انتخاب کنید."),
+    requireText(data.city, "شهر را انتخاب کنید."),
+    requireText(data.address, "آدرس را وارد کنید."),
+    requireLookup(data.cooperation_type ?? data.collaborationType, "نوع همکاری را انتخاب کنید.")
+  );
+}
+
+export function validateHealthAssistantOrganizationStep2(data = {}) {
+  return firstError(
+    requireText(data.province, "استان را انتخاب کنید."),
+    requireText(data.city, "شهر را انتخاب کنید."),
+    requireText(data.address, "آدرس را وارد کنید."),
+    requireText(data.social_unit_head_first_name, "نام رئیس واحد مددکاری را وارد کنید."),
+    requireText(data.social_unit_head_last_name, "نام خانوادگی رئیس واحد مددکاری را وارد کنید."),
+    requirePhone(data.social_unit_head_phone_number),
+    requireLookup(data.cooperation_type ?? data.collaborationType, "نوع همکاری را انتخاب کنید.")
+  );
+}
+
+export function validatePasswordStep(password, confirmPassword) {
+  if (!password) return "رمز عبور را وارد کنید.";
+  if (password.length < 8) return "رمز عبور باید حداقل ۸ کاراکتر باشد.";
+  if (password !== confirmPassword) return "رمز عبور و تکرار آن یکسان نیست.";
   return "";
 }
 
-export function validateHealthAssistantIndividualStep2(data) {
-  // Backend only requires step-1 fields for individual HA; step-2 fields are optional.
+export function validateDraftForRole(role, draft = {}) {
+  if (role === "patient") return validatePatientDraft(draft);
   return "";
-}
-
-export function validateHealthAssistantOrganizationStep2(data) {
-  // Backend only requires org_name from step 1 for organization HA.
-  return "";
-}
-
-export function validateDraftForRole(role, draft) {
-  const normalized = role === "SalamtyaranSignup" ? "salamtyaran" : role;
-  switch (normalized) {
-    case "patient":
-      return validatePatientDraft(draft);
-    case "doctor":
-      return validateDoctorForm(draft.step1 || draft);
-    case "charitable":
-      return validateBenefactorForm(draft.step1 || draft);
-    case "salamtyaran": {
-      const s1 = draft[1] || draft.step1 || {};
-      const profileType =
-        s1.profile_type ||
-        (s1.referrerType === "legal" ? "organization" : "individual");
-      const err1 = validateHealthAssistantStep1(s1, profileType);
-      if (err1) return err1;
-      const s2 = draft[2] || draft.step2 || {};
-      if (profileType === "organization") {
-        return validateHealthAssistantOrganizationStep2(s2);
-      }
-      return validateHealthAssistantIndividualStep2(s2);
-    }
-    default:
-      return "";
-  }
 }

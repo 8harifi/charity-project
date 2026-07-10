@@ -6,6 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import RenderDropdown from "./components/DropDown";
 import FileUpload from "./components/FileUpload";
 import { joinFullName, splitFullName } from "./utils/nameFields";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
 
 const CharityCenter3 = () => {
   const [province, setProvince] = useState("");
@@ -182,6 +183,9 @@ const CharityCenter3 = () => {
     });
   };
 
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <motion.div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -280,6 +284,7 @@ const CharityCenter3 = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}

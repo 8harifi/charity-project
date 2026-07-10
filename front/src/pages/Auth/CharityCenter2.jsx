@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { saveStep, loadStep } from "./utils/signupStorage";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, HandHeart, Users, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -137,6 +138,7 @@ const CharityCenter2 = () => {
   }, 800);
 };
 
+  const onEnterSubmit = useEnterSubmit(handleSignup);
 
   return (
     <motion.div
@@ -236,6 +238,7 @@ const CharityCenter2 = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}

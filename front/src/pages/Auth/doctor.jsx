@@ -9,6 +9,11 @@ import {lookupApi} from "../../API/lookupApi";
 import {useMultipleLookups, findLookupOption} from "../../hooks/useLookupOptions";
 import { IRAN_PROVINCES } from "../../data/staticSignupOptions";
 import { validateDoctorForm } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const DOCTOR_SIGNUP_STEPS = ["اطلاعات پزشک", "رمز عبور"];
 
 const Doctor = () => {
   const [firstName, setFirstName] = useState("");
@@ -177,6 +182,9 @@ const Doctor = () => {
   }, [province?.value]);
 
 
+
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <motion.div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -275,6 +283,7 @@ const Doctor = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}
@@ -377,7 +386,7 @@ const Doctor = () => {
                 exit="exit"
                 className="h-full flex flex-col justify-center"
               >
-                <div className="mb-10">
+                <div className="mb-6">
                   <h1
                     className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
                     عضویت پزشکان در شبکه
@@ -387,17 +396,14 @@ const Doctor = () => {
                   </p>
                 </div>
 
+                <SignupStepProgress steps={DOCTOR_SIGNUP_STEPS} currentStep={1} />
+
                 <div className="space-y-7">
                   {/* signup page */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                     {/* نام */}
                     <div className="relative">
-                      <label
-                        className="block text-blue-700 mb-2 text-sm sm:text-base"
-                        htmlFor="first_name"
-                      >
-                        نام
-                      </label>
+                      <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="first_name">نام</RequiredLabel>
                       <input
                         id="first_name"
                         type="text"
@@ -408,12 +414,7 @@ const Doctor = () => {
                       />
                     </div>
                     <div className="relative">
-                      <label
-                        className="block text-blue-700 mb-2 text-sm sm:text-base"
-                        htmlFor="last_name"
-                      >
-                        نام خانوادگی
-                      </label>
+                      <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="last_name">نام خانوادگی</RequiredLabel>
                       <input
                         id="last_name"
                         type="text"
@@ -434,17 +435,13 @@ const Doctor = () => {
                         placeholder="انتخاب جنسیت"
                         label="جنسیت"
                         loading={lookupsLoading}
+                        required
                       />
                     </div>
 
                     {/* کد ملی */}
                     <div className="relative">
-                      <label
-                        className="block text-blue-700 mb-2 text-sm sm:text-base"
-                        htmlFor="code"
-                      >
-                        کد ملی
-                      </label>
+                      <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="code">کد ملی</RequiredLabel>
                       <input
                         id="code"
                         type="text"
@@ -463,12 +460,7 @@ const Doctor = () => {
 
                     {/* شماره نظام پزشکی */}
                     <div className="relative">
-                      <label
-                        className="block text-blue-700 mb-2 text-sm sm:text-base"
-                        htmlFor="num"
-                      >
-                        شماره نظام پزشکی
-                      </label>
+                      <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="num">شماره نظام پزشکی</RequiredLabel>
                       <input
                         id="num"
                         type="text"
@@ -483,12 +475,7 @@ const Doctor = () => {
 
                     {/* نام پدر */}
                     <div className="relative">
-                      <label
-                        className="block text-blue-700 mb-2 text-sm sm:text-base"
-                        htmlFor="father"
-                      >
-                        نام پدر
-                      </label>
+                      <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="father">نام پدر</RequiredLabel>
                       <input
                         id="father"
                         type="text"
@@ -501,12 +488,7 @@ const Doctor = () => {
 
                     {/* تلفن همراه */}
                     <div className="relative">
-                      <label
-                        className="block text-blue-700 mb-2 text-sm sm:text-base"
-                        htmlFor="phone"
-                      >
-                        تلفن همراه پزشک یا منشی
-                      </label>
+                      <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base" htmlFor="phone">تلفن همراه پزشک یا منشی</RequiredLabel>
                       <input
                         id="phone"
                         type="tel"
@@ -533,6 +515,7 @@ const Doctor = () => {
                         placeholder="تخصص"
                         label="تخصص"
                         loading={lookupsLoading}
+                        required
                       />
                     </div>
 
@@ -552,13 +535,10 @@ const Doctor = () => {
                         name="province"
                         placeholder="انتخاب استان"
                         label="استان"
+                        required
                       />
 
-                      {/* شهر */}
                       <div>
-                        <label className="block text-blue-700 mb-2 text-sm sm:text-base">
-                          شهر
-                        </label>
                         <RenderDropdown
                           value={city}
                           setValue={setCity}
@@ -566,14 +546,12 @@ const Doctor = () => {
                           name="city"
                           placeholder="انتخاب شهر"
                           label="شهر"
+                          required
                         />
                       </div>
 
-                      {/* آدرس کامل - تمام عرض */}
                       <div className="sm:col-span-2">
-                        <label className="block text-blue-700 mb-2 text-sm sm:text-base">
-                          آدرس
-                        </label>
+                        <RequiredLabel className="text-blue-700 mb-2 text-sm sm:text-base">آدرس</RequiredLabel>
                         <input
                           type="text"
                           value={address}

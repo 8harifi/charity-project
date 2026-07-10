@@ -4,6 +4,7 @@ import { Heart, HandHeart, Users, Sparkles } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import FileUpload from "./components/FileUpload";
 import { saveStep, loadStep } from "./utils/signupStorage";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
 
 const SocialWorkUnit2 = () => {
   const [facilityType, setFacilityType] = useState("");
@@ -140,6 +141,8 @@ const SocialWorkUnit2 = () => {
     }, 600);
   };
 
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <motion.div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -238,6 +241,7 @@ const SocialWorkUnit2 = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         {/* Left Section - Welcome */}

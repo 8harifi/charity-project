@@ -11,6 +11,11 @@ import {
   convertToEnglishDigits,
   sanitizePhone,
 } from "./utils/signupValidation";
+import RequiredLabel from "../../components/RequiredLabel";
+import { useEnterSubmit } from "../../hooks/useEnterSubmit";
+import SignupStepProgress from "./components/SignupStepProgress";
+
+const BENEFACTOR_SIGNUP_STEPS = ["اطلاعات فردی", "رمز عبور"];
 
 const CharitableSignup = () => {
   const [firstName, setFirstName] = useState("");
@@ -109,6 +114,8 @@ const CharitableSignup = () => {
     setGender(findLookupOption(genders, savedData.gender));
   }, [lookupsLoading, genders]);
 
+  const onEnterSubmit = useEnterSubmit(handleSignup);
+
   return (
     <div
       className="font-kook min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-white flex items-center justify-center p-4 relative overflow-hidden"
@@ -121,6 +128,7 @@ const CharitableSignup = () => {
         variants={cardVariants}
         initial="hidden"
         animate="visible"
+        onKeyDown={onEnterSubmit}
         className="w-full max-w-6xl bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row border border-blue-100/50 relative z-10"
       >
         <div className="lg:w-1/2 relative bg-gradient-to-br from-blue-500 via-blue-600 to-emerald-600 p-10 lg:p-16 flex flex-col justify-center items-center text-white">
@@ -136,7 +144,7 @@ const CharitableSignup = () => {
           animate="visible"
           className="lg:w-5/6 p-10 lg:p-14 bg-white"
         >
-          <div className="mb-10">
+          <div className="mb-6">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
               عضویت خیرین در شبکه
             </h1>
@@ -145,11 +153,11 @@ const CharitableSignup = () => {
             </p>
           </div>
 
+          <SignupStepProgress steps={BENEFACTOR_SIGNUP_STEPS} currentStep={1} />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="first_name" className="p-3 text-blue-700 block">
-                نام
-              </label>
+              <RequiredLabel htmlFor="first_name" className="p-3 text-blue-700 block">نام</RequiredLabel>
               <input
                 id="first_name"
                 type="text"
@@ -160,9 +168,7 @@ const CharitableSignup = () => {
               />
             </div>
             <div>
-              <label htmlFor="last_name" className="p-3 text-blue-700 block">
-                نام خانوادگی
-              </label>
+              <RequiredLabel htmlFor="last_name" className="p-3 text-blue-700 block">نام خانوادگی</RequiredLabel>
               <input
                 id="last_name"
                 type="text"
@@ -181,12 +187,11 @@ const CharitableSignup = () => {
               placeholder="انتخاب جنسیت"
               label="جنسیت"
               loading={lookupsLoading}
+              required
             />
 
             <div>
-              <label htmlFor="nationalCode" className="p-3 text-blue-700 block">
-                کد ملی
-              </label>
+              <RequiredLabel htmlFor="nationalCode" className="p-3 text-blue-700 block">کد ملی</RequiredLabel>
               <input
                 id="nationalCode"
                 type="text"
@@ -202,9 +207,7 @@ const CharitableSignup = () => {
             </div>
 
             <div>
-              <label htmlFor="num" className="p-3 text-blue-700 block">
-                شماره تلفن همراه <span className="text-red-500">*</span>
-              </label>
+              <RequiredLabel htmlFor="num" className="p-3 text-blue-700 block">شماره تلفن همراه</RequiredLabel>
               <input
                 id="num"
                 type="tel"
