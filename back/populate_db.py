@@ -1,368 +1,394 @@
 """
-Django shell script to populate the database with sample data for testing
-Run with: python manage.py shell < populate_db.py
+Django script to populate the database with sample data for testing.
+
+Covers current product flows:
+  - Medical requests (patient / HA → doctor review, schedule, or funding)
+  - Financial requests (HA / doctor → benefactor pledges → staff payout wallet)
+  - Patient گردش کار (multiple requests per patient)
+  - Dual approval (admin + HA) for self-registered patients with HA code
+  - Benefactor wallet top-ups and donation holds
+
+Run with either:
+  python3 manage.py shell < populate_db.py
+  python3 populate_db.py
 """
 
-from django.contrib.auth import get_user_model
-from api.models import (
-    CustomUser,
-    Doctor,
-    Patient,
-    Benefactor,
-    HealthAssistant,
-    IndividualHealthAssistant,
-    OrganizationHealthAssistant,
-    Gender,
-    MaritalStatus,
-    Education,
-    JobStatus,
-    HousingStatus,
-    CoveredOrganization,
-    Insurance,
-    Specialty,
-    HealthAssistantCooperationType,
-    OrganizationType,
-    NetworkRequest,
-    BenefactorDonation,
-    Campaign,
-    Wallet,
-    WalletTransaction,
-    GatewayPayment,
-)
+import os
+import sys
+from decimal import Decimal
 
-print("🔄 Starting database population...")
+DEFAULT_PASSWORD = "testpass123"
+SEED_TOPUP_AMOUNT = 10_000_000
+ADMIN_PHONE = "09100000000"
 
-# ============================================================================
-# 1. CREATE LOOKUP DATA (Dependencies)
-# ============================================================================
 
-def create_lookups():
-    print("\n📋 Creating lookup data...")
+def _bootstrap_django():
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.settings")
+    import django
+    from django.apps import apps
 
-    genders = []
-    for name in ["مرد", "زن"]:
-        gender, created = Gender.objects.get_or_create(name=name)
-        genders.append(gender)
-        if created:
-            print(f"  ✓ Created Gender: {name}")
+    if not apps.ready:
+        django.setup()
 
-    marital_statuses = []
-    for name in ["مجرد", "متاهل", "مطلقه", "بیوه"]:
-        status, created = MaritalStatus.objects.get_or_create(name=name)
-        marital_statuses.append(status)
-        if created:
-            print(f"  ✓ Created MaritalStatus: {name}")
 
-    educations = []
-    for name in ["بیسواد", "ابتدایی", "راهنمایی", "دبیرستان", "کارشناسی", "کارشناسی ارشد", "دکتری"]:
-        education, created = Education.objects.get_or_create(name=name)
-        educations.append(education)
-        if created:
-            print(f"  ✓ Created Education: {name}")
+def main():
+    from api.models import (
+        AdminProfile,
+        Benefactor,
+        BenefactorDonation,
+        Campaign,
+        CustomUser,
+        Doctor,
+        DonationHold,
+        HealthAssistant,
+        IndividualHealthAssistant,
+        NetworkRequest,
+        OrganizationHealthAssistant,
+        Patient,
+        RequestStatusLog,
+        Wallet,
+        WalletTransaction,
+    )
+    from api.services.donation_service import DonationError, donate_from_wallet
+    from api.services.wallet_service import (
+        credit_wallet,
+        get_or_create_benefactor_wallet,
+        get_or_create_platform_wallet,
+        get_or_create_staff_payout_wallet,
+    )
 
-    job_statuses = []
-    for name in ["بیکار", "کارمند دولتی", "کارمند خصوصی", "خودروز", "بازنشسته", "دانشجو"]:
-        status, created = JobStatus.objects.get_or_create(name=name)
-        job_statuses.append(status)
-        if created:
-            print(f"  ✓ Created JobStatus: {name}")
+    print("🔄 Starting database population...")
 
-    housing_statuses = []
-    for name in ["مالک", "اجاره‌ای", "رایگان"]:
-        status, created = HousingStatus.objects.get_or_create(name=name)
-        housing_statuses.append(status)
-        if created:
-            print(f"  ✓ Created HousingStatus: {name}")
+    # ============================================================================
+    # 1. LOOKUP DATA
+    # ============================================================================
 
-    organizations = []
-    for name in ["تامین اجتماعی", "سلامت", "آموزش"]:
-        org, created = CoveredOrganization.objects.get_or_create(name=name)
-        organizations.append(org)
-        if created:
-            print(f"  ✓ Created CoveredOrganization: {name}")
+    def create_lookups():
+        print("\n📋 Ensuring canonical lookup data...")
+        from api.lookup_seeds import LOOKUP_SEEDS, ORGANIZATION_TYPE_SEEDS, seed_lookups
+        from django.apps import apps
 
-    insurances = []
-    for name in ["دولتی", "خصوصی", "تامین اجتماعی", "بیمه نیروهای مسلح"]:
-        insurance, created = Insurance.objects.get_or_create(name=name)
-        insurances.append(insurance)
-        if created:
-            print(f"  ✓ Created Insurance: {name}")
+        seed_lookups(verbose=True)
 
-    specialties = []
-    for name in ["پزشک عمومی", "اطفال", "قلب", "جراحی", "روانشناسی", "دندانپزشکی"]:
-        specialty, created = Specialty.objects.get_or_create(name=name)
-        specialties.append(specialty)
-        if created:
-            print(f"  ✓ Created Specialty: {name}")
+        def rows(model_name, names=None):
+            Model = apps.get_model("api", model_name)
+            source = names or LOOKUP_SEEDS[model_name]
+            return [Model.objects.get(name=n) for n in source]
 
-    cooperation_types = []
-    for name in ["فردی", "سازمانی"]:
-        coop, created = HealthAssistantCooperationType.objects.get_or_create(name=name)
-        cooperation_types.append(coop)
-        if created:
-            print(f"  ✓ Created HealthAssistantCooperationType: {name}")
+        return {
+            "genders": rows("Gender"),
+            "marital_statuses": rows("MaritalStatus"),
+            "educations": rows("Education"),
+            "job_statuses": rows("JobStatus"),
+            "housing_statuses": rows("HousingStatus"),
+            "organizations": rows("CoveredOrganization"),
+            "insurances": rows("Insurance"),
+            "specialties": rows("Specialty"),
+            "cooperation_types": rows("HealthAssistantCooperationType"),
+            "org_types": rows("OrganizationType", ORGANIZATION_TYPE_SEEDS),
+        }
 
-    org_types = []
-    for name in ["بیمارستان", "کلینیک", "پزشکی خانواده", "سازمان خدماتی"]:
-        org_type, created = OrganizationType.objects.get_or_create(name=name)
-        org_types.append(org_type)
-        if created:
-            print(f"  ✓ Created OrganizationType: {name}")
+    # ============================================================================
+    # 2. USERS
+    # ============================================================================
 
-    return {
-        'genders': genders,
-        'marital_statuses': marital_statuses,
-        'educations': educations,
-        'job_statuses': job_statuses,
-        'housing_statuses': housing_statuses,
-        'organizations': organizations,
-        'insurances': insurances,
-        'specialties': specialties,
-        'cooperation_types': cooperation_types,
-        'org_types': org_types,
-    }
+    def ensure_password(user):
+        user.set_password(DEFAULT_PASSWORD)
+        user.save(update_fields=["password"])
 
-# ============================================================================
-# 2. CREATE USERS
-# ============================================================================
+    def create_users():
+        print("\n👥 Creating users...")
 
-def create_users():
-    print("\n👥 Creating users...")
+        users = {}
 
-    users = {}
-
-    # Doctors
-    doctor_data = [
-        {"username": "dr_ali", "first_name": "علی", "last_name": "محمدی", "email": "dr.ali@charity.local"},
-        {"username": "dr_zahra", "first_name": "زهرا", "last_name": "احمدی", "email": "dr.zahra@charity.local"},
-    ]
-
-    for data in doctor_data:
-        user, created = CustomUser.objects.get_or_create(
-            username=data["username"],
-            defaults={
-                "email": data["email"],
+        for data in [
+            {
+                "user_key": "doctor_dr_ali",
+                "phone": "09111234567",
                 "role": "doctor",
-                "state": True,
-                "first_name": data["first_name"],
-                "last_name": data["last_name"],
-            }
-        )
-        users[f"doctor_{data['username']}"] = user
-        if created:
-            print(f"  ✓ Created Doctor user: {data['username']}")
-
-    # Patients
-    patient_data = [
-        {"username": "patient_reza", "first_name": "رضا", "last_name": "کریمی", "email": "reza@charity.local"},
-        {"username": "patient_fatima", "first_name": "فاطمه", "last_name": "علی‌پور", "email": "fatima@charity.local"},
-        {"username": "patient_hasan", "first_name": "حسن", "last_name": "حسنی", "email": "hasan@charity.local"},
-    ]
-
-    for data in patient_data:
-        user, created = CustomUser.objects.get_or_create(
-            username=data["username"],
-            defaults={
-                "email": data["email"],
+                "first_name": "علی",
+                "last_name": "محمدی",
+                "email": "dr.ali@charity.local",
+            },
+            {
+                "user_key": "doctor_dr_zahra",
+                "phone": "09121234567",
+                "role": "doctor",
+                "first_name": "زهرا",
+                "last_name": "احمدی",
+                "email": "dr.zahra@charity.local",
+            },
+            {
+                "user_key": "patient_patient_reza",
+                "phone": "09191234567",
                 "role": "patient",
+                "first_name": "رضا",
+                "last_name": "کریمی",
+                "email": "reza@charity.local",
                 "state": True,
-                "first_name": data["first_name"],
-                "last_name": data["last_name"],
-            }
-        )
-        users[f"patient_{data['username']}"] = user
-        if created:
-            print(f"  ✓ Created Patient user: {data['username']}")
-
-    # Benefactors
-    benefactor_data = [
-        {"username": "benefactor_hassan", "first_name": "حسن", "last_name": "صالحی", "email": "hassan@charity.local"},
-        {"username": "benefactor_maryam", "first_name": "مریم", "last_name": "فرهادی", "email": "maryam@charity.local"},
-    ]
-
-    for data in benefactor_data:
-        user, created = CustomUser.objects.get_or_create(
-            username=data["username"],
-            defaults={
-                "email": data["email"],
+            },
+            {
+                "user_key": "patient_patient_fatima",
+                "phone": "09221234567",
+                "role": "patient",
+                "first_name": "فاطمه",
+                "last_name": "علی‌پور",
+                "email": "fatima@charity.local",
+                "state": True,
+            },
+            {
+                "user_key": "patient_patient_hasan",
+                "phone": "09251234567",
+                "role": "patient",
+                "first_name": "حسن",
+                "last_name": "حسنی",
+                "email": "hasan@charity.local",
+                "state": True,
+            },
+            {
+                "user_key": "patient_patient_pending",
+                "phone": "09301234567",
+                "role": "patient",
+                "first_name": "امیر",
+                "last_name": "رضایی",
+                "email": "amir@charity.local",
+                "state": False,
+            },
+            {
+                "user_key": "benefactor_benefactor_hassan",
+                "phone": "09281234567",
                 "role": "benefactor",
-                "state": True,
-                "first_name": data["first_name"],
-                "last_name": data["last_name"],
-            }
-        )
-        users[f"benefactor_{data['username']}"] = user
-        if created:
-            print(f"  ✓ Created Benefactor user: {data['username']}")
-
-    # Health Assistants
-    ha_data = [
-        {"username": "ha_sara", "first_name": "سارا", "last_name": "حسنی", "email": "sara@charity.local"},
-        {"username": "ha_akbar", "first_name": "اکبر", "last_name": "محمدی", "email": "akbar@charity.local"},
-    ]
-
-    for data in ha_data:
-        user, created = CustomUser.objects.get_or_create(
-            username=data["username"],
-            defaults={
-                "email": data["email"],
+                "first_name": "حسن",
+                "last_name": "صالحی",
+                "email": "hassan@charity.local",
+            },
+            {
+                "user_key": "benefactor_benefactor_maryam",
+                "phone": "09291234567",
+                "role": "benefactor",
+                "first_name": "مریم",
+                "last_name": "فرهادی",
+                "email": "maryam@charity.local",
+            },
+            {
+                "user_key": "health_assistant_ha_sara",
+                "phone": "09131234567",
                 "role": "health_assistant",
+                "first_name": "سارا",
+                "last_name": "حسنی",
+                "email": "sara@charity.local",
+            },
+            {
+                "user_key": "health_assistant_ha_akbar",
+                "phone": "09141234567",
+                "role": "health_assistant",
+                "first_name": "اکبر",
+                "last_name": "محمدی",
+                "email": "akbar@charity.local",
+            },
+        ]:
+            user, created = CustomUser.objects.get_or_create(
+                username=data["phone"],
+                defaults={
+                    "email": data["email"],
+                    "role": data["role"],
+                    "state": data.get("state", True),
+                    "first_name": data["first_name"],
+                    "last_name": data["last_name"],
+                },
+            )
+            if not created and "state" in data:
+                user.state = data["state"]
+                user.save(update_fields=["state"])
+            ensure_password(user)
+            users[data["user_key"]] = user
+            if created:
+                print(f"  ✓ Created {data['role']} user: {data['phone']}")
+
+        admin_user, created = CustomUser.objects.get_or_create(
+            username=ADMIN_PHONE,
+            defaults={
+                "email": "admin@charity.local",
+                "role": "admin",
                 "state": True,
-                "first_name": data["first_name"],
-                "last_name": data["last_name"],
-            }
+                "first_name": "مدیر",
+                "last_name": "سیستم",
+                "is_staff": True,
+                "is_superuser": True,
+            },
         )
-        users[f"health_assistant_{data['username']}"] = user
+        ensure_password(admin_user)
+        users["admin"] = admin_user
         if created:
-            print(f"  ✓ Created Health Assistant user: {data['username']}")
+            print(f"  ✓ Created Admin user: {ADMIN_PHONE}")
 
-    return users
-
-# ============================================================================
-# 3. CREATE DOCTOR PROFILES
-# ============================================================================
-
-def create_doctors(users, lookups):
-    print("\n👨‍⚕️ Creating doctor profiles...")
-
-    doctors = []
-
-    doctor_info = [
-        {
-            "user_key": "doctor_dr_ali",
-            "first_name": "علی",
-            "last_name": "محمدی",
-            "father_name": "محمد",
-            "national_code": "0123456789",
-            "medical_system_code": "MSC001",
-            "phone_number": "09111234567",
-            "specialty_idx": 0,
-            "province": "تهران",
-            "city": "تهران",
-            "address": "خیابان ولیعصر، کلینیک درمانی",
-        },
-        {
-            "user_key": "doctor_dr_zahra",
-            "first_name": "زهرا",
-            "last_name": "احمدی",
-            "father_name": "احمد",
-            "national_code": "0987654321",
-            "medical_system_code": "MSC002",
-            "phone_number": "09121234567",
-            "specialty_idx": 1,
-            "province": "اصفهان",
-            "city": "اصفهان",
-            "address": "میدان نقش جهان، مرکز درمانی",
-        },
-    ]
-
-    for info in doctor_info:
-        doctor, created = Doctor.objects.get_or_create(
-            user=users[info["user_key"]],
+        AdminProfile.objects.get_or_create(
+            user=admin_user,
             defaults={
-                "first_name": info["first_name"],
-                "last_name": info["last_name"],
-                "father_name": info["father_name"],
-                "gender": lookups['genders'][0],
-                "national_code": info["national_code"],
-                "medical_system_code": info["medical_system_code"],
-                "phone_number": info["phone_number"],
-                "specialty": lookups['specialties'][info["specialty_idx"]],
-                "province": info["province"],
-                "city": info["city"],
-                "address": info["address"],
-            }
+                "first_name": "مدیر",
+                "last_name": "سیستم",
+                "phone_number": ADMIN_PHONE,
+            },
         )
-        doctors.append(doctor)
-        if created:
-            print(f"  ✓ Created Doctor profile: {info['first_name']} {info['last_name']}")
 
-    return doctors
+        return users
 
-# ============================================================================
-# 4. CREATE HEALTH ASSISTANT PROFILES
-# ============================================================================
+    # ============================================================================
+    # 3. DOCTOR PROFILES
+    # ============================================================================
 
-def create_health_assistants(users, lookups):
-    print("\n👩‍⚕️ Creating health assistant profiles...")
+    def create_doctors(users, lookups):
+        print("\n👨‍⚕️ Creating doctor profiles...")
 
-    health_assistants = []
+        doctors = []
+        for info in [
+            {
+                "user_key": "doctor_dr_ali",
+                "first_name": "علی",
+                "last_name": "محمدی",
+                "father_name": "محمد",
+                "national_code": "0123456789",
+                "medical_system_code": "MSC001",
+                "phone_number": "09111234567",
+                "specialty_idx": 1,
+                "province": "تهران",
+                "city": "تهران",
+                "address": "خیابان ولیعصر، کلینیک درمانی",
+            },
+            {
+                "user_key": "doctor_dr_zahra",
+                "first_name": "زهرا",
+                "last_name": "احمدی",
+                "father_name": "احمد",
+                "national_code": "0987654321",
+                "medical_system_code": "MSC002",
+                "phone_number": "09121234567",
+                "specialty_idx": 0,
+                "province": "اصفهان",
+                "city": "اصفهان",
+                "address": "میدان نقش جهان، مرکز درمانی",
+            },
+        ]:
+            doctor, created = Doctor.objects.get_or_create(
+                user=users[info["user_key"]],
+                defaults={
+                    "first_name": info["first_name"],
+                    "last_name": info["last_name"],
+                    "father_name": info["father_name"],
+                    "gender": lookups["genders"][0],
+                    "national_code": info["national_code"],
+                    "medical_system_code": info["medical_system_code"],
+                    "phone_number": info["phone_number"],
+                    "specialty": lookups["specialties"][info["specialty_idx"]],
+                    "province": info["province"],
+                    "city": info["city"],
+                    "address": info["address"],
+                },
+            )
+            doctors.append(doctor)
+            if created:
+                print(f"  ✓ Created Doctor: {info['first_name']} {info['last_name']}")
 
-    ha_info = [
-        {
-            "user_key": "health_assistant_ha_sara",
-            "cooperation_type_idx": 0,
-            "is_individual": True,
-            "first_name": "سارا",
-            "last_name": "حسنی",
-            "father_name": "حسن",
-            "national_code": "0111223344",
-            "phone_number": "09131234567",
-            "education_idx": 4,
-            "job": "پرستار",
-            "province": "تهران",
-            "city": "تهران",
-            "home_address": "خیابان شریعتی",
-            "work_address": "کلینیک درمانی شریعتی",
-        },
-        {
-            "user_key": "health_assistant_ha_akbar",
-            "cooperation_type_idx": 1,
-            "is_individual": False,
-            "organization_type_idx": 0,
-            "org_name": "بیمارستان امام خمینی",
-            "director_first_name": "کاظم",
-            "director_last_name": "کریمی",
-            "director_phone_number": "09141234567",
-            "director_landline_number": "02122222222",
-            "province": "تهران",
-            "city": "تهران",
-            "address": "خیابان ولیعصر، بیمارستان امام خمینی",
-            "social_unit_head_first_name": "فاطمه",
-            "social_unit_head_last_name": "حسینی",
-            "social_unit_head_phone_number": "09151234567",
-            "social_unit_head_landline_number": "02133333333",
-        },
-    ]
+        return doctors
 
-    for info in ha_info:
-        ha, created = HealthAssistant.objects.get_or_create(
-            user=users[info["user_key"]],
-            defaults={
-                "health_assistance_code": f"HA{users[info['user_key']].id:05d}",
-                "cooperation_type": lookups['cooperation_types'][info["cooperation_type_idx"]],
-                "cooperation_description": "تعاون در ارائه خدمات درمانی",
-            }
-        )
-        health_assistants.append(ha)
+    def link_doctors_to_health_assistants(doctors, health_assistants):
+        """Each doctor cooperates with one HA so incoming requests map realistically."""
+        print("\n🔗 Linking doctors to health assistants...")
+        dr_ali, dr_zahra = doctors
+        ha_sara, ha_akbar = health_assistants
+        dr_ali.cooperating_health_assistants.set([ha_sara])
+        dr_zahra.cooperating_health_assistants.set([ha_akbar])
+        print(f"  ✓ دکتر علی ↔ سلامتیار {ha_sara.health_assistance_code}")
+        print(f"  ✓ دکتر زهرا ↔ سلامتیار {ha_akbar.health_assistance_code}")
 
-        if created:
-            print(f"  ✓ Created Health Assistant: {users[info['user_key']].first_name}")
+    # ============================================================================
+    # 4. HEALTH ASSISTANT PROFILES
+    # ============================================================================
 
-            # Create individual or organization profile
+    def create_health_assistants(users, lookups):
+        print("\n👩‍⚕️ Creating health assistant profiles...")
+
+        health_assistants = []
+        for info in [
+            {
+                "user_key": "health_assistant_ha_sara",
+                "cooperation_type_idx": 0,
+                "is_individual": True,
+                "first_name": "سارا",
+                "last_name": "حسنی",
+                "father_name": "حسن",
+                "national_code": "0111223344",
+                "phone_number": "09131234567",
+                "education_idx": 3,
+                "job": "پرستار",
+                "province": "تهران",
+                "city": "تهران",
+                "home_address": "خیابان شریعتی",
+                "work_address": "کلینیک درمانی شریعتی",
+            },
+            {
+                "user_key": "health_assistant_ha_akbar",
+                "cooperation_type_idx": 1,
+                "is_individual": False,
+                "organization_type_idx": 0,
+                "org_name": "بیمارستان امام خمینی",
+                "director_first_name": "کاظم",
+                "director_last_name": "کریمی",
+                "director_phone_number": "09141234567",
+                "director_landline_number": "02122222222",
+                "province": "تهران",
+                "city": "تهران",
+                "address": "خیابان ولیعصر، بیمارستان امام خمینی",
+                "social_unit_head_first_name": "فاطمه",
+                "social_unit_head_last_name": "حسینی",
+                "social_unit_head_phone_number": "09151234567",
+                "social_unit_head_landline_number": "02133333333",
+            },
+        ]:
+            ha, created = HealthAssistant.objects.get_or_create(
+                user=users[info["user_key"]],
+                defaults={
+                    "health_assistance_code": f"HA{users[info['user_key']].id:05d}",
+                    "cooperation_type": lookups["cooperation_types"][
+                        info["cooperation_type_idx"]
+                    ],
+                    "cooperation_description": "تعاون در ارائه خدمات درمانی",
+                },
+            )
+            if not ha.health_assistance_code:
+                ha.health_assistance_code = f"HA{users[info['user_key']].id:05d}"
+                ha.save(update_fields=["health_assistance_code"])
+            health_assistants.append(ha)
+            if created:
+                print(
+                    f"  ✓ Created Health Assistant: {users[info['user_key']].first_name} "
+                    f"({ha.health_assistance_code})"
+                )
+
             if info.get("is_individual"):
                 IndividualHealthAssistant.objects.get_or_create(
                     health_assistant=ha,
                     defaults={
                         "first_name": info["first_name"],
                         "last_name": info["last_name"],
-                        "gender": lookups['genders'][1],
+                        "gender": lookups["genders"][1],
                         "national_code": info["national_code"],
                         "phone_number": info["phone_number"],
-                        "education": lookups['educations'][info["education_idx"]],
+                        "education": lookups["educations"][info["education_idx"]],
                         "job": info["job"],
                         "province": info["province"],
                         "city": info["city"],
                         "home_address": info["home_address"],
                         "work_address": info["work_address"],
-                    }
+                    },
                 )
-                print(f"    → Created Individual Health Assistant Profile")
             else:
                 OrganizationHealthAssistant.objects.get_or_create(
                     health_assistant=ha,
                     defaults={
-                        "organization_type": lookups['org_types'][info["organization_type_idx"]],
+                        "organization_type": lookups["org_types"][
+                            info["organization_type_idx"]
+                        ],
                         "name": info["org_name"],
                         "director_first_name": info["director_first_name"],
                         "director_last_name": info["director_last_name"],
@@ -373,477 +399,625 @@ def create_health_assistants(users, lookups):
                         "address": info["address"],
                         "social_unit_head_first_name": info["social_unit_head_first_name"],
                         "social_unit_head_last_name": info["social_unit_head_last_name"],
-                        "social_unit_head_phone_number": info["social_unit_head_phone_number"],
-                        "social_unit_head_landline_number": info["social_unit_head_landline_number"],
-                    }
+                        "social_unit_head_phone_number": info[
+                            "social_unit_head_phone_number"
+                        ],
+                        "social_unit_head_landline_number": info[
+                            "social_unit_head_landline_number"
+                        ],
+                    },
                 )
-                print(f"    → Created Organization Health Assistant Profile")
 
-    return health_assistants
+        return health_assistants
 
-# ============================================================================
-# 5. CREATE PATIENT PROFILES
-# ============================================================================
+    # ============================================================================
+    # 5. PATIENT PROFILES
+    # ============================================================================
 
-def create_patients(users, lookups, health_assistants):
-    print("\n🏥 Creating patient profiles...")
+    def create_patients(users, lookups, health_assistants):
+        print("\n🏥 Creating patient profiles...")
 
-    patients = []
+        patients = []
+        ha_sara, ha_akbar = health_assistants
 
-    patient_info = [
-        {
-            "user_key": "patient_patient_reza",
-            "first_name": "رضا",
-            "last_name": "کریمی",
-            "father_name": "کریم",
-            "national_code": "1234567890",
-            "gender_idx": 0,
-            "age": 45,
-            "marital_status_idx": 1,
-            "education_idx": 4,
-            "job_status_idx": 1,
-            "housing_status_idx": 0,
-            "insurance_idx": 0,
-            "phone_number": "09191234567",
-            "landline_number": "02188888888",
-            "province": "تهران",
-            "city": "تهران",
-            "address": "خیابان کریم‌خان زند، پلاک 42",
-            "sickness_description": "دیابت و فشار خون",
-            "contact1": ("احمد کریمی", "09201234567"),
-            "contact2": ("فاطمه کریمی", "09211234567"),
-            "health_assistant_idx": 0,
-        },
-        {
-            "user_key": "patient_patient_fatima",
-            "first_name": "فاطمه",
-            "last_name": "علی‌پور",
-            "father_name": "علی",
-            "national_code": "0987654321",
-            "gender_idx": 1,
-            "age": 32,
-            "marital_status_idx": 0,
-            "education_idx": 5,
-            "job_status_idx": 2,
-            "housing_status_idx": 1,
-            "insurance_idx": 1,
-            "phone_number": "09221234567",
-            "landline_number": "02199999999",
-            "province": "اصفهان",
-            "city": "اصفهان",
-            "address": "میدان نقش جهان، کوچه نو",
-            "sickness_description": "کمر درد مزمن",
-            "contact1": ("سارا علی‌پور", "09231234567"),
-            "contact2": ("محمد علی‌پور", "09241234567"),
-            "health_assistant_idx": 1,
-        },
-        {
-            "user_key": "patient_patient_hasan",
-            "first_name": "حسن",
-            "last_name": "حسنی",
-            "father_name": "حسین",
-            "national_code": "5555555555",
-            "gender_idx": 0,
-            "age": 68,
-            "marital_status_idx": 1,
-            "education_idx": 3,
-            "job_status_idx": 4,
-            "housing_status_idx": 0,
-            "insurance_idx": 2,
-            "phone_number": "09251234567",
-            "landline_number": "02177777777",
-            "province": "تهران",
-            "city": "تهران",
-            "address": "خیابان جمهوری، نبش آزادی",
-            "sickness_description": "بیماری قلبی و ریوی",
-            "contact1": ("علی حسنی", "09261234567"),
-            "contact2": ("خدیجه حسنی", "09271234567"),
-            "health_assistant_idx": 0,
-        },
-    ]
-
-    for info in patient_info:
-        patient, created = Patient.objects.get_or_create(
-            user=users[info["user_key"]],
-            defaults={
-                "patient_code": f"PAT{users[info['user_key']].id:06d}",
-                "national_code": info["national_code"],
-                "first_name": info["first_name"],
-                "last_name": info["last_name"],
-                "father_name": info["father_name"],
-                "gender": lookups['genders'][info["gender_idx"]],
-                "age": info["age"],
-                "marital_status": lookups['marital_statuses'][info["marital_status_idx"]],
-                "head_household": True,
-                "number_dependents": 2,
-                "family_status": "خانواده کامل",
-                "education": lookups['educations'][info["education_idx"]],
-                "job_status": lookups['job_statuses'][info["job_status_idx"]],
-                "skill": "تعمیر و نگهداری",
-                "housing_status": lookups['housing_statuses'][info["housing_status_idx"]],
-                "covered_organization": lookups['organizations'][0],
-                "phone_number": info["phone_number"],
-                "landline_number": info["landline_number"],
-                "province": info["province"],
-                "city": info["city"],
-                "address": info["address"],
-                "bank_card_number": "6274161234567890",
-                "insurance": lookups['insurances'][info["insurance_idx"]],
-                "sickness_description": info["sickness_description"],
-                "contact1_full_name": info["contact1"][0],
-                "contact1_phone_number": info["contact1"][1],
-                "contact2_full_name": info["contact2"][0],
-                "contact2_phone_number": info["contact2"][1],
-                "introducer": health_assistants[info["health_assistant_idx"]],
-            }
-        )
-        patients.append(patient)
-        if created:
-            print(f"  ✓ Created Patient profile: {info['first_name']} {info['last_name']} (Code: {patient.patient_code})")
-
-    return patients
-
-# ============================================================================
-# 6. CREATE BENEFACTOR PROFILES
-# ============================================================================
-
-def create_benefactors(users, lookups):
-    print("\n💰 Creating benefactor profiles...")
-
-    benefactors = []
-
-    benefactor_info = [
-        {
-            "user_key": "benefactor_benefactor_hassan",
-            "first_name": "حسن",
-            "last_name": "صالحی",
-            "gender_idx": 0,
-            "national_code": "1111111111",
-            "phone_number": "09281234567",
-        },
-        {
-            "user_key": "benefactor_benefactor_maryam",
-            "first_name": "مریم",
-            "last_name": "فرهادی",
-            "gender_idx": 1,
-            "national_code": "2222222222",
-            "phone_number": "09291234567",
-        },
-    ]
-
-    for info in benefactor_info:
-        benefactor, created = Benefactor.objects.get_or_create(
-            user=users[info["user_key"]],
-            defaults={
-                "first_name": info["first_name"],
-                "last_name": info["last_name"],
-                "gender": lookups['genders'][info["gender_idx"]],
-                "national_code": info["national_code"],
-                "phone_number": info["phone_number"],
-            }
-        )
-        benefactors.append(benefactor)
-        if created:
-            print(f"  ✓ Created Benefactor profile: {info['first_name']} {info['last_name']}")
-
-    return benefactors
-
-# ============================================================================
-# 7. CREATE WALLETS
-# ============================================================================
-
-def create_wallets(users, patients):
-    print("\n🏦 Creating wallets...")
-
-    # Create benefactor wallets
-    for user in users.values():
-        if user.role == "benefactor":
-            wallet, created = Wallet.objects.get_or_create(
-                owner_user=user,
-                wallet_type="benefactor",
+        for info in [
+            {
+                "user_key": "patient_patient_reza",
+                "first_name": "رضا",
+                "last_name": "کریمی",
+                "father_name": "کریم",
+                "national_code": "1234567890",
+                "gender_idx": 0,
+                "age": 45,
+                "marital_status_idx": 1,
+                "education_idx": 3,
+                "job_status_idx": 0,
+                "housing_status_idx": 0,
+                "insurance_idx": 0,
+                "phone_number": "09191234567",
+                "landline_number": "02188888888",
+                "province": "تهران",
+                "city": "تهران",
+                "address": "خیابان کریم‌خان زند، پلاک 42",
+                "sickness_description": "دیابت و فشار خون",
+                "contact1": ("احمد کریمی", "09201234567"),
+                "contact2": ("فاطمه کریمی", "09211234567"),
+                "introducer": ha_sara,
+                "admin_approved": True,
+                "ha_approved": True,
+            },
+            {
+                "user_key": "patient_patient_fatima",
+                "first_name": "فاطمه",
+                "last_name": "علی‌پور",
+                "father_name": "علی",
+                "national_code": "1887654321",
+                "gender_idx": 1,
+                "age": 32,
+                "marital_status_idx": 0,
+                "education_idx": 4,
+                "job_status_idx": 0,
+                "housing_status_idx": 1,
+                "insurance_idx": 1,
+                "phone_number": "09221234567",
+                "landline_number": "02199999999",
+                "province": "اصفهان",
+                "city": "اصفهان",
+                "address": "میدان نقش جهان، کوچه نو",
+                "sickness_description": "کمر درد مزمن",
+                "contact1": ("سارا علی‌پور", "09231234567"),
+                "contact2": ("محمد علی‌پور", "09241234567"),
+                "introducer": ha_akbar,
+                "admin_approved": True,
+                "ha_approved": True,
+            },
+            {
+                "user_key": "patient_patient_hasan",
+                "first_name": "حسن",
+                "last_name": "حسنی",
+                "father_name": "حسین",
+                "national_code": "5555555555",
+                "gender_idx": 0,
+                "age": 68,
+                "marital_status_idx": 1,
+                "education_idx": 1,
+                "job_status_idx": 1,
+                "housing_status_idx": 0,
+                "insurance_idx": 0,
+                "phone_number": "09251234567",
+                "landline_number": "02177777777",
+                "province": "تهران",
+                "city": "تهران",
+                "address": "خیابان جمهوری، نبش آزادی",
+                "sickness_description": "بیماری قلبی و ریوی",
+                "contact1": ("علی حسنی", "09261234567"),
+                "contact2": ("خدیجه حسنی", "09271234567"),
+                "introducer": ha_sara,
+                "admin_approved": True,
+                "ha_approved": True,
+            },
+            {
+                "user_key": "patient_patient_pending",
+                "first_name": "امیر",
+                "last_name": "رضایی",
+                "father_name": "رضا",
+                "national_code": "6666666666",
+                "gender_idx": 0,
+                "age": 28,
+                "marital_status_idx": 0,
+                "education_idx": 2,
+                "job_status_idx": 0,
+                "housing_status_idx": 1,
+                "insurance_idx": 5,
+                "phone_number": "09301234567",
+                "landline_number": "",
+                "province": "تهران",
+                "city": "تهران",
+                "address": "خیابان آزادی",
+                "sickness_description": "نیاز به پیگیری درمانی",
+                "contact1": ("رضا رضایی", "09311234567"),
+                "contact2": ("", ""),
+                "introducer": ha_sara,
+                "admin_approved": False,
+                "ha_approved": False,
+            },
+        ]:
+            user = users[info["user_key"]]
+            patient, created = Patient.objects.update_or_create(
+                user=user,
                 defaults={
-                    "cached_balance": 10000000,  # 10 million Rials
-                    "currency": "IRR",
-                    "is_active": True,
-                }
+                    "patient_code": f"PAT{user.id:06d}",
+                    "national_code": info["national_code"],
+                    "first_name": info["first_name"],
+                    "last_name": info["last_name"],
+                    "father_name": info["father_name"],
+                    "gender": lookups["genders"][info["gender_idx"]],
+                    "age": info["age"],
+                    "marital_status": lookups["marital_statuses"][
+                        info["marital_status_idx"]
+                    ],
+                    "head_household": True,
+                    "number_dependents": 2,
+                    "family_status": "خانواده کامل",
+                    "education": lookups["educations"][info["education_idx"]],
+                    "job_status": lookups["job_statuses"][info["job_status_idx"]],
+                    "skill": "تعمیر و نگهداری",
+                    "housing_status": lookups["housing_statuses"][
+                        info["housing_status_idx"]
+                    ],
+                    "covered_organization": lookups["organizations"][0],
+                    "phone_number": info["phone_number"],
+                    "landline_number": info["landline_number"],
+                    "province": info["province"],
+                    "city": info["city"],
+                    "address": info["address"],
+                    "insurance": lookups["insurances"][info["insurance_idx"]],
+                    "sickness_description": info["sickness_description"],
+                    "contact1_full_name": info["contact1"][0],
+                    "contact1_phone_number": info["contact1"][1],
+                    "contact2_full_name": info["contact2"][0],
+                    "contact2_phone_number": info["contact2"][1],
+                    "introducer": info["introducer"],
+                    "admin_approved": info["admin_approved"],
+                    "ha_approved": info["ha_approved"],
+                },
             )
+            patients.append(patient)
+            user.state = info["admin_approved"] and info["ha_approved"]
+            user.save(update_fields=["state"])
             if created:
-                print(f"  ✓ Created Benefactor Wallet for {user.first_name}")
+                print(
+                    f"  ✓ Created Patient: {info['first_name']} {info['last_name']} "
+                    f"({patient.patient_code})"
+                )
 
-    # Create patient escrow wallets
-    for patient in patients:
-        wallet, created = Wallet.objects.get_or_create(
-            owner_patient=patient,
-            wallet_type="patient_escrow",
-            defaults={
-                "cached_balance": 0,
-                "currency": "IRR",
-                "is_active": True,
-            }
+        return patients
+
+    # ============================================================================
+    # 6. BENEFACTOR PROFILES
+    # ============================================================================
+
+    def create_benefactors(users, lookups):
+        print("\n💰 Creating benefactor profiles...")
+
+        benefactors = []
+        for info in [
+            {
+                "user_key": "benefactor_benefactor_hassan",
+                "first_name": "حسن",
+                "last_name": "صالحی",
+                "gender_idx": 0,
+                "national_code": "1111111111",
+                "phone_number": "09281234567",
+            },
+            {
+                "user_key": "benefactor_benefactor_maryam",
+                "first_name": "مریم",
+                "last_name": "فرهادی",
+                "gender_idx": 1,
+                "national_code": "2222222222",
+                "phone_number": "09291234567",
+            },
+        ]:
+            benefactor, created = Benefactor.objects.get_or_create(
+                user=users[info["user_key"]],
+                defaults={
+                    "first_name": info["first_name"],
+                    "last_name": info["last_name"],
+                    "gender": lookups["genders"][info["gender_idx"]],
+                    "national_code": info["national_code"],
+                    "phone_number": info["phone_number"],
+                },
+            )
+            benefactors.append(benefactor)
+            if created:
+                print(f"  ✓ Created Benefactor: {info['first_name']} {info['last_name']}")
+
+        return benefactors
+
+    # ============================================================================
+    # 7. WALLETS
+    # ============================================================================
+
+    def create_wallets(users, patients, doctors, health_assistants):
+        print("\n🏦 Creating wallets...")
+
+        for user in users.values():
+            if user.role == "benefactor":
+                get_or_create_benefactor_wallet(user)
+                print(f"  ✓ Benefactor wallet: {user.first_name}")
+
+        for doctor in doctors:
+            get_or_create_staff_payout_wallet(doctor.user)
+            print(f"  ✓ Staff payout wallet: دکتر {doctor.first_name}")
+
+        for ha in health_assistants:
+            get_or_create_staff_payout_wallet(ha.user)
+            print(f"  ✓ Staff payout wallet: سلامتیار {ha.health_assistance_code}")
+
+        get_or_create_platform_wallet()
+        print("  ✓ Platform wallet")
+
+    def seed_wallet_topups(users):
+        print("\n💳 Seeding benefactor wallet top-ups...")
+
+        for user in users.values():
+            if user.role != "benefactor":
+                continue
+            wallet = get_or_create_benefactor_wallet(user)
+            if WalletTransaction.objects.filter(
+                wallet=wallet, kind="topup", description="Seed top-up"
+            ).exists():
+                continue
+            credit_wallet(
+                wallet,
+                SEED_TOPUP_AMOUNT,
+                kind="topup",
+                description="Seed top-up",
+                created_by=user,
+            )
+            print(f"  ✓ Credited {SEED_TOPUP_AMOUNT:,} IRR → {user.first_name}")
+
+    # ============================================================================
+    # 8. CAMPAIGNS
+    # ============================================================================
+
+    def create_campaigns(users):
+        print("\n📢 Creating campaigns...")
+
+        campaigns = []
+        for data in [
+            {
+                "title": "کمپین سرطان کودکان",
+                "description": "جمع‌آوری کمک برای درمان کودکان مبتلا به سرطان",
+                "target_amount": 500_000_000,
+                "category": "درمانی",
+                "urgency": "فوری",
+                "creator_key": "doctor_dr_ali",
+            },
+            {
+                "title": "کمپین جراحی قلب",
+                "description": "کمک برای انجام جراحی‌های قلب در مناطق محروم",
+                "target_amount": 300_000_000,
+                "category": "جراحی",
+                "urgency": "متوسط",
+                "creator_key": "doctor_dr_zahra",
+            },
+        ]:
+            campaign, created = Campaign.objects.get_or_create(
+                title=data["title"],
+                defaults={
+                    "description": data["description"],
+                    "target_amount": data["target_amount"],
+                    "raised_amount": 0,
+                    "category": data["category"],
+                    "urgency": data["urgency"],
+                    "is_published": True,
+                    "created_by": users[data["creator_key"]],
+                },
+            )
+            campaigns.append(campaign)
+            if created:
+                print(f"  ✓ Campaign: {data['title']}")
+
+        return campaigns
+
+    # ============================================================================
+    # 9. NETWORK REQUESTS (medical workflow + financial + service)
+    # ============================================================================
+
+    def log_status(request, status, note, actor):
+        RequestStatusLog.objects.get_or_create(
+            request=request,
+            status=status,
+            note=note,
+            defaults={"actor": actor},
+        )
+
+    def upsert_request(patient, subject, created_by, **fields):
+        req, created = NetworkRequest.objects.update_or_create(
+            patient=patient,
+            subject=subject,
+            defaults={"created_by": created_by, **fields},
+        )
+        return req, created
+
+    def create_network_requests(users, patients, lookups, doctors, health_assistants):
+        print("\n📋 Creating network requests (medical workflow + financial)...")
+
+        reza, fatima, hasan = patients[0], patients[1], patients[2]
+        dr_ali, dr_zahra = doctors
+        ha_sara, ha_akbar = health_assistants
+        network_requests = []
+
+        # --- Pending medical: patient → doctor inbox ---
+        req, created = upsert_request(
+            reza,
+            "وقت ویزیت تخصص داخلی",
+            users["patient_patient_reza"],
+            request_type="consultation",
+            description="نیاز به ویزیت برای کنترل دیابت و فشار خون دارم.",
+            specialty=lookups["specialties"][1],
+            consultation_mode="حضوری",
+            preferred_date="1404/04/20",
+            preferred_time="10:00",
+            status="pending",
+            handled_by=None,
+            amount_needed=None,
+            collected_amount=0,
         )
         if created:
-            print(f"  ✓ Created Patient Escrow Wallet for {patient.patient_code}")
+            log_status(req, "pending", "درخواست توسط بیمار ثبت شد", users["patient_patient_reza"])
+        network_requests.append(req)
+        print(f"  ✓ Pending medical (patient): {req.subject}")
 
-    # Create platform wallet (if doesn't exist)
-    platform_wallet, created = Wallet.objects.get_or_create(
-        wallet_type="platform",
-        defaults={
-            "cached_balance": 0,
-            "currency": "IRR",
-            "is_active": True,
-        }
-    )
-    if created:
-        print(f"  ✓ Created Platform Wallet")
-
-# ============================================================================
-# 8. CREATE CAMPAIGNS
-# ============================================================================
-
-def create_campaigns(users):
-    print("\n📢 Creating campaigns...")
-
-    campaigns_data = [
-        {
-            "title": "کمپین سرطان کودکان",
-            "description": "جمع‌آوری کمک برای درمان کودکان مبتلا به سرطان",
-            "target_amount": 500000000,
-            "category": "درمانی",
-            "urgency": "فوری",
-            "creator_idx": 0,
-        },
-        {
-            "title": "کمپین سیل جراحی قلب",
-            "description": "کمک برای انجام جراحی‌های قلب درمقالع فقیرنشین",
-            "target_amount": 300000000,
-            "category": "جراحی",
-            "urgency": "متوسط",
-            "creator_idx": 1,
-        },
-    ]
-
-    creators = list(users.values())
-    campaigns = []
-
-    for data in campaigns_data:
-        campaign, created = Campaign.objects.get_or_create(
-            title=data["title"],
-            defaults={
-                "description": data["description"],
-                "target_amount": data["target_amount"],
-                "raised_amount": 0,
-                "category": data["category"],
-                "urgency": data["urgency"],
-                "is_published": True,
-                "created_by": creators[data["creator_idx"]],
-            }
+        # --- Pending medical: HA → doctor inbox ---
+        req, created = upsert_request(
+            hasan,
+            "جراحی عروق کرونر",
+            users["health_assistant_ha_sara"],
+            request_type="consultation",
+            description="بیمار سالمند نیاز به بررسی جراحی قلب دارد.",
+            specialty=lookups["specialties"][1],
+            status="pending",
+            handled_by=None,
         )
-        campaigns.append(campaign)
         if created:
-            print(f"  ✓ Created Campaign: {data['title']}")
+            log_status(req, "pending", "درخواست توسط سلامتیار ثبت شد", users["health_assistant_ha_sara"])
+        network_requests.append(req)
+        print(f"  ✓ Pending medical (HA): {req.subject}")
 
-    return campaigns
-
-# ============================================================================
-# 9. CREATE NETWORK REQUESTS
-# ============================================================================
-
-def create_network_requests(users, patients, lookups):
-    print("\n📋 Creating network requests...")
-
-    request_data = [
-        {
-            "request_type": "consultation",
-            "patient_idx": 0,
-            "created_by_key": "doctor_dr_ali",
-            "subject": "مشاوره درباره مدیریت دیابت",
-            "description": "بیمار نیازمند مشاوره تخصصی برای کنترل بهتر قند خون",
-            "specialty_idx": 0,
-            "consultation_mode": "آنلاین",
-            "preferred_date": "1403/04/15",
-            "preferred_time": "14:00",
-        },
-        {
-            "request_type": "financial",
-            "patient_idx": 1,
-            "created_by_key": "health_assistant_ha_sara",
-            "subject": "درخواست کمک مالی برای آنجیوگرافی",
-            "description": "بیمار برای انجام آنجیوگرافی نیاز به کمک مالی دارد",
-            "amount_needed": 5000000,
-        },
-        {
-            "request_type": "service",
-            "patient_idx": 2,
-            "created_by_key": "benefactor_benefactor_hassan",
-            "subject": "درخواست خدمات پرستاری در منزل",
-            "description": "بیمار سالمند نیاز به خدمات پرستاری منزلی دارد",
-            "needed_service": "پرستاری شبانه‌روزی",
-        },
-    ]
-
-    network_requests = []
-
-    for data in request_data:
-        request, created = NetworkRequest.objects.get_or_create(
-            request_type=data["request_type"],
-            patient=patients[data["patient_idx"]],
-            subject=data["subject"],
-            defaults={
-                "created_by": users[data["created_by_key"]],
-                "description": data["description"],
-                "specialty": lookups['specialties'][data.get("specialty_idx", 0)] if data.get("specialty_idx") is not None else None,
-                "consultation_mode": data.get("consultation_mode", ""),
-                "preferred_date": data.get("preferred_date", ""),
-                "preferred_time": data.get("preferred_time", ""),
-                "needed_service": data.get("needed_service", ""),
-                "amount_needed": data.get("amount_needed"),
-                "status": "pending",
-            }
+        # --- In progress + partial funding: doctor flagged need ---
+        req, created = upsert_request(
+            fatima,
+            "جراحی ستون فقرات",
+            users["patient_patient_fatima"],
+            request_type="consultation",
+            description="درد کمر شدید؛ پزشک نیاز به جراحی را بررسی کرده.",
+            specialty=lookups["specialties"][0],
+            status="in_progress",
+            handled_by=dr_ali.user,
+            fund_recipient=dr_ali.user,
+            amount_needed=Decimal("12_000_000"),
         )
-        network_requests.append(request)
         if created:
-            print(f"  ✓ Created NetworkRequest: {data['subject']}")
+            req.collected_amount = Decimal("0")
+            req.save(update_fields=["collected_amount"])
+        log_status(
+            req,
+            "in_progress",
+            "پزشک نیاز مالی ۱۲٬۰۰۰٬۰۰۰ تومان اعلام کرد — در انتظار حمایت نیکوکاران",
+            dr_ali.user,
+        )
+        network_requests.append(req)
+        print(f"  ✓ In-progress medical + funding: {req.subject}")
 
-    return network_requests
+        # --- Completed medical: doctor scheduled directly ---
+        req, created = upsert_request(
+            reza,
+            "مشاوره تغذیه دیابت",
+            users["patient_patient_reza"],
+            request_type="consultation",
+            description="نیاز به رژیم غذایی تخصصی برای دیابت.",
+            specialty=lookups["specialties"][1],
+            status="completed",
+            handled_by=dr_ali.user,
+            appointment_date="1404/04/10",
+            appointment_time="15:30",
+            appointment_place="کلینیک ولیعصر، طبقه ۳",
+            appointment_phone="02188776655",
+            confirmation_message=(
+                "رضای عزیز، لطفاً ناشتا در ساعت ۱۵:۳۰ به کلینیک مراجعه کنید. "
+                "مدارک آزمایش خون همراه داشته باشید."
+            ),
+        )
+        if created:
+            log_status(req, "pending", "درخواست ثبت شد", users["patient_patient_reza"])
+            log_status(req, "completed", req.confirmation_message, dr_ali.user)
+        network_requests.append(req)
+        print(f"  ✓ Completed medical (scheduled): {req.subject}")
 
-# ============================================================================
-# 10. CREATE DONATIONS
-# ============================================================================
+        # --- Financial request: HA → benefactors ---
+        req, created = upsert_request(
+            fatima,
+            "کمک هزینه آنژیوگرافی",
+            users["health_assistant_ha_akbar"],
+            request_type="financial",
+            description="بیمار برای آنژیوگرافی نیاز به کمک مالی دارد.",
+            amount_needed=Decimal("5_000_000"),
+            fund_recipient=ha_akbar.user,
+            status="in_progress",
+            handled_by=None,
+        )
+        if created:
+            req.collected_amount = Decimal("0")
+            req.save(update_fields=["collected_amount"])
+        if created:
+            log_status(req, "pending", "درخواست مالی ثبت شد", users["health_assistant_ha_akbar"])
+            log_status(req, "in_progress", "در انتظار حمایت نیکوکاران", users["health_assistant_ha_akbar"])
+        network_requests.append(req)
+        print(f"  ✓ Financial (HA): {req.subject}")
 
-def create_donations(users, patients, network_requests, campaigns):
-    print("\n💳 Creating donations...")
+        # --- Service request: patient ---
+        req, created = upsert_request(
+            hasan,
+            "خدمات پرستاری در منزل",
+            users["patient_patient_hasan"],
+            request_type="service",
+            description="بیمار سالمند نیاز به پرستار شبانه دارد.",
+            needed_service="پرستاری شبانه‌روزی",
+            status="pending",
+        )
+        if created:
+            log_status(req, "pending", "درخواست خدمات ثبت شد", users["patient_patient_hasan"])
+        network_requests.append(req)
+        print(f"  ✓ Service (patient): {req.subject}")
 
-    donations_data = [
-        {
-            "benefactor_key": "benefactor_benefactor_hassan",
-            "donation_type": "cash",
-            "amount": 1000000,
-            "destination_type": "patient",
-            "patient_idx": 0,
-            "title": "کمک مالی برای درمان",
-            "description": "کمک به بیمار رضا برای تداوی",
-        },
-        {
-            "benefactor_key": "benefactor_benefactor_maryam",
-            "donation_type": "cash",
-            "amount": 2000000,
-            "destination_type": "campaign",
-            "campaign_idx": 0,
-            "title": "کمک به کمپین سرطان کودکان",
-            "description": "حمایت از درمان کودکان مبتلا به سرطان",
-        },
-        {
-            "benefactor_key": "benefactor_benefactor_hassan",
-            "donation_type": "cash",
-            "amount": 500000,
-            "destination_type": "request",
-            "request_idx": 1,
-            "title": "کمک برای درخواست مالی",
-            "description": "حمایت از درخواست مالی بیمار",
-        },
-    ]
+        return network_requests
 
-    donations = []
+    # ============================================================================
+    # 10. DONATIONS & HOLDS
+    # ============================================================================
 
-    for data in donations_data:
-        donation, created = BenefactorDonation.objects.get_or_create(
-            benefactor=users[data["benefactor_key"]],
-            amount=data["amount"],
-            donation_type=data["donation_type"],
-            created_at=None,  # Will use default
-            defaults={
+    def create_donations(users, campaigns, network_requests):
+        print("\n🤝 Creating donations and pledge holds...")
+
+        campaign_by_title = {c.title: c for c in campaigns}
+        request_by_subject = {r.subject: r for r in network_requests}
+
+        donations_data = [
+            {
+                "benefactor_key": "benefactor_benefactor_hassan",
+                "amount": 1_000_000,
+                "destination_type": "general",
+                "title": "کمک مالی عمومی",
+                "description": "کمک عمومی به صندوق خیریه",
+            },
+            {
+                "benefactor_key": "benefactor_benefactor_maryam",
+                "amount": 2_000_000,
+                "destination_type": "campaign",
+                "campaign_title": "کمپین سرطان کودکان",
+                "title": "کمک به کمپین سرطان کودکان",
+                "description": "حمایت از درمان کودکان مبتلا به سرطان",
+            },
+            {
+                "benefactor_key": "benefactor_benefactor_hassan",
+                "amount": 4_000_000,
+                "destination_type": "request",
+                "request_subject": "جراحی ستون فقرات",
+                "title": "حمایت از جراحی ستون فقرات",
+                "description": "پرداخت بخشی از هزینه جراحی",
+            },
+            {
+                "benefactor_key": "benefactor_benefactor_maryam",
+                "amount": 1_500_000,
+                "destination_type": "request",
+                "request_subject": "کمک هزینه آنژیوگرافی",
+                "title": "حمایت از آنژیوگرافی",
+                "description": "کمک به درخواست مالی بیمار",
+            },
+        ]
+
+        for data in donations_data:
+            benefactor = users[data["benefactor_key"]]
+            title = data["title"]
+            if BenefactorDonation.objects.filter(
+                benefactor=benefactor,
+                title=title,
+                destination_type=data["destination_type"],
+            ).exists():
+                print(f"  ↷ Donation already exists: {title}")
+                continue
+
+            kwargs = {
+                "benefactor_user": benefactor,
+                "amount": data["amount"],
                 "destination_type": data["destination_type"],
-                "patient": patients[data["patient_idx"]] if data["destination_type"] == "patient" else None,
-                "campaign_fk": campaigns[data.get("campaign_idx", 0)] if data["destination_type"] == "campaign" else None,
-                "network_request": network_requests[data.get("request_idx", 0)] if data["destination_type"] == "request" else None,
-                "payment_source": "wallet",
-                "status": "completed",
-                "title": data.get("title", ""),
+                "title": title,
                 "description": data.get("description", ""),
             }
+            if data["destination_type"] == "campaign":
+                kwargs["campaign_id"] = campaign_by_title[data["campaign_title"]].pk
+            elif data["destination_type"] == "request":
+                kwargs["network_request_id"] = request_by_subject[
+                    data["request_subject"]
+                ].pk
+
+            try:
+                donate_from_wallet(**kwargs)
+                print(f"  ✓ Donation: {title} ({data['amount']:,} IRR)")
+            except DonationError as exc:
+                print(f"  ⚠ Skipped '{title}': {exc}")
+
+    def complete_funded_request(users):
+        """Demonstrate partial funding state (full close optional in app)."""
+        print("\n✅ Checking funded requests...")
+
+        req = NetworkRequest.objects.filter(subject="کمک هزینه آنژیوگرافی").first()
+        if not req:
+            return
+
+        needed = req.amount_needed or Decimal("0")
+        collected = req.collected_amount or Decimal("0")
+        print(
+            f"  • آنژیوگرافی: {collected:,} / {needed:,} IRR pledged "
+            f"({'partial' if collected < needed else 'fully funded'})"
         )
-        donations.append(donation)
-        if created:
-            print(f"  ✓ Created Donation: {data.get('title', 'Donation')}")
 
-# ============================================================================
-# 11. CREATE WALLET TRANSACTIONS
-# ============================================================================
-
-def create_wallet_transactions(users, patients):
-    print("\n💰 Creating wallet transactions...")
-
-    # Get benefactor wallets and patient wallets
-    benefactor_users = [user for user in users.values() if user.role == "benefactor"]
-
-    for benefactor in benefactor_users:
-        wallet = Wallet.objects.filter(owner_user=benefactor, wallet_type="benefactor").first()
-        if wallet:
-            # Create top-up transaction
-            transaction, created = WalletTransaction.objects.get_or_create(
-                wallet=wallet,
-                kind="topup",
-                amount=5000000,
-                entry_type="credit",
-                defaults={
-                    "description": "شارژ کیف پول",
-                    "created_by": benefactor,
-                }
+        spine = NetworkRequest.objects.filter(subject="جراحی ستون فقرات").first()
+        if spine:
+            print(
+                f"  • جراحی ستون فقرات: {spine.collected_amount or 0:,} / "
+                f"{spine.amount_needed or 0:,} IRR (doctor can confirm at partial funding)"
             )
-            if created:
-                print(f"  ✓ Created Top-up transaction for {benefactor.first_name}")
 
-# ============================================================================
-# MAIN EXECUTION
-# ============================================================================
+    # ============================================================================
+    # MAIN
+    # ============================================================================
 
-print("\n" + "="*70)
-print("🚀 DATABASE POPULATION SCRIPT")
-print("="*70)
+    print("\n" + "=" * 70)
+    print("🚀 DATABASE POPULATION SCRIPT")
+    print("=" * 70)
 
-try:
-    # Create lookup data
-    lookups = create_lookups()
+    try:
+        lookups = create_lookups()
+        users = create_users()
+        doctors = create_doctors(users, lookups)
+        health_assistants = create_health_assistants(users, lookups)
+        link_doctors_to_health_assistants(doctors, health_assistants)
+        patients = create_patients(users, lookups, health_assistants)
+        create_benefactors(users, lookups)
+        create_wallets(users, patients, doctors, health_assistants)
+        campaigns = create_campaigns(users)
+        network_requests = create_network_requests(
+            users, patients, lookups, doctors, health_assistants
+        )
+        seed_wallet_topups(users)
+        create_donations(users, campaigns, network_requests)
+        complete_funded_request(users)
 
-    # Create users
-    users = create_users()
+        holds = DonationHold.objects.filter(status="held").count()
+        payout_total = sum(
+            int(w.cached_balance)
+            for w in Wallet.objects.filter(wallet_type="staff_payout")
+        )
 
-    # Create profiles
-    doctors = create_doctors(users, lookups)
-    health_assistants = create_health_assistants(users, lookups)
-    patients = create_patients(users, lookups, health_assistants)
-    benefactors = create_benefactors(users, lookups)
+        print("\n" + "=" * 70)
+        print("✅ DATABASE POPULATION COMPLETED SUCCESSFULLY!")
+        print("=" * 70)
+        print("\n📊 Summary:")
+        print(f"  • Users: {CustomUser.objects.exclude(role='admin').count()}")
+        print(f"  • Doctors: {Doctor.objects.count()}")
+        print(f"  • Patients: {Patient.objects.count()} (1 pending dual approval)")
+        print(f"  • Benefactors: {Benefactor.objects.count()}")
+        print(f"  • Health Assistants: {HealthAssistant.objects.count()}")
+        for ha in health_assistants:
+            print(f"      → {ha.health_assistance_code}")
+        print(f"  • Wallets: {Wallet.objects.count()}")
+        print(f"  • Active donation holds: {holds}")
+        print(f"  • Staff payout balance (total): {payout_total:,} IRR")
+        print(f"  • Network requests: {NetworkRequest.objects.count()}")
+        print(f"  • Donations: {BenefactorDonation.objects.count()}")
+        print("\n🧪 Test scenarios seeded:")
+        print("  • Doctor علی: incoming requests from سلامتیار سارا patients")
+        print("  • Doctor زهرا: incoming from سلامتیار اکبر patients")
+        print("  • Partial funding on «جراحی ستون فقرات» (doctor flagged)")
+        print("  • Completed schedule on «مشاوره تغذیه دیابت»")
+        print("  • Patient امیر رضایی: pending admin + HA approval (HA code signup)")
+        print(f"\n🔑 Password (all seed users): {DEFAULT_PASSWORD}")
+        print(f"🔑 Admin phone: {ADMIN_PHONE}")
 
-    # Create financial structures
-    create_wallets(users, patients)
-    campaigns = create_campaigns(users)
+    except Exception as exc:
+        print(f"\n❌ ERROR: {exc}")
+        import traceback
 
-    # Create requests
-    network_requests = create_network_requests(users, patients, lookups)
+        traceback.print_exc()
+        raise SystemExit(1) from exc
 
-    # Create donations
-    create_donations(users, patients, network_requests, campaigns)
 
-    # Create transactions
-    create_wallet_transactions(users, patients)
+if __name__ == "__main__":
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    _bootstrap_django()
 
-    print("\n" + "="*70)
-    print("✅ DATABASE POPULATION COMPLETED SUCCESSFULLY!")
-    print("="*70)
-    print("\n📊 Summary:")
-    print(f"  • Users created: {CustomUser.objects.filter(role__in=['doctor', 'patient', 'benefactor', 'health_assistant']).count()}")
-    print(f"  • Doctors: {Doctor.objects.count()}")
-    print(f"  • Patients: {Patient.objects.count()}")
-    print(f"  • Benefactors: {Benefactor.objects.count()}")
-    print(f"  • Health Assistants: {HealthAssistant.objects.count()}")
-    print(f"  • Wallets: {Wallet.objects.count()}")
-    print(f"  • Campaigns: {Campaign.objects.count()}")
-    print(f"  • Network Requests: {NetworkRequest.objects.count()}")
-    print(f"  • Donations: {BenefactorDonation.objects.count()}")
-    print(f"  • Transactions: {WalletTransaction.objects.count()}")
-    print("\n✨ All data is ready for testing!")
-
-except Exception as e:
-    print(f"\n❌ ERROR: {str(e)}")
-    import traceback
-    traceback.print_exc()
+main()
