@@ -1,17 +1,37 @@
+import re
+
 from django.apps import apps
+
+_PERSIAN_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹", "0123456789")
+
+
+def normalize_phone(phone):
+    """Normalize mobile to 09xxxxxxxxx for login identity."""
+    if phone is None:
+        return ""
+    value = str(phone).strip().translate(_PERSIAN_DIGITS).replace(" ", "")
+    return value
+
+
+def _parse_patient_code_number(patient_code):
+    if not patient_code:
+        return None
+    match = re.search(r"(\d+)$", patient_code)
+    if match:
+        return int(match.group(1))
+    return None
 
 
 def generate_patient_code():
     Patient = apps.get_model("api", "Patient")
-    last = Patient.objects.order_by("id").last()
 
-    if not last:
-        return "P00001"
+    max_num = 0
+    for code in Patient.objects.values_list("patient_code", flat=True):
+        num = _parse_patient_code_number(code)
+        if num is not None and num > max_num:
+            max_num = num
 
-    last_code = int(last.patient_code.replace("P", ""))
-    new_code = last_code + 1
-
-    return f"P{new_code:05d}"
+    return f"PAT{max_num + 1:06d}"
 
 
 def generate_health_assistance_code():

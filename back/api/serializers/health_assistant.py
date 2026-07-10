@@ -14,7 +14,7 @@ from ..models import (
     OrganizationType,
 )
 
-from ..utils import generate_health_assistance_code
+from ..utils import generate_health_assistance_code, normalize_phone
 from .lookup_utils import resolve_lookup
 from .user import UserSerializer
 
@@ -32,14 +32,14 @@ def flatten_signup_payload(data: dict) -> dict:
                 out.update(value)
 
     for key, value in data.items():
-        if key in ("username", "password", "role", "draft", "profile_type"):
+        if key in ("password", "role", "draft", "profile_type"):
             continue
         if isinstance(value, dict) and key not in ("refLetterFile",):
             out.update(value)
         elif key not in ("draft",):
             out[key] = value
 
-    return {**out, **{k: v for k, v in data.items() if k in ("username", "password", "profile_type")}}
+    return {**out, **{k: v for k, v in data.items() if k in ("password", "profile_type")}}
 
 
 class IndividualHealthAssistantSerializer(serializers.ModelSerializer):
@@ -66,7 +66,6 @@ class HealthAssistantSerializer(serializers.ModelSerializer):
 
 
 class HealthAssistantSignupSerializer(serializers.Serializer):
-    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
     profile_type = serializers.ChoiceField(
         choices=("individual", "organization"),
@@ -110,11 +109,15 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
     def to_internal_value(self, data):
         return super().to_internal_value(flatten_signup_payload(data))
 
-    def validate_username(self, value):
-        if CustomUser.objects.filter(username=value).exists():
-            raise serializers.ValidationError(msg.USERNAME_TAKEN)
-
-        return value
+    def _ensure_login_phone_available(self, phone):
+        phone = normalize_phone(phone)
+        if not phone:
+            raise serializers.ValidationError({"phone_number": msg.PHONE_NUMBER_REQUIRED})
+        if not phone.startswith("09") or len(phone) != 11 or not phone.isdigit():
+            raise serializers.ValidationError({"phone_number": msg.INVALID_MOBILE_PHONE})
+        if CustomUser.objects.filter(username=phone).exists():
+            raise serializers.ValidationError({"phone_number": msg.PHONE_ALREADY_REGISTERED})
+        return phone
 
     def validate(self, attrs):
         profile_type = attrs.get("profile_type") or "individual"
@@ -145,7 +148,8 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
             if not phone:
                 raise serializers.ValidationError({"phone_number": msg.PHONE_NUMBER_REQUIRED})
 
-            attrs["phone_number"] = phone
+            attrs["phone_number"] = self._ensure_login_phone_available(phone)
+            attrs["login_phone"] = attrs["phone_number"]
             gender_raw = attrs.get("gender")
 
             if gender_raw is None:
@@ -156,8 +160,17 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
                 Education,
                 attrs.get("education"),
                 field_name="education",
-                required=False,
+                required=True,
             )
+
+            for field in ("job", "province", "city"):
+                if not (attrs.get(field) or "").strip():
+                    raise serializers.ValidationError({field: msg.FIELD_REQUIRED})
+
+            town = (attrs.get("town") or "").strip()
+            address = (attrs.get("address") or "").strip()
+            if not address and not town:
+                raise serializers.ValidationError({"address": msg.FIELD_REQUIRED})
 
         else:
             org_name = (attrs.get("org_name") or attrs.get("legalName") or "").strip()
@@ -165,6 +178,15 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
                 raise serializers.ValidationError({"org_name": msg.ORG_NAME_REQUIRED})
 
             attrs["org_name"] = org_name
+            director_phone = (
+                attrs.get("director_phone_number") or ""
+            ).strip()
+            if not director_phone:
+                raise serializers.ValidationError(
+                    {"director_phone_number": msg.PHONE_NUMBER_REQUIRED}
+                )
+            attrs["director_phone_number"] = self._ensure_login_phone_available(director_phone)
+            attrs["login_phone"] = attrs["director_phone_number"]
             org_type_raw = attrs.get("organization_type") or attrs.get("legalType")
             attrs["organization_type"] = resolve_lookup(
                 OrganizationType,
@@ -173,22 +195,48 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
                 required=False,
             )
 
+            for field in ("province", "city", "address"):
+                if not (attrs.get(field) or "").strip():
+                    raise serializers.ValidationError({field: msg.FIELD_REQUIRED})
+
+            for field in (
+                "social_unit_head_first_name",
+                "social_unit_head_last_name",
+                "social_unit_head_phone_number",
+            ):
+                if not (attrs.get(field) or "").strip():
+                    raise serializers.ValidationError({field: msg.FIELD_REQUIRED})
+
+            head_phone = (attrs.get("social_unit_head_phone_number") or "").strip()
+            if head_phone and (
+                not head_phone.startswith("09")
+                or len(head_phone) != 11
+                or not head_phone.isdigit()
+            ):
+                raise serializers.ValidationError(
+                    {"social_unit_head_phone_number": msg.INVALID_MOBILE_PHONE}
+                )
+
         coop_raw = attrs.get("cooperation_type") or attrs.get("collaborationType")
 
         attrs["cooperation_type"] = resolve_lookup(
             HealthAssistantCooperationType,
             coop_raw,
             field_name="cooperation_type",
-            required=False,
+            required=True,
         )
+
+        if not attrs.get("cooperation_type"):
+            raise serializers.ValidationError({"cooperation_type": msg.FIELD_REQUIRED})
 
         attrs["cooperation_description"] = (attrs.get("cooperation_description") or attrs.get("explanation") or "")[
                                            :2000]
         return attrs
 
     def create(self, validated):
+        login_phone = validated["login_phone"]
         user = CustomUser.objects.create_user(
-            username=validated["username"],
+            username=login_phone,
             password=validated["password"],
             role="health_assistant",
         )

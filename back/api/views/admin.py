@@ -1,7 +1,10 @@
 from django.db.models import Q
+from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from ..admin_user_filters import filter_admin_users, user_profile_phone
 
 from .. import messages as msg
 from ..models import (
@@ -94,27 +97,64 @@ class AdminUsersView(APIView):
     permission_classes = [IsPlatformAdmin]
 
     def get(self, request):
-        qs = CustomUser.objects.all().order_by("-date_joined")
-        role = request.query_params.get("role")
-        state = request.query_params.get("state")
-        search = request.query_params.get("search", "").strip()
-
-        if role:
-            qs = qs.filter(role=role)
-        if state == "pending":
-            qs = qs.filter(state=False)
-        elif state == "approved":
-            qs = qs.filter(state=True)
-        if search:
-            qs = qs.filter(
-                Q(username__icontains=search)
-                | Q(email__icontains=search)
-                | Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
-            )
-
+        qs = filter_admin_users(request)
         data = AdminUserListSerializer(qs, many=True).data
         return Response(data)
+
+
+class AdminUsersExportView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    ROLE_LABELS = {
+        "patient": "بیمار",
+        "doctor": "پزشک",
+        "health_assistant": "سلامتیار",
+        "benefactor": "خیر",
+        "admin": "مدیر",
+    }
+
+    def get(self, request):
+        fmt = (request.query_params.get("export_as") or "csv").lower()
+        qs = filter_admin_users(request)
+        rows = AdminUserListSerializer(qs, many=True).data
+
+        if fmt == "pdf":
+            return self._pdf_response(rows)
+        return self._csv_response(rows)
+
+    def _csv_response(self, rows):
+        import csv
+        from io import StringIO
+
+        buffer = StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(
+            ["id", "display_name", "phone", "role", "state", "is_active", "date_joined"]
+        )
+        for row in rows:
+            writer.writerow(
+                [
+                    row.get("id"),
+                    row.get("display_name") or "",
+                    row.get("phone") or row.get("username") or "",
+                    self.ROLE_LABELS.get(row.get("role"), row.get("role")),
+                    "approved" if row.get("state") else "pending",
+                    "active" if row.get("is_active") is not False else "inactive",
+                    row.get("date_joined") or "",
+                ]
+            )
+
+        response = HttpResponse("\ufeff" + buffer.getvalue(), content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="users.csv"'
+        return response
+
+    def _pdf_response(self, rows):
+        from ..pdf_export import build_users_pdf
+
+        pdf_bytes = build_users_pdf(rows, role_labels=self.ROLE_LABELS)
+        response = HttpResponse(pdf_bytes, content_type="application/pdf")
+        response["Content-Disposition"] = 'attachment; filename="users.pdf"'
+        return response
 
 
 class AdminUserDetailView(APIView):
@@ -256,6 +296,7 @@ class AdminRequestsView(APIView):
     def get(self, request):
         scope = request.query_params.get("scope", "all")
         request_type = request.query_params.get("request_type")
+        search = request.query_params.get("search", "").strip()
         qs = NetworkRequest.objects.all().order_by("-created_at")
 
         if request_type:
@@ -266,6 +307,15 @@ class AdminRequestsView(APIView):
             qs = qs.filter(status="completed")
         elif scope == "rejected":
             qs = qs.filter(status="rejected")
+        if search:
+            qs = qs.filter(
+                Q(subject__icontains=search)
+                | Q(description__icontains=search)
+                | Q(patient__first_name__icontains=search)
+                | Q(patient__last_name__icontains=search)
+                | Q(patient__phone_number__icontains=search)
+                | Q(patient__patient_code__icontains=search)
+            ).distinct()
 
         return Response(NetworkRequestSerializer(qs, many=True).data)
 

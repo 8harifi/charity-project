@@ -2,7 +2,9 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .. import messages as msg
-from ..models import Benefactor, CustomUser, Doctor, HealthAssistant, Patient
+from ..models import AdminProfile, Benefactor, CustomUser, Doctor, HealthAssistant, Patient
+from ..utils import normalize_phone
+from .admin_profile import AdminProfileSerializer
 from .benefactor import BenefactorSerializer
 from .doctor import DoctorSerializer
 from .health_assistant import HealthAssistantSerializer
@@ -28,7 +30,10 @@ class ProfileSerializer(serializers.ModelSerializer):
         role = obj.role
 
         if role == "admin":
-            return None
+            try:
+                return AdminProfileSerializer(obj.admin_profile).data
+            except AdminProfile.DoesNotExist:
+                return None
 
         if role == "patient":
             try:
@@ -69,6 +74,9 @@ class CustomTokenSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        username = normalize_phone(attrs.get("username", ""))
+        if username:
+            attrs["username"] = username
         data = super().validate(attrs)
 
         user = self.user

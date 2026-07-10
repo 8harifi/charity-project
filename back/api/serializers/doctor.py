@@ -6,8 +6,10 @@ from .lookup_utils import resolve_lookup
 from .user import UserSerializer
 
 
+from ..utils import normalize_phone
+
+
 class DoctorSignupSerializer(serializers.Serializer):
-    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     first_name = serializers.CharField()
@@ -31,10 +33,15 @@ class DoctorSignupSerializer(serializers.Serializer):
         default=list,
     )
 
-    def validate_username(self, value):
-        if CustomUser.objects.filter(username=value).exists():
-            raise serializers.ValidationError(msg.USERNAME_TAKEN)
-        return value
+    def validate_phone_number(self, value):
+        phone = normalize_phone(value)
+        if not phone:
+            raise serializers.ValidationError(msg.PHONE_NUMBER_REQUIRED)
+        if not phone.startswith("09") or len(phone) != 11 or not phone.isdigit():
+            raise serializers.ValidationError(msg.INVALID_MOBILE_PHONE)
+        if CustomUser.objects.filter(username=phone).exists():
+            raise serializers.ValidationError(msg.PHONE_ALREADY_REGISTERED)
+        return phone
 
     def validate_cooperating_health_assistants(self, value):
         if not value:
@@ -57,7 +64,7 @@ class DoctorSignupSerializer(serializers.Serializer):
         assistant_ids = validated.pop("cooperating_health_assistants", [])
 
         user = CustomUser.objects.create_user(
-            username=validated["username"],
+            username=validated["phone_number"],
             password=validated["password"],
             role="doctor",
         )

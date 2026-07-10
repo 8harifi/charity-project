@@ -6,8 +6,10 @@ from .lookup_utils import resolve_lookup
 from .user import UserSerializer
 
 
+from ..utils import normalize_phone
+
+
 class BenefactorSignupSerializer(serializers.Serializer):
-    username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
     first_name = serializers.CharField()
@@ -16,22 +18,19 @@ class BenefactorSignupSerializer(serializers.Serializer):
     national_code = serializers.CharField(max_length=10)
     phone_number = serializers.CharField(max_length=11)
 
-    def validate_username(self, value):
-        if CustomUser.objects.filter(username=value).exists():
-            raise serializers.ValidationError(msg.USERNAME_TAKEN)
-        return value
+    def validate_phone_number(self, value):
+        phone = normalize_phone(value)
+        if not phone:
+            raise serializers.ValidationError(msg.PHONE_NUMBER_REQUIRED)
+        if not phone.startswith("09") or len(phone) != 11 or not phone.isdigit():
+            raise serializers.ValidationError(msg.INVALID_MOBILE_PHONE)
+        if CustomUser.objects.filter(username=phone).exists():
+            raise serializers.ValidationError(msg.PHONE_ALREADY_REGISTERED)
+        return phone
 
     def validate_national_code(self, value):
         if Benefactor.objects.filter(national_code=value).exists():
             raise serializers.ValidationError(msg.NATIONAL_CODE_EXISTS_BENEFACTOR)
-        return value
-
-    def validate_phone_number(self, value):
-        value = (value or "").strip()
-        if not value:
-            raise serializers.ValidationError(msg.PHONE_NUMBER_REQUIRED)
-        if not value.startswith("09") or len(value) != 11 or not value.isdigit():
-            raise serializers.ValidationError(msg.INVALID_MOBILE_PHONE)
         return value
 
     def validate(self, attrs):
@@ -40,7 +39,7 @@ class BenefactorSignupSerializer(serializers.Serializer):
 
     def create(self, validated):
         user = CustomUser.objects.create_user(
-            username=validated["username"],
+            username=validated["phone_number"],
             password=validated["password"],
             role="benefactor",
         )

@@ -19,7 +19,6 @@ class PatientProfileUpdateSerializer(serializers.ModelSerializer):
             "province",
             "city",
             "address",
-            "bank_card_number",
             "sickness_description",
             "contact1_full_name",
             "contact1_phone_number",
