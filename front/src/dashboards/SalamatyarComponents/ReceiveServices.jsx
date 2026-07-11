@@ -2,8 +2,8 @@ import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import RenderDropdown from "../../pages/Auth/components/DropDown";
 import SearchBox from "../Components/SearchBox";
+import PersianDateInput from "../../components/PersianDateInput";
 import {
-  CalendarDays,
   User,
   Phone,
   Stethoscope,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 const initialForm = {
-  requestDate: new Date().toISOString().slice(0, 10),
+  requestDate: "",
   patientQuery: "",
   patientId: "",
   firstName: "",
@@ -207,17 +207,10 @@ const validateForm = () => {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="mt-7">
                 <label className={labelClass}>تاریخ ثبت درخواست</label>
-                <div className="relative">
-                  <CalendarDays className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-blue-500" />
-                  <input
-                    type="date"
-                    className={`${inputClass} pr-12`}
-                    value={form.requestDate}
-                    onChange={(e) =>
-                      handleChange("requestDate", e.target.value)
-                    }
-                  />
-                </div>
+                <PersianDateInput
+                  value={form.requestDate}
+                  onChange={(v) => handleChange("requestDate", v)}
+                />
               </div>
 
               {/* انتخاب بیمار */}

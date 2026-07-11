@@ -7,6 +7,12 @@ export const adminService = {
   listUsers(params = {}) {
     return apiClient.get("/admin/users/", { params });
   },
+  exportUsers(params = {}, format = "csv") {
+    return apiClient.get("/admin/users/export/", {
+      params: { ...params, export_as: format },
+      responseType: "blob",
+    });
+  },
   getUser(userId) {
     return apiClient.get(`/admin/users/${userId}/`);
   },
@@ -68,8 +74,8 @@ export const ROLE_LABELS = {
 export const ROLE_DASHBOARD_HINTS = {
   patient: "پیشخوان، ثبت درخواست، درخواست‌های من، پروفایل",
   doctor: "پیشخوان، درخواست‌های ورودی، پرونده‌های من، پروفایل",
-  health_assistant: "پیشخوان، معرفی بیمار، بیماران من، درخواست‌ها، پروفایل",
-  benefactor: "پیشخوان، درخواست‌های مالی، پرونده‌های حمایت، ثبت کمک، کمک‌های من",
+  health_assistant: "پیشخوان، بیماران من، درخواست‌ها، پروفایل",
+  benefactor: "پیشخوان، کیف پول، درخواست‌های حمایت مالی، حمایت‌های من",
 };
 
 export function fkId(value) {

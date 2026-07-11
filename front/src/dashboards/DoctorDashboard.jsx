@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { LayoutDashboard, Users, FolderOpen, User } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, User, CheckCircle2 } from "lucide-react";
 import DashboardShell from "./Components/DashboardShell";
 import DashboardOverview from "./Components/DashboardOverview";
-import RequestListPanel from "./Components/RequestListPanel";
+import DoctorRequestPanel from "./Components/DoctorRequestPanel";
 import { ProfileTabContent } from "./Components/ProfileEditModal";
 import { doctorService } from "../Services/doctorDashboardService";
 import { dashboardService, requestService } from "../Services/dashboardApi";
@@ -26,8 +26,8 @@ const DoctorDashboard = () => {
   const headerStats = useMemo(() => {
     if (!stats) return [];
     return [
-      { label: "درخواست جدید", value: stats.new_in_specialty ?? 0 },
-      { label: "پرونده فعال", value: stats.active_cases ?? 0 },
+      { label: "درخواست جدید", value: stats.new_requests ?? stats.new_in_specialty ?? 0 },
+      { label: "در جریان", value: stats.active_cases ?? 0 },
       { label: "تکمیل‌شده", value: stats.completed ?? 0 },
     ];
   }, [stats]);
@@ -35,16 +35,22 @@ const DoctorDashboard = () => {
   const overviewCards = useMemo(() => {
     if (!stats) return [];
     return [
-      { label: "بیماران نیازمند (جدید)", value: stats.new_in_specialty ?? 0 },
-      { label: "پرونده‌های فعال", value: stats.active_cases ?? 0 },
-      { label: "مشاوره‌های تکمیل‌شده", value: stats.completed ?? 0 },
+      {
+        label: "درخواست‌های جدید بیماران",
+        value: stats.new_requests ?? stats.new_in_specialty ?? 0,
+        icon: Users,
+      },
+      { label: "درخواست‌های در جریان", value: stats.active_cases ?? 0, icon: ClipboardList },
+      { label: "تکمیل‌شده", value: stats.completed ?? 0, icon: CheckCircle2 },
     ];
   }, [stats]);
 
+  const overviewChart = useMemo(() => stats?.status_breakdown ?? [], [stats]);
+
   const tabs = [
     { id: "overview", label: "پیشخوان", icon: LayoutDashboard },
-    { id: "incoming", label: "بیماران نیازمند", icon: Users },
-    { id: "myCases", label: "پرونده‌های من", icon: FolderOpen },
+    { id: "incoming", label: "درخواست‌های بیماران", icon: Users },
+    { id: "myActive", label: "درخواست‌های من", icon: ClipboardList },
     { id: "profile", label: "پروفایل", icon: User },
   ];
 
@@ -65,20 +71,26 @@ const DoctorDashboard = () => {
       onTabChange={setActiveTab}
       approvalPending={profile.state === false}
     >
-      {activeTab === "overview" && <DashboardOverview cards={overviewCards} />}
-      {activeTab === "incoming" && (
-        <RequestListPanel
-          title="بیماران نیازمند"
-          fetchFn={() => requestService.doctorIncoming()}
-          mode="incoming"
-          showFilters={false}
+      {activeTab === "overview" && (
+        <DashboardOverview
+          cards={overviewCards}
+          chart={overviewChart}
+          chartTitle="وضعیت درخواست‌های من"
         />
       )}
-      {activeTab === "myCases" && (
-        <RequestListPanel
-          title="پرونده‌های من"
+      {activeTab === "incoming" && (
+        <DoctorRequestPanel
+          title="درخواست‌های بیماران"
+          fetchFn={() => requestService.doctorIncoming()}
+          mode="incoming"
+        />
+      )}
+      {activeTab === "myActive" && (
+        <DoctorRequestPanel
+          title="درخواست‌های من"
           fetchFn={(scope) => requestService.doctorMyCases(scope)}
-          mode="cases"
+          mode="active"
+          showFilters
         />
       )}
       {activeTab === "profile" && (

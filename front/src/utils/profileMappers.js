@@ -28,6 +28,7 @@ export function mapPatientProfile(response) {
   const u = response.data ?? response;
   const p = u.profile || {};
   return {
+    patientId: p.id,
     username: u.username || "",
     name: fullName(p.first_name, p.last_name, u.username),
     firstName: p.first_name || "",
@@ -53,7 +54,6 @@ export function mapPatientProfile(response) {
     province: p.province || "",
     city: p.city || "",
     address: p.address || "",
-    bankCardNumber: p.bank_card_number || "",
     insuranceType: lookupLabel(p.insurance),
     illness: p.sickness_description || "",
     contact1Name: p.contact1_full_name || "",
@@ -204,7 +204,6 @@ export function patientProfileFields(p) {
     { label: "استان", value: p.province },
     { label: "شهر", value: p.city },
     { label: "آدرس", value: p.address, fullWidth: true },
-    { label: "شماره کارت بانکی", value: p.bankCardNumber },
     { label: "نوع بیمه", value: p.insuranceType },
     { label: "شرح حال بیماری", value: p.illness, fullWidth: true },
     { label: "نام آشنای اول", value: p.contact1Name },
