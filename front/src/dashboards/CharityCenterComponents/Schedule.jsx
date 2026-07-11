@@ -8,6 +8,7 @@ import {
 
 import RenderDropdown from "../../pages/Auth/components/DropDown";
 import SearchBox from "../Components/SearchBox";
+import PersianDateInput from "../../components/PersianDateInput";
 
 export default function ReferralAppointmentCard() {
   const [patientName, setPatientName] = useState("");
@@ -15,6 +16,7 @@ export default function ReferralAppointmentCard() {
 
   const [specialty, setSpecialty] = useState("");
   const [doctor, setDoctor] = useState("");
+  const [appointmentDate, setAppointmentDate] = useState("");
 
   const specialties = ["قلب", "داخلی", "روانشناسی", "ارتوپدی"];
 
@@ -119,9 +121,10 @@ export default function ReferralAppointmentCard() {
               تاریخ نوبت
             </label>
 
-            <input
-              type="date"
-              className="w-full p-4 rounded-2xl border border-blue-200 bg-blue-50/50 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            <PersianDateInput
+              value={appointmentDate}
+              onChange={setAppointmentDate}
+              className="!bg-blue-50/50 !border-blue-200 !rounded-2xl !p-4"
             />
           </div>
         </div>
