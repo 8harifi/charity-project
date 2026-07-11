@@ -37,3 +37,6 @@ tzdata==2026.1
 uritemplate==4.2.0
 wcwidth==0.6.0
 gunicorn
+reportlab==4.4.1
+arabic-reshaper==3.0.0
+python-bidi==0.6.6
