@@ -22,10 +22,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-h*5q)91l7h-w2r=lm&qeg09r=dyks=a1hg3rzde2wnx=-wv813'
+SECRET_KEY = os.getenv(
+    "SECRET_KEY",
+    "django-insecure-h*5q)91l7h-w2r=lm&qeg09r=dyks=a1hg3rzde2wnx=-wv813",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG", "true").lower() in ("1", "true", "yes")
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "*"]
 
@@ -126,11 +129,27 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+# Liara: mount disk "database" → database/ (see liara.json). SQLite must live on
+# that disk — the app filesystem is read-only for writes.
+
+_db_path = os.getenv("DATABASE_PATH")
+if _db_path:
+    SQLITE_DB_PATH = Path(_db_path)
+elif (BASE_DIR / "database").is_dir():
+    # Mounted Liara disk (or local database/ folder)
+    SQLITE_DB_PATH = BASE_DIR / "database" / "db.sqlite3"
+else:
+    SQLITE_DB_PATH = BASE_DIR / "db.sqlite3"
+
+SQLITE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': SQLITE_DB_PATH,
+        'OPTIONS': {
+            'timeout': 30,
+        },
     }
 }
 

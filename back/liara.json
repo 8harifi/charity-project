@@ -1,10 +1,18 @@
 {
-  "platform": "python",
+  "app": "charity-center",
+  "platform": "django",
+  "port": 8000,
   "build": {
+    "location": "iran",
     "commands": [
       "pip install -r requirements.txt",
-      "python manage.py collectstatic --noinput",
-      "python manage.py migrate"
+      "python manage.py collectstatic --noinput"
     ]
-  }
+  },
+  "disks": [
+    {
+      "name": "database",
+      "mountTo": "database"
+    }
+  ]
 }
