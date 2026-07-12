@@ -3,15 +3,19 @@ from unittest.mock import patch
 
 from django.test import TestCase, TransactionTestCase
 
-from api.models import Benefactor, Campaign, CustomUser, GatewayPayment, Patient, Wallet
-from api.services.donation_service import DonationError, donate_from_wallet
+from api.models import Benefactor, Campaign, CustomUser, DonationHold, GatewayPayment, NetworkRequest, Patient, Wallet
+from api.services.donation_service import DonationError, donate_from_wallet, close_financial_request
 from api.services.topup_service import TopUpError, mock_instant_topup, verify_and_credit_topup
 from api.services.wallet_service import (
+    DonationHoldError,
     InsufficientBalanceError,
     credit_wallet,
     debit_wallet,
     get_or_create_benefactor_wallet,
     get_or_create_patient_escrow_wallet,
+    hold_amount,
+    refund_hold,
+    release_hold,
     transfer_between_wallets,
 )
 
@@ -109,15 +113,40 @@ class DonationServiceTests(TestCase):
         self.assertEqual(wallet.cached_balance, Decimal("75000"))
 
     def test_donate_to_patient_credits_escrow(self):
-        donate_from_wallet(
+        """Old patient escrow flow removed; test pledge-to-request instead."""
+        ha_user = CustomUser.objects.create_user(
+            username="ha_for_tests", password="pass12345",
+            role="health_assistant", state=True,
+        )
+        req = NetworkRequest.objects.create(
+            request_type="financial",
+            patient=self.patient,
+            created_by=ha_user,
+            subject="Test need",
+            description="desc",
+            amount_needed=50000,
+            status="pending",
+        )
+        donation = donate_from_wallet(
             benefactor_user=self.benefactor_user,
             amount=40000,
-            destination_type="patient",
-            patient_id=self.patient.pk,
+            destination_type="request",
+            network_request_id=req.pk,
         )
-        escrow = get_or_create_patient_escrow_wallet(self.patient)
-        escrow.refresh_from_db()
-        self.assertEqual(escrow.cached_balance, Decimal("40000"))
+        # Money should be held, not sent to patient escrow
+        wallet = get_or_create_benefactor_wallet(self.benefactor_user)
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.cached_balance, Decimal("60000"))  # 100000 - 40000
+        self.assertEqual(wallet.held_balance, Decimal("40000"))     # held
+
+        req.refresh_from_db()
+        self.assertEqual(req.collected_amount, Decimal("40000"))
+        self.assertEqual(donation.status, "held")
+
+        # Complete: held -> platform
+        close_financial_request(request_id=req.pk, closed_by_user=ha_user, action="complete")
+        wallet.refresh_from_db()
+        self.assertEqual(wallet.held_balance, Decimal("0"))
 
     def test_donate_fails_without_balance(self):
         wallet = get_or_create_benefactor_wallet(self.benefactor_user)
@@ -226,6 +255,72 @@ class MockTopUpTests(TestCase):
         self.assertEqual(self.wallet.cached_balance, Decimal("25000"))
 
 
+class HoldReleaseRefundTests(TestCase):
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            username="hold_benefactor", password="pass", role="benefactor", state=True,
+        )
+        Benefactor.objects.create(
+            user=self.user, first_name="H", last_name="R",
+            national_code="5555555555",
+        )
+        self.wallet = get_or_create_benefactor_wallet(self.user)
+        credit_wallet(self.wallet, 100000, kind="topup", reference_type="gateway_payment")
+
+    def test_hold_decrements_available_increments_held(self):
+        hold_amount(self.wallet, 30000)
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.cached_balance, Decimal("70000"))
+        self.assertEqual(self.wallet.held_balance, Decimal("30000"))
+
+    def test_hold_insufficient_balance_raises(self):
+        with self.assertRaises(InsufficientBalanceError):
+            hold_amount(self.wallet, 999999)
+
+    def test_release_hold_to_platform(self):
+        hold_amount(self.wallet, 50000)
+        platform = get_or_create_patient_escrow_wallet(
+            Patient.objects.create(user=CustomUser.objects.create_user(
+                username="plat_p", password="pass", role="patient", state=True,
+            ), patient_code="P-META", first_name="-", last_name="-",
+              father_name="-", age=1, head_household=False, phone_number="0",
+              province="-", city="-", address="-", sickness_description="-"))
+        release_hold(self.wallet, 50000, reference_type="test")
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.cached_balance, Decimal("50000"))
+        self.assertEqual(self.wallet.held_balance, Decimal("0"))
+
+    def test_refund_hold_returns_to_available(self):
+        hold_amount(self.wallet, 40000)
+        refund_hold(self.wallet, 40000)
+        self.wallet.refresh_from_db()
+        self.assertEqual(self.wallet.cached_balance, Decimal("100000"))
+        self.assertEqual(self.wallet.held_balance, Decimal("0"))
+
+    def test_payment_exceeding_remaining_rejected(self):
+        ha = CustomUser.objects.create_user(
+            username="ha_hold", password="pass", role="health_assistant", state=True,
+        )
+        p = Patient.objects.create(
+            user=CustomUser.objects.create_user(
+                username="pp", password="pass", role="patient", state=True,
+            ),
+            patient_code="P-HOLD", first_name="-", last_name="-",
+            father_name="-", age=1, head_household=False,
+            phone_number="0", province="-", city="-", address="-",
+            sickness_description="-",
+        )
+        req = NetworkRequest.objects.create(
+            request_type="financial", patient=p, created_by=ha,
+            subject="Test", description="d", amount_needed=10000, status="pending",
+        )
+        donate_from_wallet(benefactor_user=self.user, amount=3000,
+                           destination_type="request", network_request_id=req.pk)
+        with self.assertRaises(DonationError):
+            donate_from_wallet(benefactor_user=self.user, amount=8000,
+                               destination_type="request", network_request_id=req.pk)
+
+
 class ConcurrentTransferTests(TransactionTestCase):
     def test_transfer_atomicity(self):
         user = CustomUser.objects.create_user(
@@ -272,3 +367,41 @@ class ConcurrentTransferTests(TransactionTestCase):
         w2.refresh_from_db()
         self.assertEqual(w1.cached_balance, Decimal("7000"))
         self.assertEqual(w2.cached_balance, Decimal("3000"))
+
+
+class WalletDetailViewTests(TestCase):
+    def setUp(self):
+        self.user = CustomUser.objects.create_user(
+            username="wallet_view_user",
+            password="pass12345",
+            role="benefactor",
+            state=True,
+        )
+        Benefactor.objects.create(
+            user=self.user,
+            first_name="Reza",
+            last_name="Test",
+            national_code="1111111111",
+        )
+        self.wallet = get_or_create_benefactor_wallet(self.user)
+        credit_wallet(self.wallet, 100000, kind="topup", reference_type="gateway_payment")
+        hold_amount(
+            self.wallet,
+            25000,
+            reference_type="network_request",
+            reference_id=1,
+            description="pledge test",
+        )
+
+    def test_wallet_detail_returns_balance_and_transactions(self):
+        from rest_framework.test import APIClient
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+        response = client.get("/api/wallet/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Decimal(str(response.data["balance"])), Decimal("75000"))
+        self.assertEqual(Decimal(str(response.data["held_balance"])), Decimal("25000"))
+        kinds = {tx["kind"] for tx in response.data["recent_transactions"]}
+        self.assertIn("topup", kinds)
+        self.assertIn("pledge_hold", kinds)
