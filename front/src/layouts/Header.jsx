@@ -4,12 +4,14 @@ import {Link} from "react-router-dom";
 import {GiHamburgerMenu} from "react-icons/gi";
 import profileImage from "../images/profile.png";
 import {useAuth} from "../context/AuthContext";
+import {getDashboardRoute} from "../Configs/dashboardRoutes";
 
 
 const Header = () => {
   const [open, setOpen] = useState(false);
 
   const {isLogin, user, logout} = useAuth();
+  const dashboardPath = user?.role ? getDashboardRoute(user.role) : "/";
 
 
   return (
@@ -159,20 +161,21 @@ const Header = () => {
               <>
                 {/* پروفایل */}
                 <div className=" w-[85%] mt-2">
-                  <div className="flex cursor-pointer mt-3">
+                  <Link to={dashboardPath} className="flex cursor-pointer mt-3 hover:opacity-90 transition">
                     <img
                       src={profileImage}
                       className="w-14 mr-8 mt-1 rounded-full"
+                      alt="پروفایل"
                     />
                     <div className="my-auto mr-4">
                       <p className="text-white font-semibold">
                         {user?.name || "کاربر"}
                       </p>
                       <p className="text-xs text-gray-200/70">
-                        {user?.nationalCode}
+                        {user?.username}
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 </div>
 
                 {/* دکمه خروج */}
@@ -413,20 +416,21 @@ const Header = () => {
             <>
               {/* پروفایل */}
               <div className="bg-gray-200/30 h-[1px] w-[85%] mr-[-10px] mt-4">
-                <div className="flex cursor-pointer mt-3">
+                <Link to={dashboardPath} className="flex cursor-pointer mt-3 hover:opacity-90 transition">
                   <img
                     src={profileImage}
                     className="w-14 mr-8 mt-1 rounded-full"
+                    alt="پروفایل"
                   />
                   <div className="my-auto mr-4">
                     <p className="text-white font-semibold">
                       {user?.name || "کاربر"}
                     </p>
                     <p className="text-xs text-gray-200/70">
-                      {user?.nationalCode}
+                      {user?.username}
                     </p>
                   </div>
-                </div>
+                </Link>
               </div>
 
               {/* دکمه خروج */}

@@ -1,5 +1,6 @@
 import HeroSection from "../copmonent/home/HeroSection";
 import FeatureSection from "../copmonent/home/FeatureSection";
+import HealthAssistantMapSection from "../copmonent/home/HealthAssistantMapSection";
 import CallToAction from "../copmonent/home/CallToAction";
 import CharityCallSection from "../copmonent/home/CharityCallSection";
 import Review from "../copmonent/home/Reveiw";
@@ -9,6 +10,7 @@ function Home() {
     <>
       <HeroSection />
       <FeatureSection />
+      <HealthAssistantMapSection />
       <CallToAction />
       <CharityCallSection />
       <Review />
