@@ -28,8 +28,9 @@ const AdminDashboard = () => {
       const r = await profileService.getProfile();
       const u = r.data;
       setProfile({
-        name: u.first_name || u.username || "مدیر",
-        username: u.username,
+        name: u.first_name || u.profile?.first_name || "مدیر",
+        username: u.profile?.phone_number || u.username,
+        phone: u.profile?.phone_number || u.username,
         avatar:
           "https://api.dicebear.com/7.x/avataaars/svg?seed=" +
           encodeURIComponent(u.username || "admin"),
@@ -50,39 +51,8 @@ const AdminDashboard = () => {
   const loadStats = useCallback(async () => {
     try {
       const r = await adminService.getStats();
-      // #region agent log
-      fetch("http://127.0.0.1:7338/ingest/fd34130a-6dd2-4769-91ac-074406a65388", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "09c3fc" },
-        body: JSON.stringify({
-          sessionId: "09c3fc",
-          location: "AdminDashboard.jsx:loadStats",
-          message: "admin stats loaded",
-          data: { total_users: r.data?.total_users, keys: Object.keys(r.data || {}) },
-          timestamp: Date.now(),
-          hypothesisId: "B",
-        }),
-      }).catch(() => {});
-      // #endregion
       setStats(r.data);
     } catch (err) {
-      // #region agent log
-      fetch("http://127.0.0.1:7338/ingest/fd34130a-6dd2-4769-91ac-074406a65388", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "09c3fc" },
-        body: JSON.stringify({
-          sessionId: "09c3fc",
-          location: "AdminDashboard.jsx:loadStats",
-          message: "admin stats failed",
-          data: {
-            status: err?.response?.status,
-            detail: err?.response?.data?.detail,
-          },
-          timestamp: Date.now(),
-          hypothesisId: "B",
-        }),
-      }).catch(() => {});
-      // #endregion
       const fallback = await dashboardService.getStats().catch(() => null);
       setStats(fallback?.data || {});
     }
@@ -166,7 +136,7 @@ const AdminDashboard = () => {
         <div className="text-right space-y-4 max-w-lg">
           <h2 className="text-xl font-bold text-gray-800">حساب مدیر</h2>
           <p className="text-gray-600 text-sm">
-            نام کاربری: <strong>{profile.username}</strong>
+            شماره موبایل: <strong>{profile.phone || profile.username}</strong>
           </p>
           <p className="text-gray-500 text-sm">
             از تب «کاربران» می‌توانید همه اعضا را مدیریت کنید. از تب «lookup ها» فیلدهای

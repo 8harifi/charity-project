@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { Check, Eye, Loader2, Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Check, Download, Eye, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
 import {
   ROLE_DASHBOARD_HINTS,
   ROLE_LABELS,
@@ -34,7 +34,6 @@ const EDITABLE_PROFILE_FIELDS = {
     ["province", "استان"],
     ["city", "شهر"],
     ["address", "آدرس"],
-    ["bank_card_number", "کارت بانکی"],
     ["sickness_description", "شرح بیماری"],
     ["gender", "جنسیت (شناسه lookup)", "fk"],
     ["marital_status", "وضعیت تأهل (شناسه)", "fk"],
@@ -178,7 +177,7 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <h3 className="font-bold text-lg text-gray-800">
-            {user ? `${user.username} — ${ROLE_LABELS[user.role] || user.role}` : "کاربر"}
+            {user ? `${user.phone || user.username} — ${ROLE_LABELS[user.role] || user.role}` : "کاربر"}
           </h3>
           <button type="button" onClick={onClose} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
             <X size={20} />
@@ -371,32 +370,94 @@ export default function AdminUsersPanel() {
   const [loading, setLoading] = useState(true);
   const [roleFilter, setRoleFilter] = useState("");
   const [stateFilter, setStateFilter] = useState("");
+  const [activeFilter, setActiveFilter] = useState("");
   const [search, setSearch] = useState("");
+  const [phone, setPhone] = useState("");
+  const [nationalCode, setNationalCode] = useState("");
+  const [patientCode, setPatientCode] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
+  const [exporting, setExporting] = useState("");
+
+  const filterParams = useMemo(
+    () => ({
+      role: roleFilter || undefined,
+      state: stateFilter || undefined,
+      is_active: activeFilter || undefined,
+      search: search || undefined,
+      phone: phone || undefined,
+      national_code: nationalCode || undefined,
+      patient_code: patientCode || undefined,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
+    }),
+    [roleFilter, stateFilter, activeFilter, search, phone, nationalCode, patientCode, dateFrom, dateTo]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await adminService.listUsers({
-        role: roleFilter || undefined,
-        state: stateFilter || undefined,
-        search: search || undefined,
-      });
+      const r = await adminService.listUsers(filterParams);
       setUsers(Array.isArray(r.data) ? r.data : []);
     } catch {
       setUsers([]);
     } finally {
       setLoading(false);
     }
-  }, [roleFilter, stateFilter, search]);
+  }, [filterParams]);
 
   useEffect(() => {
-    load();
+    const t = setTimeout(load, 300);
+    return () => clearTimeout(t);
   }, [load]);
+
+  const handleExport = async (format) => {
+    setExporting(format);
+    try {
+      const r = await adminService.exportUsers(filterParams, format);
+      const blob = new Blob([r.data], {
+        type: format === "pdf" ? "application/pdf" : "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = format === "pdf" ? "users.pdf" : "users.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.alert("خطا در دریافت خروجی");
+    } finally {
+      setExporting("");
+    }
+  };
 
   return (
     <div className="text-right space-y-6">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-800">مدیریت کاربران</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800">مدیریت کاربران</h2>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => handleExport("csv")}
+            disabled={!!exporting}
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50"
+          >
+            <Download size={16} />
+            {exporting === "csv" ? "..." : "CSV"}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleExport("pdf")}
+            disabled={!!exporting}
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-700 text-white text-sm font-semibold disabled:opacity-50"
+          >
+            <Download size={16} />
+            {exporting === "pdf" ? "..." : "PDF"}
+          </button>
+        </div>
+      </div>
 
       <div className="flex flex-col lg:flex-row gap-3">
         <div className="relative flex-1">
@@ -404,7 +465,7 @@ export default function AdminUsersPanel() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="جستجو نام کاربری..."
+            placeholder="جستجو نام، موبایل، کد ملی..."
             className="w-full p-3 pr-10 rounded-xl border border-gray-200 outline-none"
           />
         </div>
@@ -430,7 +491,59 @@ export default function AdminUsersPanel() {
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm font-semibold"
+        >
+          <SlidersHorizontal size={16} />
+          جستجوی پیشرفته
+        </button>
       </div>
+
+      {showAdvanced && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="موبایل"
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          />
+          <input
+            value={nationalCode}
+            onChange={(e) => setNationalCode(e.target.value)}
+            placeholder="کد ملی"
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          />
+          <input
+            value={patientCode}
+            onChange={(e) => setPatientCode(e.target.value)}
+            placeholder="کد بیمار"
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          />
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          />
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          />
+          <select
+            value={activeFilter}
+            onChange={(e) => setActiveFilter(e.target.value)}
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          >
+            <option value="">همه — فعال/غیرفعال</option>
+            <option value="true">فقط فعال</option>
+            <option value="false">فقط غیرفعال</option>
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -444,7 +557,7 @@ export default function AdminUsersPanel() {
             <thead className="bg-gray-50 text-gray-600">
               <tr>
                 <th className="p-3 text-right">نام</th>
-                <th className="p-3 text-right">نام کاربری</th>
+                <th className="p-3 text-right">موبایل</th>
                 <th className="p-3 text-right">نقش</th>
                 <th className="p-3 text-right">وضعیت</th>
                 <th className="p-3 text-right">عملیات</th>
@@ -454,7 +567,7 @@ export default function AdminUsersPanel() {
               {users.map((u) => (
                 <tr key={u.id} className="border-t border-gray-100 hover:bg-gray-50">
                   <td className="p-3 font-medium">{u.display_name || "—"}</td>
-                  <td className="p-3">{u.username}</td>
+                  <td className="p-3">{u.phone || u.username}</td>
                   <td className="p-3">{ROLE_LABELS[u.role] || u.role}</td>
                   <td className="p-3">
                     {!u.state ? (

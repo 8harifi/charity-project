@@ -11,7 +11,6 @@ const EDIT_FIELDS = {
     { key: "province", label: "استان" },
     { key: "city", label: "شهر" },
     { key: "address", label: "آدرس", multiline: true },
-    { key: "bank_card_number", label: "شماره کارت بانکی" },
     { key: "sickness_description", label: "شرح حال بیماری", multiline: true },
     { key: "contact1_full_name", label: "نام آشنای اول" },
     { key: "contact1_phone_number", label: "تلفن آشنای اول" },
@@ -47,7 +46,6 @@ const EDIT_FIELDS = {
 const PROFILE_KEY_MAP = {
   phoneNumber: "phone_number",
   landlineNumber: "landline_number",
-  bankCardNumber: "bank_card_number",
   sickness_description: "sickness_description",
   illness: "sickness_description",
   contact1Name: "contact1_full_name",
