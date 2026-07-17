@@ -6,13 +6,13 @@ import { motion } from "framer-motion";
 
 const HeroSection = () => {
   return (
-    <div className=" bg-[#e0e0e0] font-kook overflow-x-hidden">
-      <div className="relative pt-[70px] pb-[110px] lg:pt-[150px] ">
+    <div className="bg-[#e0e0e0] font-kook overflow-x-hidden">
+      <div className="relative pt-[30px] pb-[110px] lg:pt-[150px]">
         <div className="container mx-auto px-10">
           <div className="flex flex-wrap items-center">
             
             {/* متن سمت راست */}
-            <div className="w-full lg:w-6/12 px-4  text-right">
+            <div className="w-full lg:w-6/12 px-5 pt-10 text-right">
               <div className="hero-content">
 
                 <motion.div
@@ -24,17 +24,23 @@ const HeroSection = () => {
                   animate="visible"
                   transition={{ duration: 0.6 }}
                 >
-                  <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 to-emerald-700 mb-5 font-bold leading-snug text-3xl sm:text-5xl ">
-                    
-        
-                  <span className=" sm:text-8xl  -mt-18 text-8xl" > سامانه جامع جلب مشارکت‌های خیرخواهانه حوزه سلامت</span>  
+                  {/* عنوان اصلی با دو خط */}
+                  <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-blue-900 to-emerald-700 mb-8 font-bold leading-tight">
+                    <span className="text-5xl sm:text-7xl block">
+                      همراه سلامت،
+                    </span>
+                    <span className="text-5xl sm:text-7xl block">
+                      همراه امید
+                    </span>
                   </h1>
 
-                 
-                  <p className="text-gray-700 text-base mb-10 max-w-[520px] ml-auto">
-                    بستری برای ایجاد شبکه‌ای گسترده از خیرین، پزشکان،
-                    مراکز درمانی و مراکز نیکوکاری با هدف حمایت از بیماران
-                    نیازمند، توسعه خدمات سلامت و تقویت مسئولیت اجتماعی.
+                  {/* زیر عنوان */}
+                  <h2 className="text-xl sm:text-2xl text-gray-700 mb-40font-semibold">
+                    شبکه‌ای برای ارتباط خیرین، بیماران و مراکز درمانی
+                  </h2>
+
+                  <p className="text-gray-600 text-base mb-8 max-w-[520px] ml-auto leading-relaxed">
+                    تا کمک‌های شما سریع‌تر، شفاف‌تر و مؤثرتر به دست نیازمندان برسد.
                   </p>
                 </motion.div>
 
@@ -52,8 +58,8 @@ const HeroSection = () => {
 
                     <li>
                       <Link
-                        to="/needs"
-                        className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition"
+                        to="/campaigns"
+                        className="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition duration-300 shadow-md hover:shadow-lg"
                       >
                         مشاهده نیازمندی‌ها
                       </Link>
@@ -62,18 +68,9 @@ const HeroSection = () => {
                     <li>
                       <Link
                         to="/signuprole"
-                        className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition"
+                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-md hover:shadow-lg"
                       >
-                        ثبت‌نام در شبکه
-                      </Link>
-                    </li>
-
-                    <li>
-                      <Link
-                        to="/donate"
-                        className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition"
-                      >
-                        کمک مالی
+                        ثبت‌نام خیرین
                       </Link>
                     </li>
 
@@ -95,7 +92,7 @@ const HeroSection = () => {
 
                     <div>
                       <h3 className="text-2xl font-bold text-emerald-600">
-                        1200+
+                        ۱۲۰۰+
                       </h3>
                       <p className="text-gray-600 text-sm">
                         بیمار حمایت شده
@@ -104,7 +101,7 @@ const HeroSection = () => {
 
                     <div>
                       <h3 className="text-2xl font-bold text-blue-600">
-                        450+
+                        ۴۵۰+
                       </h3>
                       <p className="text-gray-600 text-sm">
                         خیر عضو شبکه
@@ -113,7 +110,7 @@ const HeroSection = () => {
 
                     <div>
                       <h3 className="text-2xl font-bold text-purple-600">
-                        80+
+                        ۸۰+
                       </h3>
                       <p className="text-gray-600 text-sm">
                         مرکز نیکوکاری
@@ -139,13 +136,13 @@ const HeroSection = () => {
                   animate="visible"
                   transition={{ duration: 0.6 }}
                   src={heroImage}
-                  alt="hero"
-                  className="max-w-full rounded-l-[20%] rounded-br-[6%]"
+                  alt="همراه سلامت، همراه امید"
+                  className="max-w-full rounded-l-[20%] rounded-br-[6%] shadow-2xl"
                 />
 
                 <img
                   src={Stars}
-                  alt="stars"
+                  alt="ستاره"
                   className="z-20 w-28 absolute top-[-40px] left-[-20px] opacity-70"
                 />
 

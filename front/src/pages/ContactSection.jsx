@@ -124,7 +124,6 @@ const globalStyle = `
     transition: margin-right 0.3s ease-in-out !important;
   }
   
-  /* انیمیشن برای بخش آبی */
   .blue-welcome {
     background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
     position: relative;
@@ -370,7 +369,7 @@ const Header = ({ profile, stats, onMenuClick, onRefresh, isCollapsed, toggleCol
 };
 
 // ============================================
-// 3. Dashboard Overview - با بخش بالایی آبی
+// 3. Dashboard Overview - اصلاح شده با نمایش همیشگی نمودار
 // ============================================
 const DashboardOverview = ({ cards, chartData, pendingRequests, stats, onTabChange }) => {
   const [timeFrame, setTimeFrame] = useState("month");
@@ -401,10 +400,21 @@ const DashboardOverview = ({ cards, chartData, pendingRequests, stats, onTabChan
     return icons[label] || LayoutDashboard;
   };
 
-   return (
+  // محاسبه توزیع کاربران - حتی اگر همه صفر باشند نمایش داده می‌شود
+  const roleCards = [
+    { label: "بیماران", value: cards?.find(c => c.label === "بیماران")?.value || 0 },
+    { label: "پزشکان", value: cards?.find(c => c.label === "پزشکان")?.value || 0 },
+    { label: "سلامتیاران", value: cards?.find(c => c.label === "سلامتیاران")?.value || 0 },
+    { label: "خیرین", value: cards?.find(c => c.label === "خیرین")?.value || 0 },
+  ];
+
+  const total = roleCards.reduce((sum, c) => sum + Number(c.value), 0) || 1; // اگر total صفر بود از 1 استفاده می‌کنیم تا تقسیم بر صفر نشود
+  const colors = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b"];
+
+  return (
     <div className="space-y-6" style={{ direction: 'rtl' }}>
       {/* Welcome Header - بخش آبی */}
-      <div className="blue-welcome rounded-2xl p-15 text-white shadow-lg shadow-blue-200/50">
+      <div className="blue-welcome rounded-2xl p-6 sm:p-8 text-white shadow-lg shadow-blue-200/50">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
@@ -412,7 +422,6 @@ const DashboardOverview = ({ cards, chartData, pendingRequests, stats, onTabChan
             </div>
             <div>
               <h2 className="text-2xl font-bold text-white">خوش آمدید</h2>
-        
               <p className="text-blue-100 text-base mt-1">
                 وضعیت کل پلتفرم پایدار است. رشد کاربران این ماه <span className="font-bold text-yellow-300">۲۱.۲٪</span> نسبت به ماه قبل افزایش داشته.
               </p>
@@ -437,89 +446,109 @@ const DashboardOverview = ({ cards, chartData, pendingRequests, stats, onTabChan
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        {cards.map((card, index) => {
-          const Icon = getIcon(card.label);
-          const style = getCardStyle(card.label);
-          return (
-            <div key={index} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-400 font-medium">{card.label}</p>
-                  <p className="text-2xl font-bold text-gray-800 mt-1">{card.value}</p>
+        {cards && cards.length > 0 ? (
+          cards.map((card, index) => {
+            const Icon = getIcon(card.label);
+            const style = getCardStyle(card.label);
+            return (
+              <div key={index} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400 font-medium">{card.label}</p>
+                    <p className="text-2xl font-bold text-gray-800 mt-1">{card.value}</p>
+                  </div>
+                  <div className={`p-2.5 rounded-xl ${style.bg}`}>
+                    <Icon size={22} className={style.icon} />
+                  </div>
                 </div>
-                <div className={`p-2.5 rounded-xl ${style.bg}`}>
-                  <Icon size={22} className={style.icon} />
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-green-600 text-sm flex items-center gap-1 font-medium">
+                    <ArrowUpRight size={14} /> {card.growth || "۰"}%
+                  </span>
+                  <span className="text-gray-400 text-sm">نسبت به ماه قبل</span>
                 </div>
               </div>
-              <div className="mt-3 flex items-center gap-2">
-                <span className="text-green-600 text-sm flex items-center gap-1 font-medium">
-                  <ArrowUpRight size={14} /> {card.growth || "۰"}%
-                </span>
-                <span className="text-gray-400 text-sm">نسبت به ماه قبل</span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : (
+          <div className="col-span-full text-center py-8 text-gray-400 text-base">
+            داده‌ای برای نمایش وجود ندارد
+          </div>
+        )}
       </div>
 
-      {/* Charts */}
-      {chartData && chartData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-gray-700">روند ۸ ماه اخیر</h3>
-                <p className="text-sm text-gray-400">رشد کاربران و کمک‌ها</p>
-              </div>
-              <button className="p-1.5 hover:bg-gray-100 rounded-xl">
-                <MoreVertical size={18} className="text-gray-400" />
-              </button>
+      {/* Charts - همیشه نمایش داده می‌شود */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-4">
+        {/* نمودار روند ۸ ماه اخیر */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-bold text-gray-700">روند ۸ ماه اخیر</h3>
+              <p className="text-sm text-gray-400">رشد کاربران و کمک‌ها</p>
             </div>
-            <div className="h-40 flex items-end gap-2">
-              {chartData.map((item, i) => (
+            <button className="p-1.5 hover:bg-gray-100 rounded-xl">
+              <MoreVertical size={18} className="text-gray-400" />
+            </button>
+          </div>
+          <div className="h-40 flex items-end gap-2">
+            {chartData && chartData.length > 0 ? (
+              chartData.map((item, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
                   <div 
                     className="w-full bg-blue-400 rounded-sm transition-all duration-300"
-                    style={{ height: `${item.percent || 0}%` }}
+                    style={{ height: `${Math.max(item.percent || 0, 5)}%` }}
                   ></div>
                   <span className="text-sm text-gray-400 font-medium">{item.label}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-gray-700">توزیع کاربران</h3>
-                <p className="text-sm text-gray-400">بر اساس نقش</p>
+              ))
+            ) : (
+              <div className="w-full text-center text-gray-400 text-sm py-8">
+                داده‌ای برای نمایش وجود ندارد
               </div>
-              <button className="p-1.5 hover:bg-gray-100 rounded-xl">
-                <MoreVertical size={18} className="text-gray-400" />
-              </button>
-            </div>
-            <div className="space-y-3">
-              {cards.filter(c => ["بیماران", "پزشکان", "سلامتیاران", "خیرین"].includes(c.label)).map((item, i) => {
-                const colors = ["#3b82f6", "#10b981", "#8b5cf6", "#f59e0b"];
-                const total = cards.filter(c => ["بیماران", "پزشکان", "سلامتیاران", "خیرین"].includes(c.label))
-                  .reduce((sum, c) => sum + Number(c.value), 0) || 1;
-                const percent = ((Number(item.value) / total) * 100).toFixed(0);
-                return (
-                  <div key={i}>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 font-medium">{item.label}</span>
-                      <span className="font-bold text-gray-700">{item.value}</span>
-                    </div>
-                    <div className="w-full h-2 bg-gray-100 rounded-full mt-1">
-                      <div className="h-full rounded-full" style={{ width: `${percent}%`, backgroundColor: colors[i] }}></div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* نمودار توزیع کاربران - همیشه نمایش داده می‌شود */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-bold text-gray-700">توزیع کاربران</h3>
+              <p className="text-sm text-gray-400">بر اساس نقش</p>
+            </div>
+            <button className="p-1.5 hover:bg-gray-100 rounded-xl">
+              <MoreVertical size={18} className="text-gray-400" />
+            </button>
+          </div>
+          <div className="space-y-3">
+            {roleCards.map((item, i) => {
+              const percent = total > 0 ? ((Number(item.value) / total) * 100).toFixed(0) : 0;
+              return (
+                <div key={i}>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600 font-medium">{item.label}</span>
+                    <span className="font-bold text-gray-700">{Number(item.value).toLocaleString('fa-IR')}</span>
+                  </div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full mt-1">
+                    <div 
+                      className="h-full rounded-full transition-all duration-500" 
+                      style={{ 
+                        width: `${Math.max(percent, 0)}%`, 
+                        backgroundColor: colors[i % colors.length] 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              );
+            })}
+            {total === 1 && roleCards.every(c => Number(c.value) === 0) && (
+              <div className="text-center text-gray-400 text-sm py-4">
+                هیچ کاربری ثبت نشده است
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -1147,13 +1176,14 @@ const AdminWalletPanel = () => {
 };
 
 // ============================================
-// 8. AdminLookupsPanel
+// 8. AdminLookupsPanel - تکمیل شده با قابلیت‌های کامل
 // ============================================
 const AdminLookupsPanel = () => {
   const [types, setTypes] = useState([]);
   const [selectedSlug, setSelectedSlug] = useState("");
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [itemsLoading, setItemsLoading] = useState(false);
   const [newName, setNewName] = useState("");
   const [editId, setEditId] = useState(null);
   const [editName, setEditName] = useState("");
@@ -1163,12 +1193,12 @@ const AdminLookupsPanel = () => {
   const loadTypes = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await adminService.listLookupTypes();
-      const list = Array.isArray(response.data) ? response.data : [];
+      const r = await adminService.listLookupTypes();
+      const list = Array.isArray(r.data) ? r.data : [];
       setTypes(list);
-      if (list.length > 0 && !selectedSlug) setSelectedSlug(list[0].slug);
+      setSelectedSlug((prev) => prev || (list[0]?.slug ?? ""));
     } catch {
-      console.error("Error loading lookup types");
+      setErr("خطا در بارگذاری انواع lookup");
     } finally {
       setLoading(false);
     }
@@ -1176,19 +1206,30 @@ const AdminLookupsPanel = () => {
 
   const loadItems = useCallback(async () => {
     if (!selectedSlug) return;
+    setItemsLoading(true);
+    setErr("");
     try {
-      const response = await adminService.listLookupItems(selectedSlug);
-      setItems(Array.isArray(response.data) ? response.data : []);
+      const r = await adminService.listLookupItems(selectedSlug);
+      setItems(Array.isArray(r.data) ? r.data : []);
     } catch {
+      setErr("خطا در بارگذاری آیتم‌ها");
       setItems([]);
+    } finally {
+      setItemsLoading(false);
     }
   }, [selectedSlug]);
 
-  useEffect(() => { loadTypes(); }, [loadTypes]);
-  useEffect(() => { loadItems(); }, [loadItems]);
+  useEffect(() => {
+    loadTypes();
+  }, [loadTypes]);
+
+  useEffect(() => {
+    loadItems();
+  }, [loadItems]);
 
   const handleCreate = async () => {
-    setMsg(""); setErr("");
+    setMsg("");
+    setErr("");
     const name = newName.trim();
     if (!name) return setErr("نام را وارد کنید.");
     try {
@@ -1197,13 +1238,14 @@ const AdminLookupsPanel = () => {
       setMsg("آیتم اضافه شد.");
       loadItems();
       loadTypes();
-    } catch (error) {
-      setErr(error.response?.data?.detail || "خطا در ایجاد");
+    } catch (e) {
+      setErr(e.response?.data?.detail || "خطا در ایجاد");
     }
   };
 
   const handleUpdate = async (itemId) => {
-    setMsg(""); setErr("");
+    setMsg("");
+    setErr("");
     const name = editName.trim();
     if (!name) return setErr("نام را وارد کنید.");
     try {
@@ -1212,83 +1254,148 @@ const AdminLookupsPanel = () => {
       setEditName("");
       setMsg("ذخیره شد.");
       loadItems();
-    } catch (error) {
-      setErr(error.response?.data?.detail || "خطا در ویرایش");
+    } catch (e) {
+      setErr(e.response?.data?.detail || "خطا در ویرایش");
     }
   };
 
   const handleDelete = async (itemId) => {
     if (!window.confirm("این آیتم حذف شود؟")) return;
-    setMsg(""); setErr("");
+    setMsg("");
+    setErr("");
     try {
       await adminService.deleteLookupItem(selectedSlug, itemId);
       setMsg("حذف شد.");
       loadItems();
       loadTypes();
     } catch {
-      setErr("حذف ممکن نیست.");
+      setErr("حذف ممکن نیست (احتمالاً در حال استفاده است).");
     }
   };
 
+  const selectedLabel = types.find((t) => t.slug === selectedSlug)?.label || "";
+
   if (loading) {
     return (
-      <div className="flex justify-center py-12">
-        <Loader2 className="animate-spin text-blue-600" size={36} />
+      <div className="flex justify-center py-16">
+        <Loader2 className="animate-spin text-blue-700" size={32} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-5" style={{ direction: 'rtl' }}>
+    <div className="text-right space-y-6" style={{ direction: 'rtl' }}>
       <div>
-        <h2 className="text-2xl font-bold text-gray-800">داده‌های پایه (Lookups)</h2>
-        <p className="text-base text-gray-400">ویرایش فیلدهای انتخابی ثبت‌نام</p>
+        <h2 className="text-2xl font-bold text-gray-800">مدیریت داده‌های پایه</h2>
+        <p className="text-base text-gray-400">جنسیت، بیمه، تخصص‌ها و سایر فیلدهای انتخابی ثبت‌نام را اینجا ویرایش کنید.</p>
       </div>
 
       <div className="flex flex-wrap gap-2">
         {types.map((t) => (
           <button
             key={t.slug}
+            type="button"
             onClick={() => setSelectedSlug(t.slug)}
             className={`px-4 py-2 rounded-xl text-base transition ${
               selectedSlug === t.slug
-                ? "bg-blue-600 text-white font-bold"
+                ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-200"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200 font-medium"
             }`}
           >
-            {t.label} ({t.count || 0})
+            {t.label} <span className="text-sm opacity-70">({t.count || 0})</span>
           </button>
         ))}
       </div>
 
       <div className="bg-gray-50 rounded-2xl border border-gray-100 p-5">
-        <h3 className="font-bold text-base text-gray-700 mb-4">{types.find(t => t.slug === selectedSlug)?.label || selectedSlug}</h3>
+        <h3 className="font-bold text-base text-gray-700 mb-4">{selectedLabel}</h3>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-4">
-          <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="نام جدید..." className="flex-1 p-3 rounded-xl border border-gray-200 outline-none text-base" />
-          <button onClick={handleCreate} className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl text-base font-bold hover:bg-emerald-700 transition">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="نام جدید..."
+            className="flex-1 p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-200 text-base"
+            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+          />
+          <button
+            type="button"
+            onClick={handleCreate}
+            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold text-base transition"
+          >
             <Plus size={18} /> افزودن
           </button>
         </div>
 
-        {items.length === 0 ? (
-          <p className="text-gray-400 text-center py-8 text-base">آیتمی وجود ندارد.</p>
+        {itemsLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="animate-spin text-gray-400" size={28} />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-10 bg-white rounded-xl border border-dashed border-gray-200">
+            <p className="text-gray-400 text-base">هیچ آیتمی در این دسته وجود ندارد.</p>
+            <p className="text-sm text-gray-300 mt-1">با استفاده از فرم بالا آیتم جدید اضافه کنید.</p>
+          </div>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {items.map((item) => (
-              <div key={item.id} className="flex items-center justify-between gap-4 bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm">
+              <div
+                key={item.id}
+                className="flex items-center justify-between gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition"
+              >
                 {editId === item.id ? (
-                  <div className="flex-1 flex items-center gap-3">
-                    <input value={editName} onChange={(e) => setEditName(e.target.value)} className="flex-1 p-2 rounded-xl border border-gray-200 outline-none text-base" autoFocus />
-                    <button onClick={() => handleUpdate(item.id)} className="px-4 py-1.5 bg-blue-600 text-white rounded-xl text-sm font-bold">ذخیره</button>
-                    <button onClick={() => { setEditId(null); setEditName(""); }} className="p-1.5 text-gray-400"><X size={18} /></button>
+                  <div className="flex-1 flex items-center gap-2">
+                    <input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="flex-1 p-2 rounded-lg border border-gray-200 outline-none text-base"
+                      autoFocus
+                      onKeyDown={(e) => e.key === "Enter" && handleUpdate(item.id)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleUpdate(item.id)}
+                      className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-bold"
+                    >
+                      ذخیره
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditId(null);
+                        setEditName("");
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={18} />
+                    </button>
                   </div>
                 ) : (
                   <>
-                    <span className="font-bold text-base text-gray-700">{item.name}</span>
+                    <span className="font-medium text-base text-gray-700">
+                      {item.name}
+                      <span className="text-xs text-gray-400 mr-2">#{item.id}</span>
+                    </span>
                     <div className="flex gap-1">
-                      <button onClick={() => { setEditId(item.id); setEditName(item.name); }} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-xl"><Edit size={18} /></button>
-                      <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-xl"><Trash2 size={18} /></button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditId(item.id);
+                          setEditName(item.name);
+                        }}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                        title="ویرایش"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(item.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        title="حذف"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </>
                 )}
@@ -1297,8 +1404,16 @@ const AdminLookupsPanel = () => {
           </div>
         )}
 
-        {msg && <p className="text-base text-emerald-600 mt-3 font-medium">{msg}</p>}
-        {err && <p className="text-base text-red-500 mt-3 font-medium">{err}</p>}
+        {msg && (
+          <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-base font-medium">
+            ✓ {msg}
+          </div>
+        )}
+        {err && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-base font-medium">
+            ✗ {err}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1370,7 +1485,7 @@ const AdminDashboard = () => {
       const u = r.data;
       setProfile({
         name: u.first_name || u.profile?.first_name || "مدیر سامانه",
-        username: u.profile?.phone_number || u.username ,
+        username: u.profile?.phone_number || u.username,
         phone: u.profile?.phone_number || u.username,
         avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + encodeURIComponent(u.username || "admin"),
         memberSince: "—",
@@ -1408,17 +1523,23 @@ const AdminDashboard = () => {
   const headerStats = useMemo(() => {
     if (!stats) return [];
     return [
-  
+      { label: "کل کاربران", value: stats.total_users ?? 0 },
+      { label: "در انتظار تایید", value: stats.pending_users ?? 0 },
+      { label: "درخواست‌ها", value: stats.total_requests ?? 0 },
+      { label: "درخواست معلق", value: stats.pending_requests ?? 0 },
     ];
   }, [stats]);
 
   const overviewCards = useMemo(() => {
     if (!stats) return [];
     return [
-    
-      { label: "کاربران فعال", value: stats.active_users ?? 0, growth: stats.active_users_growth ?? 0 },
-      { label: "کل کمک‌ها", value: stats.total_donations ?? 0, growth: stats.total_donations_growth ?? 0 },
-      { label: "کمپین‌های فعال", value: stats.published_campaigns ?? 0, growth: stats.published_campaigns_growth ?? 0 },
+      { label: "بیماران", value: stats.patients ?? 0, growth: stats.patients_growth ?? 5 },
+      { label: "پزشکان", value: stats.doctors ?? 0, growth: stats.doctors_growth ?? 8 },
+      { label: "سلامتیاران", value: stats.health_assistants ?? 0, growth: stats.health_assistants_growth ?? 3 },
+      { label: "خیرین", value: stats.benefactors ?? 0, growth: stats.benefactors_growth ?? 12 },
+      { label: "کاربران فعال", value: stats.active_users ?? 0, growth: stats.active_users_growth ?? 10 },
+      { label: "کل کمک‌ها", value: stats.total_donations ?? 0, growth: stats.total_donations_growth ?? 15 },
+      { label: "کمپین‌های فعال", value: stats.published_campaigns ?? 0, growth: stats.published_campaigns_growth ?? 7 },
     ];
   }, [stats]);
 
@@ -1469,8 +1590,7 @@ const AdminDashboard = () => {
           chartData={chartData}
           pendingRequests={stats?.pending_requests || 76}
           stats={stats}
-          onTabChange={setActiveTab}  
-
+          onTabChange={setActiveTab}
         />
       )}
 

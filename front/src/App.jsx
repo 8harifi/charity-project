@@ -33,9 +33,11 @@ import AdminDashboard from "./dashboards/AdminDashboard"
 import WalletTopupResult from "./pages/WalletTopupResult";
 
 
+
 import SignupSuccess from "./pages/SignupSuccess";
 import SalamatyaranSignupIndividual from "./pages/Auth/SalamatyaranSignupIndividual.jsx";
 import SalamatyaranSignupOrganization from "./pages/Auth/SalamatyaranSignupOrganization.jsx";
+import ContactSection from "./pages/ContactSection.jsx";
 
 
 function App() {
@@ -91,6 +93,9 @@ function App() {
             <Route path="/education" element={<EducationCourse/>}/>
             <Route path="/members" element={<Aboutus/>}/>
             <Route path="/news" element={<News/>}/>
+            
+            <Route path="/contact" element={<ContactSection/>}/>
+
           </Route>
         </Routes>
       </BrowserRouter>

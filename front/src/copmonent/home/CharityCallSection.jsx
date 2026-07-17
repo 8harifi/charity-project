@@ -40,7 +40,6 @@ const CharityCallSection = () => {
           همراه ما باشید تا با هم در بهبود کیفیت زندگی بیماران نیازمند سهیم شویم
         </motion.p>
         
-        {/* بخش انتشار فراخوان */}
         <div className="mb-16">
           <motion.h3 
             initial={{ opacity: 0, y: -30 }}
