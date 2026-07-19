@@ -57,9 +57,7 @@ const Header = () => {
             </ul>
           </div>
 
-          {/* دکمه‌ها (دسکتاپ) + منوی موبایل */}
           <div className="flex items-center">
-            {/* دکمه کمک به بیماران */}
             <button
               type="button"
               className="bg-green-600 px-4 py-2 text-white hidden sm:block rounded-xl ml-2 hover:bg-green-500 text-sm"

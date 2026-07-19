@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import heroImage from "../../images/heroImage.jpg";
+//import heroImage from "../../images/heroImage.jpg";
+import heroImage from "../../images/heroone.png";
+
 import Stars from "../../images/stars.png";
 import { motion } from "framer-motion";
 
