@@ -38,7 +38,7 @@ const inputClass =
 
 const labelClass = "mb-2 block text-sm font-semibold text-slate-700";
 
-export default function ReceiveService() {
+export default function ReceiveService({ embedded = false }) {
   const [form, setForm] = useState(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -175,35 +175,8 @@ const validateForm = () => {
     }
   };
 
-  return (
-    <div
-      className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-emerald-50 p-4 md:p-8"
-      dir="rtl"
-    >
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="mx-auto max-w-6xl"
-      >
-        <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-2xl backdrop-blur-sm">
-          <div className="border-b border-slate-100 bg-gradient-to-l from-blue-900 via-blue-800 to-emerald-700 px-6 py-6 text-white md:px-8">
-            <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-white/15 p-3">
-                <ClipboardList className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-xl font-extrabold md:text-2xl">
-                  فرم درخواست دریافت خدمات برای بیمار
-                </h1>
-                <p className="mt-1 text-sm text-blue-100">
-                  ثبت و ارسال درخواست دریافت خدمات 
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+  const formMarkup = (
+    <form onSubmit={handleSubmit} className={embedded ? "space-y-6" : "p-6 md:p-8"}>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="mt-7">
                 <label className={labelClass}>تاریخ ثبت درخواست</label>
@@ -411,7 +384,7 @@ const validateForm = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-l from-blue-800 to-emerald-700 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
                   <>
@@ -426,7 +399,49 @@ const validateForm = () => {
                 )}
               </button>
             </div>
-          </form>
+    </form>
+  );
+
+  if (embedded) {
+    return (
+      <div dir="rtl" className="text-right">
+        <h2 className="text-lg sm:text-2xl font-bold text-gray-800 mb-2">
+          فرم درخواست دریافت خدمات برای بیمار
+        </h2>
+        <p className="text-sm text-gray-500 mb-6">ثبت و ارسال درخواست دریافت خدمات</p>
+        <div className="bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm">
+          {formMarkup}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="min-h-screen bg-gradient-to-b from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-8"
+      dir="rtl"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="mx-auto max-w-6xl"
+      >
+        <div className="overflow-hidden rounded-3xl border border-white/60 bg-white/90 shadow-2xl backdrop-blur-sm">
+          <div className="border-b border-slate-100 bg-gradient-to-l from-blue-900 via-blue-800 to-indigo-700 px-6 py-6 text-white md:px-8">
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-white/15 p-3">
+                <ClipboardList className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-xl font-extrabold md:text-2xl">
+                  فرم درخواست دریافت خدمات برای بیمار
+                </h1>
+                <p className="mt-1 text-sm text-blue-100">ثبت و ارسال درخواست دریافت خدمات</p>
+              </div>
+            </div>
+          </div>
+          {formMarkup}
         </div>
       </motion.div>
     </div>

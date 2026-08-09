@@ -34,7 +34,7 @@ function lookupId(field) {
   return field;
 }
 
-export default function IntroducePatientModal({ open, onClose, onSuccess }) {
+export default function IntroducePatientModal({ open, onClose, onSuccess, introducer }) {
   const [step, setStep] = useState(1);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -306,6 +306,20 @@ export default function IntroducePatientModal({ open, onClose, onSuccess }) {
             </button>
           </div>
 
+          {introducer && (
+            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-sm text-emerald-900">
+              <p className="font-semibold mb-1">سلامتیار معرف</p>
+              <p>
+                {introducer.name}
+                {introducer.healthAssistanceCode
+                  ? ` — کد ${introducer.healthAssistanceCode}`
+                  : ""}
+              </p>
+              {introducer.nationalCode && <p>کد ملی: {introducer.nationalCode}</p>}
+              {introducer.phoneNumber && <p>تلفن: {introducer.phoneNumber}</p>}
+            </div>
+          )}
+
           {success ? (
             <div className="text-center py-8">
               <CheckCircle className="mx-auto text-emerald-600 mb-4" size={48} />
@@ -313,7 +327,16 @@ export default function IntroducePatientModal({ open, onClose, onSuccess }) {
               <p className="text-gray-600 mb-1">
                 {success.first_name} {success.last_name}
               </p>
-              <p className="text-sm text-gray-500 mb-6">کد بیمار: {success.patient_code}</p>
+              <p className="text-sm text-gray-500 mb-1">کد بیمار: {success.patient_code}</p>
+              {introducer && (
+                <p className="text-sm text-emerald-700 mb-6">
+                  سلامتیار معرف: {introducer.name}
+                  {introducer.healthAssistanceCode
+                    ? ` (${introducer.healthAssistanceCode})`
+                    : ""}
+                </p>
+              )}
+              {!introducer && <div className="mb-6" />}
               <button
                 type="button"
                 onClick={onClose}

@@ -6,10 +6,27 @@ import { fetchSpecialties, requestService } from "../../Services/dashboardApi";
 import PersianDateInput from "../../components/PersianDateInput";
 import PersianTimeInput from "../../components/PersianTimeInput";
 
-const REQUEST_TYPES = [
-  { value: "consultation", label: "درخواست پزشکی" },
+const STAFF_REQUEST_TYPES = [
+  { value: "consultation", label: "درخواست ویزیت" },
   { value: "financial", label: "حمایت مالی" },
   { value: "service", label: "دریافت خدمات" },
+  { value: "regional", label: "نیازمندی منطقه" },
+];
+
+const PATIENT_SUBTYPES = [
+  { value: "accommodation", label: "رزرو اسکان" },
+  { value: "expense", label: "هزینه‌کرد" },
+  { value: "visit", label: "وقت ویزیت" },
+  { value: "other", label: "سایر موارد" },
+];
+
+const EXPENSE_CATEGORIES = [
+  { value: "visit", label: "ویزیت" },
+  { value: "medicine", label: "دارو" },
+  { value: "lab", label: "آزمایش" },
+  { value: "imaging", label: "تصویربرداری" },
+  { value: "equipment", label: "تجهیزات" },
+  { value: "other", label: "سایر" },
 ];
 
 const CONSULTATION_MODES = ["حضوری", "تلفنی"];
@@ -21,11 +38,21 @@ function lookupId(field) {
 }
 
 const inputClass =
-  "w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200";
+  "w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-200";
 
-export default function NewRequestForm({ forHealthAssistant = false, forDoctor = false, patients = [], onSuccess }) {
-  const [requestType, setRequestType] = useState("consultation");
+export default function NewRequestForm({
+  forHealthAssistant = false,
+  forDoctor = false,
+  forPatient = false,
+  patients = [],
+  onSuccess,
+  onPatientSearch,
+}) {
+  const [requestType, setRequestType] = useState(forPatient ? "service" : "consultation");
+  const [requestSubtype, setRequestSubtype] = useState("visit");
   const [patientId, setPatientId] = useState(null);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
   const [specialty, setSpecialty] = useState(null);
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
@@ -36,15 +63,18 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [neededService, setNeededService] = useState("");
+  const [doctorName, setDoctorName] = useState("");
+  const [expenseCategory, setExpenseCategory] = useState("visit");
+  const [companionMale, setCompanionMale] = useState("");
+  const [companionFemale, setCompanionFemale] = useState("");
+  const [attachments, setAttachments] = useState([]);
   const [specialties, setSpecialties] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchSpecialties()
-      .then(setSpecialties)
-      .catch(console.error);
+    fetchSpecialties().then(setSpecialties).catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -63,10 +93,32 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
       .catch(() => setFundRecipientOptions([]));
   }, [forHealthAssistant, forDoctor]);
 
-  const patientOptions = patients.map((p) => ({
-    value: String(p.id),
-    label: `${p.first_name} ${p.last_name} (${p.patient_code})`,
-  }));
+  useEffect(() => {
+    if (!forHealthAssistant || !patientSearch.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      const fn = onPatientSearch || requestService.healthAssistantSearchPatients;
+      fn(patientSearch.trim())
+        .then((r) => setSearchResults(Array.isArray(r.data) ? r.data : []))
+        .catch(() => setSearchResults([]));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [patientSearch, forHealthAssistant, onPatientSearch]);
+
+  const patientOptions = [
+    ...searchResults.map((p) => ({
+      value: String(p.id),
+      label: `${p.first_name} ${p.last_name} (${p.patient_code})${p.is_orphan ? " — بدون معرف" : ""}`,
+    })),
+    ...patients
+      .filter((p) => !searchResults.some((s) => s.id === p.id))
+      .map((p) => ({
+        value: String(p.id),
+        label: `${p.first_name} ${p.last_name} (${p.patient_code})`,
+      })),
+  ];
 
   const specialtyOptions = specialties.map((s) => ({
     value: String(s.id),
@@ -78,65 +130,87 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
     setError("");
     setSuccess("");
 
-    if (!subject.trim() || !description.trim()) {
-      setError("موضوع و توضیحات الزامی است.");
+    if (!description.trim()) {
+      setError("توضیحات الزامی است.");
       return;
     }
-    if ((forHealthAssistant || forDoctor) && !lookupId(patientId)) {
+    if (!forPatient && !subject.trim()) {
+      setError("موضوع الزامی است.");
+      return;
+    }
+    if (
+      (forHealthAssistant || forDoctor) &&
+      requestType !== "regional" &&
+      !lookupId(patientId)
+    ) {
       setError("انتخاب بیمار الزامی است.");
-      return;
-    }
-    if (requestType === "consultation" && (forHealthAssistant || forDoctor) && !lookupId(specialty)) {
-      setError("انتخاب تخصص پزشک الزامی است.");
-      return;
-    }
-    if (requestType === "financial" && !amountNeeded) {
-      setError("مبلغ مورد نیاز الزامی است.");
-      return;
-    }
-    if (requestType === "service" && !neededService.trim()) {
-      setError("نوع خدمت الزامی است.");
       return;
     }
 
     setSubmitting(true);
     try {
+      let effectiveType = requestType;
       const payload = {
-        request_type: requestType,
         subject: subject.trim(),
         description: description.trim(),
       };
-      if (forHealthAssistant || forDoctor) {
-        payload.patient_id = Number(lookupId(patientId));
-      }
-      if (requestType === "consultation") {
-        const specId = lookupId(specialty);
-        if (specId) payload.specialty = Number(specId);
-        if (forHealthAssistant || forDoctor) {
+
+      if (forPatient) {
+        // Visit appointments go to the doctor queue as consultations.
+        effectiveType = requestSubtype === "visit" ? "consultation" : "service";
+        payload.request_type = effectiveType;
+        payload.request_subtype = requestSubtype;
+        if (!subject.trim()) {
+          const label = PATIENT_SUBTYPES.find((t) => t.value === requestSubtype)?.label || "";
+          payload.subject = label;
+        }
+        if (requestSubtype === "accommodation") {
+          payload.companion_male_count = Number(companionMale) || 0;
+          payload.companion_female_count = Number(companionFemale) || 0;
+        }
+        if (requestSubtype === "expense") {
+          payload.expense_category = expenseCategory;
+        }
+        if (requestSubtype === "visit") {
+          const specId = lookupId(specialty);
+          if (specId) payload.specialty = Number(specId);
+          payload.doctor_name = doctorName.trim();
+        }
+      } else {
+        payload.request_type = effectiveType;
+        if ((forHealthAssistant || forDoctor) && effectiveType !== "regional") {
+          payload.patient_id = Number(lookupId(patientId));
+        } else if (forHealthAssistant && effectiveType === "regional" && lookupId(patientId)) {
+          payload.patient_id = Number(lookupId(patientId));
+        }
+        if (effectiveType === "consultation") {
+          const specId = lookupId(specialty);
+          if (specId) payload.specialty = Number(specId);
+          payload.doctor_name = doctorName.trim();
           payload.consultation_mode = consultationMode;
           payload.preferred_date = preferredDate;
           payload.preferred_time = preferredTime;
         }
-      }
-      if (requestType === "financial") {
-        payload.amount_needed = Number(amountNeeded);
-        if (lookupId(fundRecipient)) {
-          payload.fund_recipient_user_id = Number(lookupId(fundRecipient));
+        if (effectiveType === "financial") {
+          payload.amount_needed = Number(amountNeeded);
+          payload.expense_category = expenseCategory;
+          if (lookupId(fundRecipient)) {
+            payload.fund_recipient_user_id = Number(lookupId(fundRecipient));
+          }
         }
+        if (effectiveType === "service") payload.needed_service = neededService.trim();
+        if (effectiveType === "regional") payload.amount_needed = Number(amountNeeded);
       }
-      if (requestType === "service") payload.needed_service = neededService.trim();
 
-      await requestService.create(payload);
+      await requestService.create(payload, attachments);
       setSuccess("درخواست با موفقیت ثبت شد.");
       setSubject("");
       setDescription("");
       setAmountNeeded("");
       setNeededService("");
-      setSpecialty(null);
-      setFundRecipient(null);
+      setAttachments([]);
       onSuccess?.();
     } catch (err) {
-      console.error(err);
       const msg =
         err?.response?.data?.detail ||
         Object.values(err?.response?.data || {})?.[0]?.[0] ||
@@ -158,16 +232,35 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
         {forHealthAssistant ? "ثبت درخواست برای بیمار" : "ثبت درخواست جدید"}
       </h2>
 
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">نوع درخواست</label>
-        {!forHealthAssistant && !forDoctor ? (
-          <p className="text-sm text-gray-600 bg-gray-50 rounded-xl px-4 py-3">
-            درخواست پزشکی — نیاز خود را بنویسید (مثلاً وقت ویزیت، جراحی، مشاوره و ...)
-          </p>
-        ) : (
+      {forPatient ? (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">موضوع درخواست</label>
+          <select
+            value={requestSubtype}
+            onChange={(e) => {
+              const next = e.target.value;
+              setRequestSubtype(next);
+              const label = PATIENT_SUBTYPES.find((t) => t.value === next)?.label || "";
+              if (!subject.trim() || PATIENT_SUBTYPES.some((t) => t.label === subject)) {
+                setSubject(label);
+              }
+            }}
+            className={inputClass}
+          >
+            {PATIENT_SUBTYPES.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">نوع درخواست</label>
           <div className="flex flex-wrap gap-2">
-            {REQUEST_TYPES.filter((t) => {
+            {STAFF_REQUEST_TYPES.filter((t) => {
               if (t.value === "financial" && !forHealthAssistant && !forDoctor) return false;
+              if (t.value === "regional" && !forHealthAssistant) return false;
               return true;
             }).map((t) => (
               <button
@@ -176,7 +269,7 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
                 onClick={() => setRequestType(t.value)}
                 className={`px-4 py-2 rounded-xl text-sm font-semibold transition ${
                   requestType === t.value
-                    ? "bg-emerald-600 text-white"
+                    ? "bg-blue-600 text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
@@ -184,12 +277,21 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
               </button>
             ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {(forHealthAssistant || forDoctor) && (
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">بیمار</label>
+      {(forHealthAssistant || forDoctor) && requestType !== "regional" && (
+        <div className="space-y-2">
+          {forHealthAssistant && (
+            <input
+              type="text"
+              value={patientSearch}
+              onChange={(e) => setPatientSearch(e.target.value)}
+              className={inputClass}
+              placeholder="جستجوی بیمار با نام یا کد ملی..."
+            />
+          )}
+          <label className="block text-sm font-semibold text-gray-700">بیمار</label>
           <RenderDropdown
             value={patientId}
             setValue={setPatientId}
@@ -199,15 +301,23 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
           />
         </div>
       )}
+      {forHealthAssistant && requestType === "regional" && (
+        <p className="text-xs text-gray-500 bg-gray-50 rounded-xl p-3">
+          نیازمندی منطقه به بیمار خاصی گره نمی‌خورد؛ پس از ثبت، کمپین عمومی ساخته می‌شود.
+        </p>
+      )}
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">موضوع</label>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          موضوع {forPatient ? "(اختیاری — از روی نوع درخواست پر می‌شود)" : ""}
+        </label>
         <input
           type="text"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           className={inputClass}
-          placeholder="مثلاً وقت ویزیت، جراحی، مشاوره تخصصی..."
+          placeholder="مثلاً وقت ویزیت، دارو، اسکان..."
+          required={!forPatient}
         />
       </div>
 
@@ -218,116 +328,89 @@ export default function NewRequestForm({ forHealthAssistant = false, forDoctor =
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
           className={`${inputClass} resize-none`}
-          placeholder="شرح کامل درخواست..."
         />
       </div>
 
-      {requestType === "consultation" && (
+      {forPatient && requestSubtype === "accommodation" && (
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">تعداد همراه مرد</label>
+            <input type="number" min="0" value={companionMale} onChange={(e) => setCompanionMale(e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">تعداد همراه زن</label>
+            <input type="number" min="0" value={companionFemale} onChange={(e) => setCompanionFemale(e.target.value)} className={inputClass} />
+          </div>
+        </div>
+      )}
+
+      {((forPatient && requestSubtype === "expense") || requestType === "financial") && (
         <>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              تخصص پزشک {forHealthAssistant || forDoctor ? "" : "(اختیاری)"}
-            </label>
-          <RenderDropdown
-            value={specialty}
-            setValue={setSpecialty}
-            options={specialtyOptions}
-            placeholder="انتخاب تخصص..."
-            name="specialty"
-          />
-          </div>
-          {(forHealthAssistant || forDoctor) && (
-          <>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">نوع تماس</label>
-            <div className="flex gap-2 flex-wrap">
-              {CONSULTATION_MODES.map((m) => (
+            <label className="block text-sm font-semibold text-gray-700 mb-2">موضوع هزینه</label>
+            <div className="flex flex-wrap gap-2">
+              {EXPENSE_CATEGORIES.map((c) => (
                 <button
-                  key={m}
+                  key={c.value}
                   type="button"
-                  onClick={() => setConsultationMode(m)}
+                  onClick={() => setExpenseCategory(c.value)}
                   className={`px-3 py-1.5 rounded-lg text-sm ${
-                    consultationMode === m
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-600"
+                    expenseCategory === c.value ? "bg-blue-600 text-white" : "bg-gray-100"
                   }`}
                 >
-                  {m}
+                  {c.label}
                 </button>
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">تاریخ ترجیحی</label>
-              <PersianDateInput value={preferredDate} onChange={setPreferredDate} />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">ساعت ترجیحی</label>
-              <PersianTimeInput value={preferredTime} onChange={setPreferredTime} />
-            </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">پیوست مدارک</label>
+            <input type="file" multiple onChange={(e) => setAttachments(Array.from(e.target.files || []))} className={inputClass} />
           </div>
-          </>
-          )}
         </>
       )}
 
-      {requestType === "financial" && (
+      {((forPatient && requestSubtype === "visit") || requestType === "consultation") && (
         <>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">مبلغ مورد نیاز (تومان)</label>
-            <input
-              type="number"
-              value={amountNeeded}
-              onChange={(e) => setAmountNeeded(e.target.value)}
-              className={inputClass}
-              placeholder="مبلغ..."
-            />
+            <label className="block text-sm font-semibold text-gray-700 mb-2">تخصص</label>
+            <RenderDropdown value={specialty} setValue={setSpecialty} options={specialtyOptions} placeholder="انتخاب تخصص..." name="specialty" />
           </div>
-          {(forHealthAssistant || forDoctor) && fundRecipientOptions.length > 0 && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                گیرنده وجه (پس از تکمیل درخواست)
-              </label>
-              <RenderDropdown
-                value={fundRecipient}
-                setValue={setFundRecipient}
-                options={fundRecipientOptions}
-                placeholder="پیش‌فرض: خودم"
-                name="fund-recipient"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                وجه جمع‌آوری‌شده پس از تأیید نهایی به کیف پول این شخص واریز می‌شود.
-              </p>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">نام پزشک (اختیاری)</label>
+            <input type="text" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className={inputClass} />
+          </div>
         </>
       )}
 
-      {requestType === "service" && (
+      {(requestType === "financial" || requestType === "regional") && !forPatient && (
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">خدمت مورد نیاز</label>
-          <input
-            type="text"
-            value={neededService}
-            onChange={(e) => setNeededService(e.target.value)}
-            className={inputClass}
-            placeholder="مثلاً همراه‌سرا، توانبخشی..."
-          />
+          <label className="block text-sm font-semibold text-gray-700 mb-2">مبلغ (تومان)</label>
+          <input type="number" value={amountNeeded} onChange={(e) => setAmountNeeded(e.target.value)} className={inputClass} />
         </div>
       )}
 
-      {error && (
-        <p className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+      {requestType === "financial" && (forHealthAssistant || forDoctor) && fundRecipientOptions.length > 0 && (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">گیرنده وجه</label>
+          <RenderDropdown value={fundRecipient} setValue={setFundRecipient} options={fundRecipientOptions} placeholder="پیش‌فرض: خودم" name="fund-recipient" />
+        </div>
       )}
-      {success && (
-        <p className="text-emerald-700 text-sm bg-emerald-50 px-3 py-2 rounded-lg">{success}</p>
+
+      {requestType === "service" && !forPatient && (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">خدمت مورد نیاز</label>
+          <input type="text" value={neededService} onChange={(e) => setNeededService(e.target.value)} className={inputClass} />
+        </div>
       )}
+
+      {error && <p className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+      {success && <p className="text-blue-700 text-sm bg-blue-50 px-3 py-2 rounded-lg">{success}</p>}
 
       <button
         type="submit"
         disabled={submitting}
-        className="w-full py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+        className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {submitting ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
         ثبت درخواست

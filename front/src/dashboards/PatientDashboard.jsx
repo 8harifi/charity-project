@@ -79,7 +79,7 @@ const PatientDashboard = () => {
         </div>
       )}
       {activeTab === "newRequest" && (
-        <NewRequestForm onSuccess={() => setActiveTab("myRequests")} />
+        <NewRequestForm forPatient onSuccess={() => setActiveTab("myRequests")} />
       )}
       {activeTab === "myRequests" && (
         <RequestListPanel

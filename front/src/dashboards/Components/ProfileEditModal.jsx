@@ -12,19 +12,38 @@ const EDIT_FIELDS = {
     { key: "city", label: "شهر" },
     { key: "address", label: "آدرس", multiline: true },
     { key: "sickness_description", label: "شرح حال بیماری", multiline: true },
+    { key: "skill", label: "مهارت" },
+    { key: "family_status", label: "وضعیت خانواده", multiline: true },
     { key: "contact1_full_name", label: "نام آشنای اول" },
     { key: "contact1_phone_number", label: "تلفن آشنای اول" },
     { key: "contact2_full_name", label: "نام آشنای دوم" },
     { key: "contact2_phone_number", label: "تلفن آشنای دوم" },
   ],
   doctor: [
+    { key: "first_name", label: "نام" },
+    { key: "last_name", label: "نام خانوادگی" },
+    { key: "father_name", label: "نام پدر" },
     { key: "phone_number", label: "تلفن همراه" },
     { key: "province", label: "استان" },
     { key: "city", label: "شهر" },
     { key: "address", label: "آدرس", multiline: true },
   ],
-  benefactor: [{ key: "phone_number", label: "تلفن همراه" }],
+  benefactor: [
+    { key: "first_name", label: "نام" },
+    { key: "last_name", label: "نام خانوادگی" },
+    { key: "national_code", label: "کد ملی" },
+    { key: "phone_number", label: "تلفن همراه" },
+    { key: "province", label: "استان" },
+    { key: "city", label: "شهر" },
+  ],
+  admin: [
+    { key: "first_name", label: "نام" },
+    { key: "last_name", label: "نام خانوادگی" },
+    { key: "phone_number", label: "تلفن همراه" },
+  ],
   health_assistant_individual: [
+    { key: "first_name", label: "نام" },
+    { key: "last_name", label: "نام خانوادگی" },
     { key: "phone_number", label: "تلفن همراه" },
     { key: "job", label: "شغل" },
     { key: "province", label: "استان" },
@@ -33,11 +52,16 @@ const EDIT_FIELDS = {
     { key: "work_address", label: "آدرس محل کار", multiline: true },
   ],
   health_assistant_organization: [
+    { key: "name", label: "نام سازمان" },
+    { key: "director_first_name", label: "نام رئیس" },
+    { key: "director_last_name", label: "نام خانوادگی رئیس" },
     { key: "director_phone_number", label: "تلفن همراه رئیس" },
     { key: "director_landline_number", label: "تلفن ثابت رئیس" },
     { key: "province", label: "استان" },
     { key: "city", label: "شهر" },
     { key: "address", label: "آدرس مجموعه", multiline: true },
+    { key: "social_unit_head_first_name", label: "نام رئیس واحد مددکاری" },
+    { key: "social_unit_head_last_name", label: "نام خانوادگی رئیس واحد" },
     { key: "social_unit_head_phone_number", label: "تلفن همراه رئیس واحد مددکاری" },
     { key: "social_unit_head_landline_number", label: "تلفن ثابت رئیس واحد" },
   ],
@@ -46,18 +70,29 @@ const EDIT_FIELDS = {
 const PROFILE_KEY_MAP = {
   phoneNumber: "phone_number",
   landlineNumber: "landline_number",
+  firstName: "first_name",
+  lastName: "last_name",
+  fatherName: "father_name",
+  nationalCode: "national_code",
   sickness_description: "sickness_description",
   illness: "sickness_description",
+  skill: "skill",
+  familyStatus: "family_status",
   contact1Name: "contact1_full_name",
   contact1Phone: "contact1_phone_number",
   contact2Name: "contact2_full_name",
   contact2Phone: "contact2_phone_number",
   homeAddress: "home_address",
   workAddress: "work_address",
+  directorFirstName: "director_first_name",
+  directorLastName: "director_last_name",
   directorPhoneNumber: "director_phone_number",
   directorLandlineNumber: "director_landline_number",
+  socialUnitHeadFirstName: "social_unit_head_first_name",
+  socialUnitHeadLastName: "social_unit_head_last_name",
   socialUnitHeadPhone: "social_unit_head_phone_number",
   socialUnitHeadLandline: "social_unit_head_landline_number",
+  name: "name",
 };
 
 function getFieldKey(role, profileType) {
@@ -84,12 +119,16 @@ export default function ProfileEditModal({ open, onClose, role, profile, profile
     [role, profileType]
   );
   const [form, setForm] = useState({});
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (open && profile) {
       setForm(buildInitialForm(profile, fieldSet));
+      setImageFile(null);
+      setImagePreview(profile.avatar || "");
       setError("");
     }
   }, [open, profile, fieldSet]);
@@ -100,7 +139,7 @@ export default function ProfileEditModal({ open, onClose, role, profile, profile
     setSaving(true);
     setError("");
     try {
-      const r = await profileService.updateProfile(form);
+      const r = await profileService.updateProfile(form, imageFile);
       onSaved?.(r.data);
       onClose();
     } catch (err) {
@@ -134,6 +173,35 @@ export default function ProfileEditModal({ open, onClose, role, profile, profile
             </button>
           </div>
 
+          <div className="mb-5 flex items-center gap-4">
+            {imagePreview ? (
+              <img
+                src={imagePreview}
+                alt="پروفایل"
+                className="w-16 h-16 rounded-full object-cover border border-gray-200"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-gray-100 border border-gray-200" />
+            )}
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                عکس پروفایل
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setImageFile(file);
+                  if (file) {
+                    setImagePreview(URL.createObjectURL(file));
+                  }
+                }}
+                className="w-full text-sm text-gray-600"
+              />
+            </div>
+          </div>
+
           <div className="space-y-4">
             {fieldSet.map((f) => (
               <div key={f.key}>
@@ -145,14 +213,14 @@ export default function ProfileEditModal({ open, onClose, role, profile, profile
                     value={form[f.key] || ""}
                     onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
                     rows={3}
-                    className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200 resize-none"
+                    className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-200 resize-none"
                   />
                 ) : (
                   <input
                     type="text"
                     value={form[f.key] || ""}
                     onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
-                    className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-emerald-200"
+                    className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
                   />
                 )}
               </div>
@@ -168,7 +236,7 @@ export default function ProfileEditModal({ open, onClose, role, profile, profile
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {saving && <Loader2 size={18} className="animate-spin" />}
               ذخیره
@@ -197,7 +265,7 @@ export function ProfileTabContent({ fields, role, profile, profileType, onProfil
         <button
           type="button"
           onClick={() => setEditOpen(true)}
-          className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700"
+          className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700"
         >
           ویرایش پروفایل
         </button>

@@ -9,12 +9,21 @@ import {
   CheckCircle2,
   Clock,
   ShieldCheck,
+  Search,
+  Edit,
+  Wallet,
+  Building2,
 } from "lucide-react";
 import DashboardShell from "./Components/DashboardShell";
 import DashboardOverview from "./Components/DashboardOverview";
 import NewRequestForm from "./Components/NewRequestForm";
 import RequestListPanel from "./Components/RequestListPanel";
 import IntroducePatientModal from "./Components/IntroducePatientModal";
+import HAPatientsBrowsePanel from "./Components/HAPatientsBrowsePanel";
+import HAPatientEditModal from "./Components/HAPatientEditModal";
+import GlobalSearchPanel from "./Components/GlobalSearchPanel";
+import PayoutPanel from "./Components/PayoutPanel";
+import OrgSubordinatesPanel from "./Components/OrgSubordinatesPanel";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { ProfileTabContent } from "./Components/ProfileEditModal";
 import { healthAssistantDashboardService } from "../Services/healthAssistantDashboardService";
@@ -30,6 +39,8 @@ const SalamatyarDashboard = () => {
   const [patientSearch, setPatientSearch] = useState("");
   const [approvingPatient, setApprovingPatient] = useState(null);
   const [approving, setApproving] = useState(false);
+  const [editPatient, setEditPatient] = useState(null);
+  const [staffRequests, setStaffRequests] = useState([]);
 
   const loadProfile = useCallback(async () => {
     const r = await healthAssistantDashboardService.getProfile();
@@ -45,11 +56,21 @@ const SalamatyarDashboard = () => {
     }
   }, []);
 
+  const loadStaffRequests = useCallback(async () => {
+    try {
+      const r = await requestService.staffRequests();
+      setStaffRequests(Array.isArray(r.data) ? r.data : []);
+    } catch {
+      setStaffRequests([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadProfile();
     dashboardService.getStats().then((r) => setStats(r.data)).catch(console.error);
     loadPatients();
-  }, [loadProfile, loadPatients]);
+    loadStaffRequests();
+  }, [loadProfile, loadPatients, loadStaffRequests]);
 
   const headerStats = useMemo(() => {
     if (!stats) return [];
@@ -105,13 +126,36 @@ const SalamatyarDashboard = () => {
     });
   }, [patients, patientSearch]);
 
+  const perms = profile?.permissions || {};
+
   const tabs = [
     { id: "overview", label: "پیشخوان", icon: LayoutDashboard },
     { id: "myPatients", label: "بیماران من", icon: Users },
+    { id: "allPatients", label: "همه بیماران", icon: Search },
+    {
+      id: "globalSearch",
+      label: "جستجوی کلی",
+      icon: Search,
+      hidden: !(
+        perms.can_search_patients ||
+        perms.can_search_doctors ||
+        perms.can_search_assistants ||
+        perms.can_search_benefactors ||
+        perms.can_search_organizations
+      ),
+    },
     { id: "newRequest", label: "ثبت درخواست برای بیمار", icon: FilePlus },
     { id: "requests", label: "درخواست‌ها", icon: List },
+    { id: "staffRequests", label: "درخواست‌های پزشک", icon: ShieldCheck },
+    {
+      id: "subordinates",
+      label: "زیرمجموعه‌ها",
+      icon: Building2,
+      hidden: profile?.profileType !== "organization",
+    },
+    { id: "payout", label: "تسویه", icon: Wallet },
     { id: "profile", label: "پروفایل", icon: User },
-  ];
+  ].filter((t) => !t.hidden);
 
   if (!profile) {
     return (
@@ -141,7 +185,7 @@ const SalamatyarDashboard = () => {
             <button
               type="button"
               onClick={() => setIntroduceOpen(true)}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700"
             >
               <UserPlus size={18} />
               معرفی بیمار
@@ -152,7 +196,7 @@ const SalamatyarDashboard = () => {
             value={patientSearch}
             onChange={(e) => setPatientSearch(e.target.value)}
             placeholder="جستجو نام، موبایل، کد بیمار..."
-            className="w-full mb-4 p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-200"
+            className="w-full mb-4 p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-200"
           />
 
           {filteredPatients.length === 0 ? (
@@ -184,22 +228,49 @@ const SalamatyarDashboard = () => {
                       <button
                         type="button"
                         onClick={() => setApprovingPatient(p)}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 shrink-0"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 shrink-0"
                       >
                         <ShieldCheck size={14} />
                         تأیید بیمار
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => setEditPatient(p)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 border border-blue-200 text-blue-700 rounded-lg text-xs font-semibold hover:bg-blue-50 shrink-0"
+                    >
+                      <Edit size={14} />
+                      ویرایش
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (!window.confirm("حذف بیمار از لیست شما؟")) return;
+                        await requestService.removePatient(p.id);
+                        loadPatients();
+                      }}
+                      className="text-xs px-3 py-1.5 border border-red-200 text-red-600 rounded-lg shrink-0"
+                    >
+                      حذف
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
+          <HAPatientEditModal
+            open={!!editPatient}
+            patient={editPatient}
+            onClose={() => setEditPatient(null)}
+            onSaved={loadPatients}
+          />
+
           <IntroducePatientModal
             open={introduceOpen}
             onClose={() => setIntroduceOpen(false)}
             onSuccess={() => loadPatients()}
+            introducer={profile}
           />
 
           <ConfirmDialog
@@ -214,6 +285,20 @@ const SalamatyarDashboard = () => {
             onCancel={() => setApprovingPatient(null)}
           />
         </div>
+      )}
+
+      {activeTab === "allPatients" && (
+        <HAPatientsBrowsePanel
+          defaultScope="others"
+          onClaimOrphan={async (id) => {
+            await requestService.claimPatient(id);
+            loadPatients();
+          }}
+        />
+      )}
+
+      {activeTab === "globalSearch" && (
+        <GlobalSearchPanel permissions={profile.permissions || {}} />
       )}
 
       {activeTab === "newRequest" && (
@@ -231,6 +316,46 @@ const SalamatyarDashboard = () => {
           mode="staffManage"
         />
       )}
+
+      {activeTab === "payout" && <PayoutPanel />}
+
+      {activeTab === "staffRequests" && (
+        <div className="text-right space-y-3">
+          <h2 className="text-lg font-bold text-gray-800">درخواست‌های پزشکان</h2>
+          {staffRequests.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">درخواستی ثبت نشده.</p>
+          ) : (
+            staffRequests.map((sr) => (
+              <div key={sr.id} className="border rounded-xl p-4 bg-white">
+                <h3 className="font-bold">{sr.subject}</h3>
+                <p className="text-sm text-gray-500 mt-1">{sr.created_by_name} — {sr.status_label}</p>
+                {sr.patient_name && (
+                  <p className="text-sm text-gray-600 mt-1">بیمار: {sr.patient_name}</p>
+                )}
+                {sr.amount_needed != null && (
+                  <p className="text-sm text-gray-600">
+                    مبلغ: {Number(sr.amount_needed).toLocaleString("fa-IR")} تومان
+                  </p>
+                )}
+                <p className="text-sm mt-2">{sr.description}</p>
+                {sr.network_request && (
+                  <p className="text-sm text-blue-700 mt-2">
+                    درخواست مالی #{sr.network_request} — {sr.financial_status_label}
+                  </p>
+                )}
+                {sr.status === "pending" && (
+                  <div className="flex gap-2 mt-3">
+                    <button type="button" onClick={() => requestService.updateStaffRequestStatus(sr.id, "accept").then(loadStaffRequests)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm">پذیرش</button>
+                    <button type="button" onClick={() => requestService.updateStaffRequestStatus(sr.id, "reject").then(loadStaffRequests)} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-sm">رد</button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === "subordinates" && <OrgSubordinatesPanel />}
 
       {activeTab === "profile" && (
         <ProfileTabContent
