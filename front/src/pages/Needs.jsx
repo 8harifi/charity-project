@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa';
 import CharityCard from "../copmonent/home/CharityCard";
 import BackgroundNetwork3D from "../copmonent/home/BackgroundNetwork3D";
+import DonateModal from "../components/DonateModal";
 import { campaignService } from "../Services/dashboardApi";
 
 const DEFAULT_IMAGE =
@@ -28,8 +29,9 @@ const Needs = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
+  const [donateTarget, setDonateTarget] = useState(null);
 
-  useEffect(() => {
+  const loadCampaigns = () => {
     campaignService
       .list()
       .then((r) => {
@@ -55,16 +57,9 @@ const Needs = () => {
       })
       .catch(() => setCampaigns([]))
       .finally(() => setIsLoading(false));
-  }, []);
-
-  const handleDonate = (campaignId) => {
-    const token = localStorage.getItem("access");
-    if (!token) {
-      navigate("/loginpage");
-      return;
-    }
-    navigate(`/charitable/dashboard?tab=newDonation&campaignId=${campaignId}`);
   };
+
+  useEffect(loadCampaigns, []);
 
   const filteredNeeds = useMemo(() => campaigns.filter((need) => {
     const matchesSearch =
@@ -180,7 +175,7 @@ const Needs = () => {
                 >
                   <CharityCard 
                     {...need}
-                    onDonateClick={() => handleDonate(need.id)}
+                    onDonateClick={() => setDonateTarget(need)}
                     onFavoriteClick={() => toggleFavorite(need.id)}
                     onShareClick={() => alert(`اشتراک‌گذاری: ${need.title}`)}
                     isFavorite={favorites.includes(need.id)}
@@ -199,9 +194,17 @@ const Needs = () => {
       </div>
 
       {/* دکمه شناور */}
-      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="fixed bottom-8 left-8 z-50 p-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full shadow-2xl" onClick={() => navigate("/loginpage")}>
+      <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="fixed bottom-8 left-8 z-50 p-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full shadow-2xl" onClick={() => navigate("/campaigns")}>
         <FaMoneyBillWave className="text-2xl" />
       </motion.button>
+
+      {donateTarget && (
+        <DonateModal
+          campaign={donateTarget}
+          onClose={() => setDonateTarget(null)}
+          onDonated={loadCampaigns}
+        />
+      )}
     </div>
   );
 };

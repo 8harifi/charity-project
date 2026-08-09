@@ -6,7 +6,7 @@ export const DASHBOARD_ROUTES = {
   health_assistant: "/salamatyar/dashboard",
   service_center: "/healthcenter/dashboard",
   charity_center: "/charitycenter/dashboard",
-  social_work_unit: "/loginpage",
+  social_work_unit: "/healthcenter/dashboard",
   admin: "/admin/dashboard",
 };
 

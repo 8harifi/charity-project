@@ -355,6 +355,18 @@ export default function HealthAssistantMapSection() {
             سلامتیاری با این مشخصات یافت نشد.
           </p>
         )}
+
+        {selectedAssistant && (
+          <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedAssistant(null)}>
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full text-right" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-xl font-bold text-blue-900">{selectedAssistant.name}</h3>
+              <p className="text-sm text-gray-500 mt-1">کد: {selectedAssistant.code}</p>
+              <p className="text-sm mt-2">{selectedAssistant.province} — {selectedAssistant.city}</p>
+              {selectedAssistant.description && <p className="text-sm mt-3 text-gray-600">{selectedAssistant.description}</p>}
+              <button type="button" onClick={() => setSelectedAssistant(null)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl">بستن</button>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -38,6 +38,7 @@ import SignupSuccess from "./pages/SignupSuccess";
 import SalamatyaranSignupIndividual from "./pages/Auth/SalamatyaranSignupIndividual.jsx";
 import SalamatyaranSignupOrganization from "./pages/Auth/SalamatyaranSignupOrganization.jsx";
 import ContactSection from "./pages/ContactSection.jsx";
+import RoleGuard from "./copmonent/RoleGaurd";
 
 
 function App() {
@@ -72,13 +73,13 @@ function App() {
           <Route path="/signuprole" element={<SignupRole/>}/>
 
 
-          <Route path="/charitable/dashboard" element={<CharitableDashboard/>}/>
-          <Route path="/doctor/dashboard" element={<DoctorDashboard/>}/>
-          <Route path="/patient/dashboard" element={<PatientDashboard/>}/>
-          <Route path="/charitycenter/dashboard" element={<CharityCenterDashboard/>}/>
-          <Route path="/salamatyar/dashboard" element={<SalamatyarDashboard/>}/>
-          <Route path="/healthcenter/dashboard" element={<HealthCenter/>}/>
-          <Route path="/admin/dashboard" element={<AdminDashboard/>}/>
+          <Route path="/charitable/dashboard" element={<RoleGuard allowedRoles={["benefactor"]}><CharitableDashboard/></RoleGuard>}/>
+          <Route path="/doctor/dashboard" element={<RoleGuard allowedRoles={["doctor"]}><DoctorDashboard/></RoleGuard>}/>
+          <Route path="/patient/dashboard" element={<RoleGuard allowedRoles={["patient"]}><PatientDashboard/></RoleGuard>}/>
+          <Route path="/charitycenter/dashboard" element={<RoleGuard allowedRoles={["charity_center"]}><CharityCenterDashboard/></RoleGuard>}/>
+          <Route path="/salamatyar/dashboard" element={<RoleGuard allowedRoles={["health_assistant"]}><SalamatyarDashboard/></RoleGuard>}/>
+          <Route path="/healthcenter/dashboard" element={<RoleGuard allowedRoles={["service_center", "social_work_unit"]}><HealthCenter/></RoleGuard>}/>
+          <Route path="/admin/dashboard" element={<RoleGuard allowedRoles={["admin"]}><AdminDashboard/></RoleGuard>}/>
           <Route path="/wallet/topup/result" element={<WalletTopupResult/>}/>
 
 

@@ -13,6 +13,12 @@ export const walletService = {
   donate(data) {
     return apiClient.post("/wallet/donate/", data);
   },
+  adjustPledge(networkRequestId, amount) {
+    return apiClient.post("/wallet/donate/adjust-pledge/", {
+      network_request_id: networkRequestId,
+      amount,
+    });
+  },
   getPatientAidSummary() {
     return apiClient.get("/patient/aid-summary/");
   },

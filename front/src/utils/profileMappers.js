@@ -17,7 +17,8 @@ export function fullName(first, last, fallback = "") {
   return n || fallback;
 }
 
-function avatarFor(username, seed) {
+function avatarFor(username, seed, profileImageUrl) {
+  if (profileImageUrl) return profileImageUrl;
   return (
     "https://api.dicebear.com/7.x/avataaars/svg?seed=" +
     encodeURIComponent(String(seed || username || "user"))
@@ -60,7 +61,9 @@ export function mapPatientProfile(response) {
     contact1Phone: p.contact1_phone_number || "",
     contact2Name: p.contact2_full_name || "",
     contact2Phone: p.contact2_phone_number || "",
-    avatar: avatarFor(u.username, "patient"),
+    introducerName: p.introducer_name || "",
+    introducerCode: p.introducer_code || "",
+    avatar: avatarFor(u.username, "patient", u.profile_image_url),
     state: u.state !== false,
   };
 }
@@ -84,7 +87,7 @@ export function mapDoctorProfile(response) {
     city: d.city || "",
     address: d.address || "",
     cooperatesWithAll: d.cooperates_with_all,
-    avatar: avatarFor(u.username, "doctor"),
+    avatar: avatarFor(u.username, "doctor", u.profile_image_url),
     state: u.state !== false,
   };
 }
@@ -101,9 +104,42 @@ export function mapBenefactorProfile(response) {
     phoneNumber: b.phone_number || "",
     nationalCode: b.national_code || "",
     gender: lookupLabel(b.gender) || b.gender_name || "",
-    avatar: avatarFor(u.username, "benefactor"),
+    province: b.province || "",
+    city: b.city || "",
+    avatar: avatarFor(u.username, "benefactor", u.profile_image_url),
     state: u.state !== false,
   };
+}
+
+function extractHaPermissions(ha) {
+  if (!ha) return {};
+  const keys = [
+    "can_approve_patients",
+    "can_edit_patients",
+    "can_claim_orphan_patients",
+    "can_create_financial",
+    "can_create_services",
+    "can_create_visits",
+    "can_approve_registration_all",
+    "can_edit_registration_all",
+    "can_approve_visits_all",
+    "can_edit_visits_all",
+    "can_approve_financial_all",
+    "can_edit_financial_all",
+    "can_approve_services_all",
+    "can_edit_services_all",
+    "can_search_patients",
+    "can_search_doctors",
+    "can_search_assistants",
+    "can_search_benefactors",
+    "can_search_organizations",
+    "org_approved",
+  ];
+  const out = {};
+  keys.forEach((k) => {
+    out[k] = Boolean(ha[k]);
+  });
+  return out;
 }
 
 export function mapHealthAssistantProfile(ha) {
@@ -117,6 +153,7 @@ export function mapHealthAssistantProfile(ha) {
     cooperationDescription: ha.cooperation_description || "",
     memberSince: ha.created_at ? String(ha.created_at).slice(0, 10) : "",
     profileType: ind ? "individual" : org ? "organization" : "",
+    permissions: extractHaPermissions(ha),
   };
 
   if (ind) {
@@ -173,7 +210,7 @@ export function mapHealthAssistantProfileFromMe(response) {
   return {
     ...mapped,
     username: u.username || mapped.username,
-    avatar: avatarFor(u.username, "health-assistant"),
+    avatar: avatarFor(u.username, "health-assistant", u.profile_image_url),
     state: u.state !== false,
   };
 }
@@ -184,6 +221,7 @@ export function patientProfileFields(p) {
   return [
     { label: "نام کاربری", value: p.username },
     { label: "کد بیمار", value: p.patientCode },
+    { label: "سلامتیار معرف", value: p.introducerName ? `${p.introducerName} (${p.introducerCode})` : "—" },
     { label: "نام", value: p.firstName },
     { label: "نام خانوادگی", value: p.lastName },
     { label: "نام پدر", value: p.fatherName },
@@ -242,6 +280,8 @@ export function benefactorProfileFields(p) {
     { label: "کد ملی", value: p.nationalCode },
     { label: "جنسیت", value: p.gender },
     { label: "تلفن همراه", value: p.phoneNumber },
+    { label: "استان", value: p.province },
+    { label: "شهر", value: p.city },
     { label: "تاریخ عضویت", value: p.memberSince },
   ];
 }
