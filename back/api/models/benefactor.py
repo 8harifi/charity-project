@@ -30,6 +30,9 @@ class Benefactor(models.Model):
         blank=True,
     )
 
+    province = models.CharField(max_length=100, blank=True, default="")
+    city = models.CharField(max_length=100, blank=True, default="")
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

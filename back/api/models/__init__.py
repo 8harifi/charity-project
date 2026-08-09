@@ -9,4 +9,7 @@ from .health_assistant import *
 from .benefactor import *
 from .admin_profile import *
 from .misc import *
+from .organization_application import *
+from .platform_audit_log import *
+from .payout import *
 from .wallet import *

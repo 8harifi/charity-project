@@ -57,9 +57,30 @@ class PatientServiceRequest(models.Model):
 
 class NetworkRequest(models.Model):
     REQUEST_TYPES = [
-        ("consultation", "درخواست پزشکی"),
+        ("consultation", "درخواست ویزیت"),
         ("financial", "حمایت مالی"),
         ("service", "دریافت خدمات"),
+        ("regional", "نیازمندی منطقه"),
+    ]
+    REQUEST_SUBTYPES = [
+        ("accommodation", "رزرو اسکان"),
+        ("expense", "هزینه‌کرد"),
+        ("visit", "وقت ویزیت"),
+        ("other", "سایر"),
+    ]
+    EXPENSE_CATEGORIES = [
+        ("visit", "ویزیت"),
+        ("medicine", "دارو"),
+        ("lab", "آزمایش"),
+        ("imaging", "تصویربرداری"),
+        ("equipment", "تجهیزات"),
+        ("other", "سایر"),
+    ]
+    HA_APPROVAL_STATUSES = [
+        ("not_required", "نیاز به تأیید ندارد"),
+        ("pending", "در انتظار تأیید سلامتیار"),
+        ("approved", "تأیید شده"),
+        ("rejected", "رد شده"),
     ]
     CONSULTATION_MODES = [
         ("حضوری", "حضوری"),
@@ -79,6 +100,9 @@ class NetworkRequest(models.Model):
         Patient,
         on_delete=models.CASCADE,
         related_name="network_requests",
+        null=True,
+        blank=True,
+        help_text="Optional for regional needs requests.",
     )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -126,6 +150,20 @@ class NetworkRequest(models.Model):
     appointment_phone = models.CharField(max_length=20, blank=True, default="")
     confirmation_message = models.TextField(blank=True, default="")
     needed_service = models.CharField(max_length=512, blank=True, default="")
+    request_subtype = models.CharField(
+        max_length=20, choices=REQUEST_SUBTYPES, blank=True, default=""
+    )
+    expense_category = models.CharField(
+        max_length=20, choices=EXPENSE_CATEGORIES, blank=True, default=""
+    )
+    doctor_name = models.CharField(max_length=200, blank=True, default="")
+    companion_male_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    companion_female_count = models.PositiveSmallIntegerField(null=True, blank=True)
+    ha_approval_status = models.CharField(
+        max_length=20,
+        choices=HA_APPROVAL_STATUSES,
+        default="not_required",
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -146,6 +184,76 @@ class NetworkRequest(models.Model):
 
     def __str__(self):
         return f"{self.get_request_type_display()} — {self.subject}"
+
+
+class RequestAttachment(models.Model):
+    request = models.ForeignKey(
+        NetworkRequest,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+    )
+    file = models.FileField(upload_to="requests/attachments/")
+    label = models.CharField(max_length=100, blank=True, default="")
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class StaffRequest(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "در انتظار بررسی"),
+        ("accepted", "پذیرفته شده"),
+        ("rejected", "رد شده"),
+        ("in_progress", "در حال انجام"),
+        ("completed", "تکمیل شده"),
+        ("cancelled", "لغو شده"),
+    ]
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="staff_requests_created",
+    )
+    health_assistant = models.ForeignKey(
+        "HealthAssistant",
+        on_delete=models.CASCADE,
+        related_name="staff_requests",
+    )
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="staff_requests",
+    )
+    doctor_name = models.CharField(max_length=200, blank=True, default="")
+    subject = models.CharField(max_length=255)
+    description = models.TextField()
+    amount_needed = models.DecimalField(
+        max_digits=12, decimal_places=0, null=True, blank=True
+    )
+    network_request = models.ForeignKey(
+        "NetworkRequest",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="source_staff_requests",
+    )
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="pending"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
 
 
 class RequestStatusLog(models.Model):
@@ -175,6 +283,10 @@ class BenefactorDonation(models.Model):
     ]
     STATUS_CHOICES = [
         ("pending", "در انتظار"),
+        ("held", "رزرو شده"),
+        ("released", "آزاد شده"),
+        ("refunded", "بازگردانده شده"),
+        ("cancelled", "لغو شده"),
         ("completed", "تکمیل شده"),
     ]
     DESTINATION_TYPES = [
@@ -274,6 +386,14 @@ class Campaign(models.Model):
         null=True,
         blank=True,
         related_name="campaigns_created",
+    )
+    source_request = models.ForeignKey(
+        "NetworkRequest",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="campaigns",
+        help_text="Regional NetworkRequest that spawned this campaign, if any.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

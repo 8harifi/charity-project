@@ -29,6 +29,40 @@ class HealthAssistant(models.Model):
     )
     cooperation_description = models.TextField()
 
+    # Baseline capabilities, scoped to patients this assistant introduced.
+    can_approve_patients = models.BooleanField(default=True)
+    can_claim_orphan_patients = models.BooleanField(default=True)
+    can_create_financial = models.BooleanField(default=True)
+    can_create_services = models.BooleanField(default=True)
+    can_create_visits = models.BooleanField(default=True)
+    can_edit_patients = models.BooleanField(default=True)
+
+    # Widen approve/edit from "my caseload" to every patient on the platform.
+    can_approve_registration_all = models.BooleanField(default=False)
+    can_edit_registration_all = models.BooleanField(default=False)
+    can_approve_visits_all = models.BooleanField(default=False)
+    can_edit_visits_all = models.BooleanField(default=False)
+    can_approve_financial_all = models.BooleanField(default=False)
+    can_edit_financial_all = models.BooleanField(default=False)
+    can_approve_services_all = models.BooleanField(default=False)
+    can_edit_services_all = models.BooleanField(default=False)
+
+    # Which entity types this assistant may reach through the global search.
+    can_search_patients = models.BooleanField(default=True)
+    can_search_doctors = models.BooleanField(default=True)
+    can_search_assistants = models.BooleanField(default=False)
+    can_search_benefactors = models.BooleanField(default=False)
+    can_search_organizations = models.BooleanField(default=False)
+
+    org_approved = models.BooleanField(default=False)
+    parent_organization = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="subordinate_assistants",
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
 

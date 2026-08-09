@@ -17,6 +17,7 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=30, choices=ROLE_CHOICES)
 
     state = models.BooleanField(default=False)
+    profile_image = models.ImageField(upload_to="profiles/", blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if self.is_superuser:
