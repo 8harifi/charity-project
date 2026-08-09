@@ -13,6 +13,7 @@ from .patient import PatientSerializer
 
 class ProfileSerializer(serializers.ModelSerializer):
     profile = serializers.SerializerMethodField()
+    profile_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
@@ -23,8 +24,18 @@ class ProfileSerializer(serializers.ModelSerializer):
             "role",
             "first_name",
             "last_name",
+            "profile_image_url",
             "profile",
         ]
+
+    def get_profile_image_url(self, obj: CustomUser):
+        if not obj.profile_image:
+            return None
+        request = self.context.get("request")
+        url = obj.profile_image.url
+        if request is not None:
+            return request.build_absolute_uri(url)
+        return url
 
     def get_profile(self, obj: CustomUser):
         role = obj.role

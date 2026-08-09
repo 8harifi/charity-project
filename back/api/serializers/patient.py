@@ -195,7 +195,25 @@ class HealthAssistantPatientSignupSerializer(PatientSignupSerializer):
 
 class PatientSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    introducer_name = serializers.SerializerMethodField()
+    introducer_code = serializers.SerializerMethodField()
 
     class Meta:
         model = Patient
         fields = "__all__"
+
+    def get_introducer_name(self, obj):
+        if not obj.introducer_id:
+            return ""
+        ha = obj.introducer
+        if getattr(ha, "individual_profile", None):
+            ind = ha.individual_profile
+            return f"{ind.first_name} {ind.last_name}".strip()
+        if getattr(ha, "organization_profile", None):
+            return ha.organization_profile.name
+        return ""
+
+    def get_introducer_code(self, obj):
+        if not obj.introducer_id:
+            return ""
+        return obj.introducer.health_assistance_code

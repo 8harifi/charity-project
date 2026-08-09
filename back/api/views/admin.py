@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.http import HttpResponse
 from rest_framework import status
 from rest_framework.response import Response
@@ -41,6 +41,8 @@ from ..serializers.admin import (
     admin_profile_payload,
 )
 from ..serializers.requests import NetworkRequestSerializer
+from ..services.audit_service import log_audit_event
+from .requests import filter_by_scope
 
 
 LOOKUP_REGISTRY = {
@@ -67,6 +69,28 @@ def _lookup_model(slug):
     return entry[0]
 
 
+REQUEST_STATUS_LABELS = {
+    "pending": "در انتظار",
+    "accepted": "پذیرفته‌شده",
+    "in_progress": "در حال انجام",
+    "completed": "تکمیل‌شده",
+    "cancelled": "لغوشده",
+}
+
+
+def _request_status_breakdown():
+    rows = NetworkRequest.objects.values("status").annotate(count=Count("id"))
+    return [
+        {
+            "label": REQUEST_STATUS_LABELS.get(row["status"], row["status"]),
+            "value": row["count"],
+            "status": row["status"],
+        }
+        for row in rows
+        if row["count"]
+    ]
+
+
 class AdminStatsView(APIView):
     permission_classes = [IsPlatformAdmin]
 
@@ -86,9 +110,14 @@ class AdminStatsView(APIView):
                 "health_assistants": HealthAssistant.objects.count(),
                 "total_requests": NetworkRequest.objects.count(),
                 "pending_requests": NetworkRequest.objects.filter(status="pending").count(),
+                "in_progress_requests": NetworkRequest.objects.filter(
+                    status="in_progress"
+                ).count(),
+                "completed_requests": NetworkRequest.objects.filter(status="completed").count(),
                 "total_donations": BenefactorDonation.objects.count(),
                 "total_campaigns": Campaign.objects.count(),
                 "published_campaigns": Campaign.objects.filter(is_published=True).count(),
+                "request_status_breakdown": _request_status_breakdown(),
             }
         )
 
@@ -188,15 +217,26 @@ class AdminUserDetailView(APIView):
             account_serializer.save()
 
         if profile_data:
-            err = _patch_user_profile(user, profile_data)
+            err = _patch_user_profile(user, profile_data, actor=request.user)
             if err:
                 return Response(err, status=400)
+
+        if account_data or profile_data:
+            log_audit_event(
+                actor=request.user,
+                event_type="user_profile_updated",
+                summary=f"ویرایش حساب/پروفایل کاربر {user.username}",
+                target_type="user",
+                target_id=user.pk,
+                metadata={"role": user.role},
+            )
 
         return Response(admin_profile_payload(user))
 
 
-def _patch_user_profile(user, profile_data):
+def _patch_user_profile(user, profile_data, actor=None):
     role = user.role
+    ha_perm_updated = False
     try:
         if role == "patient":
             profile = user.patient_profile
@@ -215,6 +255,34 @@ def _patch_user_profile(user, profile_data):
             )
         elif role == "health_assistant":
             ha = user.health_assistant_profile
+            perm_fields = {
+                k: v
+                for k, v in profile_data.items()
+                if k.startswith("can_") or k == "org_approved"
+            }
+            if perm_fields:
+                from ..serializers.admin import AdminHealthAssistantPermissionsSerializer
+
+                perm_ser = AdminHealthAssistantPermissionsSerializer(
+                    ha, data=perm_fields, partial=True
+                )
+                perm_ser.is_valid(raise_exception=True)
+                perm_ser.save()
+                ha_perm_updated = True
+                if actor:
+                    log_audit_event(
+                        actor=actor,
+                        event_type="ha_permission_updated",
+                        summary=f"تغییر دسترسی سلامتیار {user.username}",
+                        target_type="health_assistant",
+                        target_id=ha.pk,
+                        metadata=perm_fields,
+                    )
+                profile_data = {
+                    k: v for k, v in profile_data.items() if k not in perm_fields
+                }
+            if not profile_data:
+                return None
             try:
                 profile = ha.individual_profile
                 serializer = AdminIndividualHASerializer(
@@ -280,13 +348,7 @@ class AdminUserRequestsView(APIView):
         else:
             qs = qs.none()
 
-        if scope == "active":
-            qs = qs.filter(status__in=("pending", "accepted", "in_progress"))
-        elif scope == "completed":
-            qs = qs.filter(status="completed")
-        elif scope == "rejected":
-            qs = qs.filter(status="rejected")
-
+        qs = filter_by_scope(qs, scope)
         return Response(NetworkRequestSerializer(qs.order_by("-created_at"), many=True).data)
 
 
@@ -301,12 +363,7 @@ class AdminRequestsView(APIView):
 
         if request_type:
             qs = qs.filter(request_type=request_type)
-        if scope == "active":
-            qs = qs.filter(status__in=("pending", "accepted", "in_progress"))
-        elif scope == "completed":
-            qs = qs.filter(status="completed")
-        elif scope == "rejected":
-            qs = qs.filter(status="rejected")
+        qs = filter_by_scope(qs, scope)
         if search:
             qs = qs.filter(
                 Q(subject__icontains=search)
@@ -355,6 +412,14 @@ class AdminLookupItemsView(APIView):
         if model.objects.filter(name=name).exists():
             return Response({"detail": msg.LOOKUP_NAME_ALREADY_EXISTS}, status=400)
         row = model.objects.create(name=name)
+        log_audit_event(
+            actor=request.user,
+            event_type="lookup_created",
+            summary=f"افزودن «{name}» به {slug}",
+            target_type="lookup",
+            target_id=row.id,
+            metadata={"slug": slug, "name": name},
+        )
         return Response({"id": row.id, "name": row.name}, status=status.HTTP_201_CREATED)
 
 
@@ -382,11 +447,29 @@ class AdminLookupItemDetailView(APIView):
             return Response({"detail": msg.LOOKUP_NAME_ALREADY_EXISTS}, status=400)
         row.name = name
         row.save(update_fields=["name"])
+        log_audit_event(
+            actor=request.user,
+            event_type="lookup_updated",
+            summary=f"ویرایش داده پایه {slug} به «{name}»",
+            target_type="lookup",
+            target_id=row.id,
+            metadata={"slug": slug, "name": name},
+        )
         return Response({"id": row.id, "name": row.name})
 
     def delete(self, request, slug, item_id):
         row, err = self._get_row(slug, item_id)
         if err:
             return err
+        row_id = row.id
+        row_name = row.name
         row.delete()
+        log_audit_event(
+            actor=request.user,
+            event_type="lookup_deleted",
+            summary=f"حذف «{row_name}» از {slug}",
+            target_type="lookup",
+            target_id=row_id,
+            metadata={"slug": slug, "name": row_name},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)

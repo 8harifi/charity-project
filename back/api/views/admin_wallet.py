@@ -23,6 +23,7 @@ from ..services.wallet_service import (
     debit_wallet,
     get_or_create_benefactor_wallet,
 )
+from ..services.audit_service import log_audit_event
 
 
 class AdminGatewayPaymentsView(APIView):
@@ -115,6 +116,20 @@ class AdminWalletAdjustView(APIView):
             return Response({"detail": str(exc)}, status=400)
 
         wallet.refresh_from_db(fields=["cached_balance", "held_balance"])
+        log_audit_event(
+            actor=request.user,
+            event_type="wallet_adjusted",
+            summary=f"تنظیم موجودی {data['direction']} به مبلغ {amount} برای {user.username}",
+            target_type="wallet",
+            target_id=wallet.pk,
+            metadata={
+                "direction": data["direction"],
+                "amount": str(amount),
+                "phone": user.username,
+                "reason": reason,
+                "transaction_id": tx.pk,
+            },
+        )
         return Response(
             {
                 "message": "تنظیم موجودی با موفقیت انجام شد.",

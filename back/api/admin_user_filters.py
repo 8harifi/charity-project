@@ -7,6 +7,7 @@ from .models import (
     Doctor,
     HealthAssistant,
     IndividualHealthAssistant,
+    OrganizationApplication,
     OrganizationHealthAssistant,
     Patient,
 )
@@ -24,6 +25,12 @@ def filter_admin_users(request):
     patient_code = request.query_params.get("patient_code", "").strip()
     date_from = request.query_params.get("date_from", "").strip()
     date_to = request.query_params.get("date_to", "").strip()
+    province = request.query_params.get("province", "").strip()
+    city = request.query_params.get("city", "").strip()
+    org_type = request.query_params.get("org_type", "").strip()
+    org_subtype = request.query_params.get("org_subtype", "").strip()
+    org_role = request.query_params.get("org_role", "").strip()
+    description = request.query_params.get("description", "").strip()
 
     if role:
         qs = qs.filter(role=role)
@@ -95,7 +102,64 @@ def filter_admin_users(request):
     if patient_code:
         qs = qs.filter(patient_profile__patient_code__icontains=patient_code)
 
+    if province:
+        qs = qs.filter(
+            Q(patient_profile__province__icontains=province)
+            | Q(doctor_profile__province__icontains=province)
+            | Q(benefactor_profile__province__icontains=province)
+            | Q(health_assistant_profile__individual_profile__province__icontains=province)
+            | Q(health_assistant_profile__organization_profile__province__icontains=province)
+            | Q(organization_application__province__icontains=province)
+        ).distinct()
+
+    if city:
+        qs = qs.filter(
+            Q(patient_profile__city__icontains=city)
+            | Q(doctor_profile__city__icontains=city)
+            | Q(benefactor_profile__city__icontains=city)
+            | Q(health_assistant_profile__individual_profile__city__icontains=city)
+            | Q(health_assistant_profile__organization_profile__city__icontains=city)
+            | Q(organization_application__city__icontains=city)
+        ).distinct()
+
+    if org_type:
+        qs = qs.filter(
+            Q(health_assistant_profile__organization_profile__organization_type__name__icontains=org_type)
+            | Q(organization_application__org_type__icontains=org_type)
+        ).distinct()
+
+    if org_subtype:
+        qs = qs.filter(
+            organization_application__org_subtype__icontains=org_subtype
+        ).distinct()
+
+    if org_role:
+        qs = qs.filter(organization_application__organization_role=org_role)
+
+    if description:
+        qs = qs.filter(network_description_q(description)).distinct()
+
     return qs
+
+
+def network_description_q(term: str) -> Q:
+    """Match the «توضیحات عضو شبکه» concept across every profile type.
+
+    There is no single such column: a health assistant describes their cooperation,
+    a patient lists skills and illness, and organizations keep everything (sharable
+    facilities, specialisation, target community) inside the signup JSON payload.
+    """
+    return (
+        Q(health_assistant_profile__cooperation_description__icontains=term)
+        | Q(health_assistant_profile__cooperation_type__name__icontains=term)
+        | Q(patient_profile__sickness_description__icontains=term)
+        | Q(patient_profile__skill__icontains=term)
+        | Q(doctor_profile__specialty__name__icontains=term)
+        | Q(organization_application__payload__icontains=term)
+        | Q(organization_application__org_type__icontains=term)
+        | Q(organization_application__org_subtype__icontains=term)
+        | Q(organization_application__name__icontains=term)
+    )
 
 
 def user_profile_phone(user):

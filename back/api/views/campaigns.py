@@ -7,6 +7,7 @@ from .. import messages as msg
 from ..models import Campaign
 from ..permissions import IsPlatformAdmin
 from ..serializers.campaigns import CampaignPublicSerializer, CampaignSerializer
+from ..services.audit_service import log_audit_event
 
 
 class CampaignListView(APIView):
@@ -30,6 +31,14 @@ class AdminCampaignListCreateView(APIView):
         serializer = CampaignSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         campaign = serializer.save(created_by=request.user)
+        log_audit_event(
+            actor=request.user,
+            event_type="campaign_created",
+            summary=f"ایجاد کمپین «{campaign.title}»",
+            target_type="campaign",
+            target_id=campaign.pk,
+            metadata={"title": campaign.title},
+        )
         return Response(CampaignSerializer(campaign).data, status=status.HTTP_201_CREATED)
 
 
@@ -55,11 +64,28 @@ class AdminCampaignDetailView(APIView):
         serializer = CampaignSerializer(campaign, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        log_audit_event(
+            actor=request.user,
+            event_type="campaign_updated",
+            summary=f"ویرایش کمپین «{campaign.title}»",
+            target_type="campaign",
+            target_id=campaign.pk,
+        )
         return Response(CampaignSerializer(campaign).data)
 
     def delete(self, request, pk):
         campaign = self._get(pk)
         if not campaign:
             return Response({"detail": msg.NOT_FOUND}, status=404)
+        title = campaign.title
+        campaign_id = campaign.pk
         campaign.delete()
+        log_audit_event(
+            actor=request.user,
+            event_type="campaign_deleted",
+            summary=f"حذف کمپین «{title}»",
+            target_type="campaign",
+            target_id=campaign_id,
+            metadata={"title": title},
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)

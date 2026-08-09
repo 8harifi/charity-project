@@ -41,6 +41,11 @@ class DonateSerializer(serializers.Serializer):
     description = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+class AdjustPledgeSerializer(serializers.Serializer):
+    network_request_id = serializers.IntegerField()
+    amount = serializers.DecimalField(max_digits=14, decimal_places=0, min_value=0)
+
+
 class DonationListSerializer(serializers.ModelSerializer):
     campaign_title = serializers.SerializerMethodField()
     patient_label = serializers.SerializerMethodField()

@@ -196,6 +196,104 @@ def donate_from_wallet(
 
 
 @transaction.atomic
+def adjust_request_pledge(
+    *,
+    benefactor_user,
+    network_request_id,
+    new_amount,
+) -> BenefactorDonation | None:
+    """Change a benefactor's held pledge on an open request before final confirmation.
+
+    Refunds existing held pledges for this benefactor+request, then re-pledges
+    ``new_amount`` (or only refunds when ``new_amount`` is 0).
+    """
+    try:
+        new_amt = Decimal(str(new_amount))
+    except Exception as exc:
+        raise DonationError(msg.INVALID_AMOUNT) from exc
+    if new_amt < 0:
+        raise DonationError(msg.AMOUNT_MUST_BE_POSITIVE)
+
+    try:
+        req = NetworkRequest.objects.select_for_update().get(pk=network_request_id)
+    except NetworkRequest.DoesNotExist as exc:
+        raise DonationError(msg.FINANCIAL_REQUEST_NOT_FOUND) from exc
+
+    if req.request_type not in ("financial", "consultation"):
+        raise DonationError(msg.REQUEST_NOT_FINANCIAL)
+    if req.status not in ("pending", "accepted", "in_progress"):
+        raise DonationError(msg.REQUEST_NOT_PAYABLE)
+
+    holds = list(
+        DonationHold.objects.select_for_update().filter(
+            benefactor=benefactor_user,
+            network_request=req,
+            status="held",
+        )
+    )
+    if not holds:
+        raise DonationError("تعهد معلقی برای تغییر وجود ندارد.")
+
+    current = sum((h.amount for h in holds), Decimal("0"))
+    if new_amt == current:
+        donation = (
+            BenefactorDonation.objects.filter(
+                benefactor=benefactor_user,
+                network_request=req,
+                status="held",
+            )
+            .order_by("-id")
+            .first()
+        )
+        return donation
+
+    wallet = get_or_create_benefactor_wallet(benefactor_user)
+    for hold in holds:
+        refund_tx = refund_hold(
+            wallet,
+            hold.amount,
+            reference_type="network_request",
+            reference_id=req.pk,
+            description=f"Pledge adjust refund for request: {req.subject}",
+            created_by=benefactor_user,
+        )
+        hold.status = "refunded"
+        hold.refund_transaction = refund_tx
+        hold.closed_by = benefactor_user
+        hold.closed_at = timezone.now()
+        hold.save(
+            update_fields=[
+                "status",
+                "refund_transaction",
+                "closed_by",
+                "closed_at",
+            ]
+        )
+        NetworkRequest.objects.filter(pk=req.pk).update(
+            collected_amount=F("collected_amount") - hold.amount,
+            updated_at=timezone.now(),
+        )
+
+    BenefactorDonation.objects.filter(
+        benefactor=benefactor_user,
+        network_request=req,
+        status="held",
+    ).update(status="cancelled")
+
+    if new_amt == 0:
+        return None
+
+    return donate_from_wallet(
+        benefactor_user=benefactor_user,
+        amount=new_amt,
+        destination_type="request",
+        network_request_id=req.pk,
+        title=req.subject,
+        description="ویرایش مبلغ تعهد",
+    )
+
+
+@transaction.atomic
 def close_financial_request(
     *,
     request_id: int,

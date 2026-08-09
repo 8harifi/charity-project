@@ -1,9 +1,16 @@
 from django.db import models
 from rest_framework import serializers
 
-from ..models import CustomUser, NetworkRequest, Patient, RequestStatusLog, Specialty
+from ..models import CustomUser, NetworkRequest, Patient, RequestAttachment, RequestStatusLog, Specialty
 from ..models.wallet import DonationHold
+from ..utils import (
+    ha_can_access_patient,
+    ha_orphan_patients,
+    ha_search_patients,
+    request_type_domain,
+)
 from .lookup_utils import resolve_lookup
+from .staff_requests import RequestAttachmentSerializer
 
 
 class RequestStatusLogSerializer(serializers.ModelSerializer):
@@ -38,21 +45,83 @@ class RequestStatusLogSerializer(serializers.ModelSerializer):
         return labels.get(obj.status, obj.status)
 
 
+def is_fully_funded(obj) -> bool:
+    """A financial request whose target is met but which nobody has closed yet.
+
+    Money is only released once the creator confirms delivery, so the row keeps the
+    `in_progress` status. Benefactors read that as "not done", hence the distinction.
+    """
+    if obj.status not in ("pending", "accepted", "in_progress"):
+        return False
+    needed = obj.amount_needed or 0
+    if needed <= 0:
+        return False
+    return (obj.collected_amount or 0) >= needed
+
+
+def request_status_label(obj) -> str:
+    if is_fully_funded(obj):
+        return "تأمین مالی شد — در انتظار تسویه"
+    return obj.get_status_display()
+
+
+def creator_display_name(user) -> str:
+    if user.role == "health_assistant":
+        try:
+            ha = user.health_assistant_profile
+            if getattr(ha, "individual_profile", None):
+                ind = ha.individual_profile
+                return f"{ind.first_name} {ind.last_name}".strip()
+            if getattr(ha, "organization_profile", None):
+                return ha.organization_profile.name
+        except Exception:
+            pass
+    elif user.role == "doctor":
+        try:
+            d = user.doctor_profile
+            return f"{d.first_name} {d.last_name}".strip()
+        except Exception:
+            pass
+    elif user.role == "patient":
+        try:
+            p = user.patient_profile
+            return f"{p.first_name} {p.last_name}".strip()
+        except Exception:
+            pass
+    return user.username
+
+
+def creator_national_code(user) -> str:
+    try:
+        if user.role == "health_assistant":
+            return user.health_assistant_profile.individual_profile.national_code or ""
+        if user.role == "doctor":
+            return user.doctor_profile.national_code or ""
+        if user.role == "patient":
+            return user.patient_profile.national_code or ""
+    except Exception:
+        return ""
+    return ""
+
+
 class NetworkRequestSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
-    patient_code = serializers.CharField(source="patient.patient_code", read_only=True)
+    patient_code = serializers.SerializerMethodField()
     specialty_name = serializers.SerializerMethodField()
     request_type_label = serializers.CharField(source="get_request_type_display", read_only=True)
-    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    status_label = serializers.SerializerMethodField()
+    is_fully_funded = serializers.SerializerMethodField()
     handled_by_name = serializers.SerializerMethodField()
     created_by_role = serializers.CharField(source="created_by.role", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+    created_by_national_code = serializers.SerializerMethodField()
     fund_recipient_name = serializers.SerializerMethodField()
     status_logs = RequestStatusLogSerializer(many=True, read_only=True)
-    illness_summary = serializers.CharField(
-        source="patient.sickness_description",
-        read_only=True,
-        default="",
-    )
+    attachments = RequestAttachmentSerializer(many=True, read_only=True)
+    request_subtype_label = serializers.SerializerMethodField()
+    expense_category_label = serializers.SerializerMethodField()
+    ha_approval_status_label = serializers.SerializerMethodField()
+    illness_summary = serializers.SerializerMethodField()
     collected_amount = serializers.DecimalField(max_digits=12, decimal_places=0, read_only=True)
     remaining = serializers.SerializerMethodField()
     my_pledge = serializers.SerializerMethodField()
@@ -68,6 +137,8 @@ class NetworkRequestSerializer(serializers.ModelSerializer):
             "patient_code",
             "created_by",
             "created_by_role",
+            "created_by_name",
+            "created_by_national_code",
             "specialty",
             "specialty_name",
             "subject",
@@ -85,8 +156,19 @@ class NetworkRequestSerializer(serializers.ModelSerializer):
             "appointment_phone",
             "confirmation_message",
             "needed_service",
+            "request_subtype",
+            "request_subtype_label",
+            "expense_category",
+            "expense_category_label",
+            "doctor_name",
+            "companion_male_count",
+            "companion_female_count",
+            "ha_approval_status",
+            "ha_approval_status_label",
+            "attachments",
             "status",
             "status_label",
+            "is_fully_funded",
             "handled_by",
             "handled_by_name",
             "fund_recipient",
@@ -106,12 +188,44 @@ class NetworkRequestSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def get_status_label(self, obj):
+        return request_status_label(obj)
+
+    def get_is_fully_funded(self, obj):
+        return is_fully_funded(obj)
+
+    def get_created_by_name(self, obj):
+        return creator_display_name(obj.created_by)
+
+    def get_created_by_national_code(self, obj):
+        return creator_national_code(obj.created_by)
+
+    def get_request_subtype_label(self, obj):
+        labels = dict(NetworkRequest.REQUEST_SUBTYPES)
+        return labels.get(obj.request_subtype, obj.request_subtype)
+
+    def get_expense_category_label(self, obj):
+        labels = dict(NetworkRequest.EXPENSE_CATEGORIES)
+        return labels.get(obj.expense_category, obj.expense_category)
+
+    def get_ha_approval_status_label(self, obj):
+        labels = dict(NetworkRequest.HA_APPROVAL_STATUSES)
+        return labels.get(obj.ha_approval_status, obj.ha_approval_status)
+
     def get_specialty_name(self, obj):
         return obj.specialty.name if obj.specialty else ""
 
     def get_patient_name(self, obj):
         p = obj.patient
+        if not p:
+            return "نیازمندی منطقه"
         return f"{p.first_name} {p.last_name}".strip()
+
+    def get_patient_code(self, obj):
+        return obj.patient.patient_code if obj.patient_id else ""
+
+    def get_illness_summary(self, obj):
+        return obj.patient.sickness_description if obj.patient_id else ""
 
     def get_handled_by_name(self, obj):
         if not obj.handled_by:
@@ -166,7 +280,9 @@ def fund_recipient_options(user):
 
 
 class NetworkRequestCreateSerializer(serializers.Serializer):
-    request_type = serializers.ChoiceField(choices=["consultation", "financial", "service"])
+    request_type = serializers.ChoiceField(
+        choices=["consultation", "financial", "service", "regional"]
+    )
     patient_id = serializers.IntegerField(required=False)
     specialty = serializers.IntegerField(required=False, allow_null=True)
     subject = serializers.CharField(max_length=255)
@@ -186,6 +302,21 @@ class NetworkRequestCreateSerializer(serializers.Serializer):
     preferred_date = serializers.CharField(required=False, allow_blank=True, default="")
     preferred_time = serializers.CharField(required=False, allow_blank=True, default="")
     needed_service = serializers.CharField(required=False, allow_blank=True, default="")
+    request_subtype = serializers.ChoiceField(
+        choices=[c[0] for c in NetworkRequest.REQUEST_SUBTYPES],
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    expense_category = serializers.ChoiceField(
+        choices=[c[0] for c in NetworkRequest.EXPENSE_CATEGORIES],
+        required=False,
+        allow_blank=True,
+        default="",
+    )
+    doctor_name = serializers.CharField(required=False, allow_blank=True, default="")
+    companion_male_count = serializers.IntegerField(required=False, allow_null=True)
+    companion_female_count = serializers.IntegerField(required=False, allow_null=True)
 
     def validate(self, attrs):
         request_type = attrs["request_type"]
@@ -227,8 +358,11 @@ class NetworkRequestCreateSerializer(serializers.Serializer):
                 else:
                     attrs["fund_recipient"] = user
         elif request_type == "service":
-            if not attrs.get("needed_service"):
+            if not attrs.get("needed_service") and not attrs.get("request_subtype"):
                 raise serializers.ValidationError({"needed_service": "نوع خدمت الزامی است."})
+        elif request_type == "regional":
+            if not attrs.get("amount_needed"):
+                raise serializers.ValidationError({"amount_needed": "مبلغ هدف کمپین الزامی است."})
 
         patient_id = attrs.get("patient_id")
         if user.role == "patient":
@@ -240,16 +374,36 @@ class NetworkRequestCreateSerializer(serializers.Serializer):
                 raise serializers.ValidationError({"patient_id": "بیمار فقط می‌تواند برای خود درخواست ثبت کند."})
             attrs["patient"] = patient
         elif user.role == "health_assistant":
-            if not patient_id:
-                raise serializers.ValidationError({"patient_id": "انتخاب بیمار الزامی است."})
-            try:
-                patient = Patient.objects.get(pk=patient_id)
-            except Patient.DoesNotExist:
-                raise serializers.ValidationError({"patient_id": "بیمار یافت نشد."})
             ha = user.health_assistant_profile
-            if patient.introducer_id != ha.pk:
-                raise serializers.ValidationError({"patient_id": "این بیمار تحت پوشش شما نیست."})
-            attrs["patient"] = patient
+            if request_type == "regional":
+                # Regional needs are about an area, not a specific patient.
+                attrs["patient"] = None
+                if patient_id:
+                    try:
+                        attrs["patient"] = Patient.objects.get(pk=patient_id)
+                    except Patient.DoesNotExist:
+                        raise serializers.ValidationError({"patient_id": "بیمار یافت نشد."})
+            else:
+                if not patient_id:
+                    raise serializers.ValidationError({"patient_id": "انتخاب بیمار الزامی است."})
+                try:
+                    patient = Patient.objects.get(pk=patient_id)
+                except Patient.DoesNotExist:
+                    raise serializers.ValidationError({"patient_id": "بیمار یافت نشد."})
+                domain = request_type_domain(request_type)
+                if patient.introducer_id != ha.pk and not ha_can_access_patient(
+                    ha, patient, action="edit", domain=domain
+                ):
+                    raise serializers.ValidationError(
+                        {"patient_id": "این بیمار تحت پوشش شما نیست."}
+                    )
+                if request_type == "financial" and not ha.can_create_financial:
+                    raise serializers.ValidationError("مجوز ثبت درخواست مالی ندارید.")
+                if request_type == "consultation" and not ha.can_create_visits:
+                    raise serializers.ValidationError("مجوز ثبت درخواست ویزیت ندارید.")
+                if request_type == "service" and not ha.can_create_services:
+                    raise serializers.ValidationError("مجوز ثبت درخواست خدمات ندارید.")
+                attrs["patient"] = patient
         elif user.role == "doctor":
             if not patient_id:
                 raise serializers.ValidationError({"patient_id": "انتخاب بیمار الزامی است."})
@@ -272,25 +426,48 @@ class NetworkRequestCreateSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated):
+        from ..models import Campaign
+
         user = self.context["request"].user
+        request_type = validated.get("request_type")
         specialty = validated.pop("specialty", None)
         validated.pop("patient_id", None)
         validated.pop("fund_recipient_user_id", None)
-        patient = validated.pop("patient")
+        patient = validated.pop("patient", None)
+
+        ha_approval_status = "not_required"
+        initial_status = "pending"
+        if user.role == "patient":
+            ha_approval_status = "pending"
+            initial_status = "pending"
 
         network_request = NetworkRequest.objects.create(
             patient=patient,
             created_by=user,
             specialty=specialty,
-            status="pending",
+            status=initial_status,
+            ha_approval_status=ha_approval_status,
             **validated,
         )
         RequestStatusLog.objects.create(
             request=network_request,
-            status="pending",
+            status=initial_status,
             note="درخواست ثبت شد",
             actor=user,
         )
+
+        if request_type == "regional":
+            Campaign.objects.create(
+                title=network_request.subject,
+                description=network_request.description,
+                target_amount=network_request.amount_needed or 0,
+                category="تجهیزات",
+                urgency="متوسط",
+                is_published=True,
+                created_by=user,
+                source_request=network_request,
+            )
+
         return network_request
 
 
@@ -305,9 +482,18 @@ class NetworkRequestStatusSerializer(serializers.Serializer):
             "request_funding",
             "schedule",
             "confirm",
+            "ha_approve",
+            "ha_reject",
+            "set_status",
         ]
     )
     note = serializers.CharField(required=False, allow_blank=True, default="")
+    status = serializers.ChoiceField(
+        choices=[c[0] for c in NetworkRequest.STATUS_CHOICES],
+        required=False,
+        allow_blank=True,
+        default="",
+    )
     amount_needed = serializers.DecimalField(
         max_digits=12, decimal_places=0, required=False, allow_null=True
     )
@@ -318,10 +504,56 @@ class NetworkRequestStatusSerializer(serializers.Serializer):
     confirmation_message = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+class NetworkRequestEditSerializer(serializers.ModelSerializer):
+    """Fields an admin or the original submitter may correct after the fact.
+
+    Status, patient and creator stay out of it: status has its own audited endpoint
+    and reassigning a request to a different patient would orphan its donations.
+    """
+
+    class Meta:
+        model = NetworkRequest
+        fields = [
+            "subject",
+            "description",
+            "amount_needed",
+            "specialty",
+            "doctor_name",
+            "needed_service",
+            "request_subtype",
+            "expense_category",
+            "companion_male_count",
+            "companion_female_count",
+            "consultation_mode",
+            "preferred_date",
+            "preferred_time",
+            "appointment_date",
+            "appointment_time",
+            "appointment_place",
+            "appointment_phone",
+            "confirmation_message",
+        ]
+        extra_kwargs = {field: {"required": False} for field in fields}
+
+    def validate_amount_needed(self, value):
+        if value is None:
+            return value
+        collected = self.instance.collected_amount or 0
+        if value < collected:
+            raise serializers.ValidationError(
+                f"مبلغ مورد نیاز نمی‌تواند کمتر از مبلغ جمع‌آوری‌شده ({int(collected):,} تومان) باشد."
+            )
+        return value
+
+
 class PatientWorkflowRequestSerializer(serializers.ModelSerializer):
     request_type_label = serializers.CharField(source="get_request_type_display", read_only=True)
-    status_label = serializers.CharField(source="get_status_display", read_only=True)
+    status_label = serializers.SerializerMethodField()
+    is_fully_funded = serializers.SerializerMethodField()
     handled_by_name = serializers.SerializerMethodField()
+    created_by_role = serializers.CharField(source="created_by.role", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+    created_by_national_code = serializers.SerializerMethodField()
 
     class Meta:
         model = NetworkRequest
@@ -333,6 +565,7 @@ class PatientWorkflowRequestSerializer(serializers.ModelSerializer):
             "description",
             "status",
             "status_label",
+            "is_fully_funded",
             "amount_needed",
             "collected_amount",
             "appointment_date",
@@ -341,11 +574,26 @@ class PatientWorkflowRequestSerializer(serializers.ModelSerializer):
             "appointment_phone",
             "confirmation_message",
             "handled_by_name",
+            "created_by_role",
+            "created_by_name",
+            "created_by_national_code",
             "created_at",
             "updated_at",
         ]
+
+    def get_status_label(self, obj):
+        return request_status_label(obj)
+
+    def get_is_fully_funded(self, obj):
+        return is_fully_funded(obj)
 
     def get_handled_by_name(self, obj):
         if not obj.handled_by:
             return ""
         return obj.handled_by.username
+
+    def get_created_by_name(self, obj):
+        return creator_display_name(obj.created_by)
+
+    def get_created_by_national_code(self, obj):
+        return creator_national_code(obj.created_by)

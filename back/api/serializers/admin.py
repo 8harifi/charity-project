@@ -234,8 +234,50 @@ class AdminOrganizationHASerializer(serializers.ModelSerializer):
         ]
 
 
+HA_PERMISSION_FIELDS = [
+    "can_approve_patients",
+    "can_claim_orphan_patients",
+    "can_create_financial",
+    "can_create_services",
+    "can_create_visits",
+    "can_edit_patients",
+    "can_approve_registration_all",
+    "can_edit_registration_all",
+    "can_approve_visits_all",
+    "can_edit_visits_all",
+    "can_approve_financial_all",
+    "can_edit_financial_all",
+    "can_approve_services_all",
+    "can_edit_services_all",
+    "can_search_patients",
+    "can_search_doctors",
+    "can_search_assistants",
+    "can_search_benefactors",
+    "can_search_organizations",
+    "org_approved",
+]
+
+
+def health_assistant_permissions(ha) -> dict:
+    return {field: getattr(ha, field) for field in HA_PERMISSION_FIELDS}
+
+
+class AdminHealthAssistantPermissionsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HealthAssistant
+        fields = HA_PERMISSION_FIELDS
+
+
 def admin_profile_payload(user):
     data = ProfileSerializer(user).data
     data["state"] = user.state
     data["is_active"] = user.is_active
+    data["date_joined"] = user.date_joined
+    if user.role == "health_assistant":
+        try:
+            data["permissions"] = health_assistant_permissions(
+                user.health_assistant_profile
+            )
+        except Exception:
+            pass
     return data

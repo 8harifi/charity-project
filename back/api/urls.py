@@ -128,6 +128,16 @@ urlpatterns = [
         name="benefactor_my_cases",
     ),
     path(
+        "health-assistant/patients/browse/",
+        views.HealthAssistantBrowsePatientsView.as_view(),
+        name="health_assistant_browse_patients",
+    ),
+    path(
+        "health-assistant/patients/<int:pk>/",
+        views.HealthAssistantPatientDetailView.as_view(),
+        name="health_assistant_patient_detail",
+    ),
+    path(
         "health-assistant/patients/",
         views.HealthAssistantPatientsView.as_view(),
         name="health_assistant_patients",
@@ -141,6 +151,42 @@ urlpatterns = [
         "health-assistant/patients/<int:pk>/approve/",
         views.HealthAssistantApprovePatientView.as_view(),
         name="health_assistant_patient_approve",
+    ),
+    path(
+        "health-assistant/patients/orphans/",
+        views.HealthAssistantOrphanPatientsView.as_view(),
+        name="health_assistant_orphan_patients",
+    ),
+    path(
+        "health-assistant/patients/<int:pk>/claim/",
+        views.HealthAssistantClaimPatientView.as_view(),
+        name="health_assistant_claim_patient",
+    ),
+    path(
+        "health-assistant/patients/<int:pk>/remove/",
+        views.HealthAssistantRemovePatientView.as_view(),
+        name="health_assistant_remove_patient",
+    ),
+    path(
+        "health-assistant/patients/search/",
+        views.HealthAssistantPatientSearchView.as_view(),
+        name="health_assistant_patient_search",
+    ),
+    path(
+        "health-assistant/subordinates/",
+        views.OrgSubordinatesView.as_view(),
+        name="org_subordinates",
+    ),
+    path(
+        "health-assistant/subordinates/<int:pk>/",
+        views.OrgSubordinateActionView.as_view(),
+        name="org_subordinate_action",
+    ),
+    path("staff-requests/", views.StaffRequestListCreateView.as_view(), name="staff_requests"),
+    path(
+        "staff-requests/<int:pk>/status/",
+        views.StaffRequestStatusView.as_view(),
+        name="staff_request_status",
     ),
     path(
         "requests/fund-recipients/",
@@ -161,6 +207,16 @@ urlpatterns = [
         name="wallet_topup_callback",
     ),
     path("wallet/donate/", views.WalletDonateView.as_view(), name="wallet_donate"),
+    path(
+        "wallet/donate/adjust-pledge/",
+        views.WalletAdjustPledgeView.as_view(),
+        name="wallet_adjust_pledge",
+    ),
+    path(
+        "wallet/donate/guest/",
+        views.GuestCampaignDonateView.as_view(),
+        name="wallet_guest_donate",
+    ),
     path("patient/aid-summary/", views.PatientAidSummaryView.as_view(), name="patient_aid_summary"),
     path(
         "admin/wallet/payments/",
@@ -181,6 +237,72 @@ urlpatterns = [
         "admin/wallet/pledges/",
         views.AdminPledgesView.as_view(),
         name="admin_wallet_pledges",
+    ),
+    path(
+        "admin/reports/transactions/",
+        views.AdminReportTransactionsView.as_view(),
+        name="admin_report_transactions",
+    ),
+    path(
+        "admin/reports/gateway-payments/",
+        views.AdminReportGatewayPaymentsView.as_view(),
+        name="admin_report_gateway_payments",
+    ),
+    path(
+        "admin/reports/donations/",
+        views.AdminReportDonationsView.as_view(),
+        name="admin_report_donations",
+    ),
+    path(
+        "admin/reports/pledges/",
+        views.AdminReportPledgesView.as_view(),
+        name="admin_report_pledges",
+    ),
+    path(
+        "admin/reports/workflow/",
+        views.AdminReportWorkflowView.as_view(),
+        name="admin_report_workflow",
+    ),
+    path(
+        "admin/reports/requests/",
+        views.AdminReportRequestsView.as_view(),
+        name="admin_report_requests",
+    ),
+    path(
+        "admin/reports/registrations/",
+        views.AdminReportRegistrationsView.as_view(),
+        name="admin_report_registrations",
+    ),
+    path(
+        "admin/reports/staff-requests/",
+        views.AdminReportStaffRequestsView.as_view(),
+        name="admin_report_staff_requests",
+    ),
+    path(
+        "admin/reports/org-applications/",
+        views.AdminReportOrgApplicationsView.as_view(),
+        name="admin_report_org_applications",
+    ),
+    path(
+        "admin/reports/audit/",
+        views.AdminReportAuditView.as_view(),
+        name="admin_report_audit",
+    ),
+    path("payout/", views.StaffPayoutView.as_view(), name="staff_payout"),
+    path(
+        "payout/withdrawals/",
+        views.StaffWithdrawalCreateView.as_view(),
+        name="staff_withdrawal_create",
+    ),
+    path(
+        "admin/withdrawals/",
+        views.AdminWithdrawalsView.as_view(),
+        name="admin_withdrawals",
+    ),
+    path(
+        "admin/withdrawals/<int:pk>/",
+        views.AdminWithdrawalActionView.as_view(),
+        name="admin_withdrawal_action",
     ),
     path("", include(router.urls)),
 ]

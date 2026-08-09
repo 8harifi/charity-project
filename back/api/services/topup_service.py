@@ -17,6 +17,24 @@ class TopUpError(Exception):
 
 
 def _credit_verified_payment(payment: GatewayPayment) -> GatewayPayment:
+    if (payment.callback_payload or {}).get("guest_campaign_id"):
+        from ..models import Campaign, BenefactorDonation
+
+        campaign_id = payment.callback_payload["guest_campaign_id"]
+        campaign = Campaign.objects.select_for_update().get(pk=campaign_id, is_published=True)
+        campaign.raised_amount = (campaign.raised_amount or 0) + payment.amount
+        campaign.save(update_fields=["raised_amount", "updated_at"])
+        BenefactorDonation.objects.create(
+            benefactor=payment.user,
+            donation_type="cash",
+            amount=payment.amount,
+            title=campaign.title,
+            campaign_fk=campaign,
+            destination_type="campaign",
+            payment_source="gateway_direct",
+            status="completed",
+        )
+        return payment
     credit_wallet(
         payment.wallet,
         payment.amount,

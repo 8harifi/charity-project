@@ -25,16 +25,19 @@ class IsAdmin(RolePermission):
     allowed_roles = ("admin",)
 
 
+def is_platform_admin(user) -> bool:
+    if not user or not user.is_authenticated:
+        return False
+    if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
+        return True
+    return getattr(user, "role", None) == "admin"
+
+
 class IsPlatformAdmin(BasePermission):
     """Admin role, Django staff, or superuser."""
 
     def has_permission(self, request, view):
-        user = request.user
-        if not user or not user.is_authenticated:
-            return False
-        if getattr(user, "is_superuser", False) or getattr(user, "is_staff", False):
-            return True
-        return getattr(user, "role", None) == "admin"
+        return is_platform_admin(request.user)
 
 
 class IsPatient(RolePermission):

@@ -97,7 +97,7 @@ class SocialWorkUnitSignupView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        return Response(
-            {"detail": msg.SOCIAL_WORK_UNIT_SIGNUP_DISABLED},
-            status=status.HTTP_501_NOT_IMPLEMENTED,
-        )
+        from .organization_signups import _create_org_signup, _flat_payload
+
+        body = _flat_payload(request)
+        return _create_org_signup("social_work_unit", body)

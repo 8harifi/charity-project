@@ -6,6 +6,7 @@ from .. import messages as msg
 from ..models import CustomUser, Patient
 from ..permissions import IsPlatformAdmin
 from ..serializers import UserSerializer
+from ..services.audit_service import log_audit_event
 
 
 @api_view(["GET"])
@@ -47,6 +48,14 @@ def approve_user(request, user_id):
 
     user.state = True
     user.save(update_fields=["state"])
+    log_audit_event(
+        actor=request.user,
+        event_type="user_approved",
+        summary=f"تأیید کاربر {user.username} ({user.role})",
+        target_type="user",
+        target_id=user.pk,
+        metadata={"role": user.role},
+    )
     return Response({"message": msg.USER_APPROVED}, status=status.HTTP_200_OK)
 
 
@@ -60,4 +69,12 @@ def reject_user(request, user_id):
 
     user.is_active = False
     user.save(update_fields=["is_active"])
+    log_audit_event(
+        actor=request.user,
+        event_type="user_rejected",
+        summary=f"رد کاربر {user.username} ({user.role})",
+        target_type="user",
+        target_id=user.pk,
+        metadata={"role": user.role},
+    )
     return Response({"message": msg.USER_REJECTED}, status=status.HTTP_200_OK)
