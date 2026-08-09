@@ -5,7 +5,7 @@ import RequestListPanel from "./RequestListPanel";
 import SearchBox from "./SearchBox";
 import { donationService, requestService } from "../../Services/dashboardApi";
 
-export default function BenefactorSupportPanel({ onWalletPay, onRefresh }) {
+export default function BenefactorSupportPanel({ onWalletPay, onAdjustPledge, onRefresh }) {
   const [donations, setDonations] = useState([]);
   const [search, setSearch] = useState("");
   const [loadingDonations, setLoadingDonations] = useState(true);
@@ -32,6 +32,12 @@ export default function BenefactorSupportPanel({ onWalletPay, onRefresh }) {
     onRefresh?.();
   };
 
+  const handleAdjustPledge = async (requestId, amount) => {
+    await onAdjustPledge?.(requestId, amount);
+    loadDonations();
+    onRefresh?.();
+  };
+
   const filteredDonations = donations.filter(
     (d) =>
       (d.patient_label || d.patient || "").includes(search) ||
@@ -50,10 +56,14 @@ export default function BenefactorSupportPanel({ onWalletPay, onRefresh }) {
         </p>
         <RequestListPanel
           title=""
-          fetchFn={(scope) => requestService.benefactorMyCases(scope)}
+          fetchFn={(scope, filters) => requestService.benefactorMyCases(scope, filters)}
           mode="view"
           showFilters
+          advancedFilters
           defaultScope="active"
+          enableWalletPay
+          onWalletPay={handleWalletPay}
+          onAdjustPledge={handleAdjustPledge}
         />
       </section>
 

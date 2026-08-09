@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-const CHART_COLORS = ["#059669", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
+const CHART_COLORS = ["#3b82f6", "#6366f1", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4"];
 
 function StatusChart({ title, data }) {
   if (!data?.length) return null;
@@ -51,14 +51,14 @@ export default function DashboardOverview({ cards, chart, chartTitle }) {
           return (
             <div
               key={card.label}
-              className="bg-gradient-to-br from-blue-50 to-emerald-50 border border-gray-100 rounded-2xl p-6 relative overflow-hidden"
+              className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-gray-100 rounded-2xl p-6 relative overflow-hidden"
             >
               {Icon && (
-                <div className="absolute left-4 top-4 w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center text-emerald-600">
+                <div className="absolute left-4 top-4 w-10 h-10 rounded-xl bg-white/70 flex items-center justify-center text-blue-600">
                   <Icon size={20} />
                 </div>
               )}
-              <p className="text-3xl font-bold text-emerald-700 mb-2">{card.value}</p>
+              <p className="text-3xl font-bold text-blue-700 mb-2">{card.value}</p>
               <p className="text-gray-600 text-sm">{card.label}</p>
               {card.hint && (
                 <p className="text-gray-400 text-xs mt-2">{card.hint}</p>

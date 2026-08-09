@@ -16,6 +16,7 @@ export default function AdminWalletPanel() {
     reason: "",
   });
   const [msg, setMsg] = useState("");
+  const [msgIsError, setMsgIsError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,6 +45,7 @@ export default function AdminWalletPanel() {
   const handleAdjust = async (e) => {
     e.preventDefault();
     setMsg("");
+    setMsgIsError(false);
     try {
       await adminWalletService.adjustBalance({
         phone_number: form.phone_number.trim(),
@@ -52,9 +54,11 @@ export default function AdminWalletPanel() {
         reason: form.reason,
       });
       setForm({ phone_number: "", direction: "credit", amount: "", reason: "" });
+      setMsgIsError(false);
       setMsg("تنظیم موجودی با موفقیت انجام شد.");
       load();
     } catch (err) {
+      setMsgIsError(true);
       setMsg(err.response?.data?.detail || "خطا در تنظیم موجودی.");
     }
   };
@@ -62,7 +66,7 @@ export default function AdminWalletPanel() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="animate-spin text-emerald-600" size={32} />
+        <Loader2 className="animate-spin text-blue-600" size={32} />
       </div>
     );
   }
@@ -112,12 +116,14 @@ export default function AdminWalletPanel() {
           />
           <button
             type="submit"
-            className="sm:col-span-2 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700"
+            className="sm:col-span-2 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700"
           >
             اعمال تغییر
           </button>
         </form>
-        {msg && <p className="text-sm mt-3 text-emerald-700">{msg}</p>}
+        {msg && (
+          <p className={`text-sm mt-3 ${msgIsError ? "text-red-600" : "text-blue-700"}`}>{msg}</p>
+        )}
       </div>
 
       {/* Wallet Search & List */}
@@ -128,7 +134,7 @@ export default function AdminWalletPanel() {
           placeholder="جستجوی شماره موبایل..."
           value={walletSearch}
           onChange={(e) => setWalletSearch(e.target.value)}
-          className="w-full p-3 rounded-xl border border-gray-200 mb-4 outline-none focus:ring-2 focus:ring-emerald-200"
+          className="w-full p-3 rounded-xl border border-gray-200 mb-4 outline-none focus:ring-2 focus:ring-blue-200"
         />
         {wallets.length === 0 ? (
           <p className="text-gray-500 bg-gray-50 rounded-xl p-6 text-center">کیف پولی یافت نشد.</p>
@@ -142,7 +148,7 @@ export default function AdminWalletPanel() {
                   </p>
                 </div>
                 <div className="text-left">
-                  <p className="font-bold text-emerald-600">
+                  <p className="font-bold text-blue-600">
                     {Number(w.cached_balance).toLocaleString("fa-IR")} تومان
                   </p>
                   {Number(w.held_balance) > 0 && (
@@ -170,7 +176,7 @@ export default function AdminWalletPanel() {
                   <p className="font-medium">#{p.id} — {p.status}</p>
                   <p className="text-xs text-gray-500">{p.authority || "—"}</p>
                 </div>
-                <p className="font-bold text-emerald-600">
+                <p className="font-bold text-blue-600">
                   {Number(p.amount).toLocaleString("fa-IR")} تومان
                 </p>
               </div>
@@ -196,7 +202,7 @@ export default function AdminWalletPanel() {
                     {h.patient_name} — درخواست #{h.request_id}
                   </p>
                 </div>
-                <p className={`font-bold ${h.status === "held" ? "text-amber-600" : h.status === "released" ? "text-emerald-600" : "text-red-600"}`}>
+                <p className={`font-bold ${h.status === "held" ? "text-amber-600" : h.status === "released" ? "text-blue-600" : "text-red-600"}`}>
                   {Number(h.amount).toLocaleString("fa-IR")} — {h.status}
                 </p>
               </div>

@@ -80,7 +80,7 @@ export default function WalletPanel({ onBalanceChange }) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="animate-spin text-emerald-600" size={32} />
+        <Loader2 className="animate-spin text-blue-600" size={32} />
       </div>
     );
   }
@@ -98,7 +98,7 @@ export default function WalletPanel({ onBalanceChange }) {
             {loadError}
           </p>
         )}
-        <div className="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-blue-700 to-indigo-800 text-white rounded-2xl p-6 shadow-lg">
           <div className="flex items-center gap-3 mb-2">
             <Wallet size={28} />
             <h2 className="text-xl font-bold">کیف پول من</h2>
@@ -131,13 +131,13 @@ export default function WalletPanel({ onBalanceChange }) {
               value={topUpAmount}
               onChange={(e) => setTopUpAmount(e.target.value)}
               placeholder="مبلغ (تومان)"
-              className="flex-1 p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-emerald-500"
+              className="flex-1 p-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="button"
               onClick={handleTopUpClick}
               disabled={topUpLoading}
-              className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {topUpLoading ? <Loader2 className="animate-spin" size={18} /> : <CreditCard size={18} />}
               {mockPayments ? "شارژ آزمایشی" : "پرداخت آنلاین"}

@@ -14,6 +14,7 @@ const LoginPage = () => {
   const [forgotPassword, setForgotPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
   const [confirmCode, setConfirmCode] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -134,28 +135,27 @@ const LoginPage = () => {
       return;
     }
 
-    const result = await login({
-      username: sanitizePhone(phoneNumber),
-      password,
-    });
+    setLoginLoading(true);
+    try {
+      const result = await login({
+        username: sanitizePhone(phoneNumber),
+        password,
+      });
 
-    if (result.success) {
-      const {access} = result;   // ✅ get token
-
-      // ✅ decode token
-      const decoded = jwtDecode(access);
-
-      const role = decoded.role;
-
-      const target = getDashboardRoute(role);
-
-      setSuccess("ورود با موفقیت انجام شد");
-
-      setTimeout(() => {
-        navigate(target);
-      }, 700);
-    } else {
-      setError(result.error);
+      if (result.success) {
+        const { access } = result;
+        const decoded = jwtDecode(access);
+        const role = decoded.role;
+        const target = getDashboardRoute(role);
+        setSuccess("ورود با موفقیت انجام شد");
+        setTimeout(() => {
+          navigate(target);
+        }, 700);
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -683,17 +683,19 @@ const LoginPage = () => {
                     {/* button */}
                     <motion.button
                       onClick={handleLogin}
-                      whileHover={{scale: 1.02}}
-                      whileTap={{scale: 0.98}}
+                      disabled={loginLoading}
+                      whileHover={{ scale: loginLoading ? 1 : 1.02 }}
+                      whileTap={{ scale: loginLoading ? 1 : 0.98 }}
                       className="
     w-full py-3 sm:py-4 mt-3
     bg-gradient-to-l from-blue-500 to-emerald-600
     text-white rounded-xl sm:rounded-2xl
     font-bold text-sm sm:text-base md:text-lg
     shadow-lg hover:shadow-xl transition-all duration-300
+    disabled:opacity-60
   "
                     >
-                      ورود به حساب کاربری
+                      {loginLoading ? "در حال ورود..." : "ورود به حساب کاربری"}
                     </motion.button>
 
                     <div className="text-center mt-3">

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Loader2, X } from "lucide-react";
-import PatientWorkflowTimeline from "./PatientWorkflowTimeline";
 import PersianDateInput from "../../components/PersianDateInput";
 import PersianTimeInput from "../../components/PersianTimeInput";
 import FundingProgressBar from "../../components/FundingProgressBar";
@@ -290,9 +289,6 @@ export default function DoctorRequestPanel({
                   </p>
                 )}
               </div>
-
-              <h4 className="font-bold text-gray-700 mb-3">گردش کار بیمار</h4>
-              <PatientWorkflowTimeline patientId={selected.patient} />
 
               {error && selected && (
                 <p className="text-red-600 text-sm mt-4 bg-red-50 px-3 py-2 rounded-lg">{error}</p>

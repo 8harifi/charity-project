@@ -69,6 +69,7 @@ const CharitableDashboard = () => {
   const handleTabChange = (id) => {
     setActiveTab(id);
     setSearchParams(id === "overview" ? {} : { tab: id });
+    if (id === "overview") refreshStats();
   };
 
   const headerStats = useMemo(() => {
@@ -121,6 +122,11 @@ const CharitableDashboard = () => {
     refreshStats();
   };
 
+  const handleAdjustPledge = async (requestId, amount) => {
+    await walletService.adjustPledge(requestId, amount);
+    refreshStats();
+  };
+
   if (!profile) {
     return (
       <div className="flex justify-center items-center min-h-screen text-xl">
@@ -147,18 +153,23 @@ const CharitableDashboard = () => {
       {activeTab === "incoming" && (
         <RequestListPanel
           title="نیازهای مالی باز"
-          fetchFn={(scope, filters) => requestService.benefactorIncoming(filters)}
+          fetchFn={(scope, filters) => requestService.benefactorIncoming({ scope, ...filters })}
           mode="view"
-          showFilters={false}
+          showFilters
           advancedFilters
           enableWalletPay
           walletBalance={walletBalance}
           onWalletPay={handleWalletPay}
+          onAdjustPledge={handleAdjustPledge}
         />
       )}
 
       {activeTab === "mySupport" && (
-        <BenefactorSupportPanel onWalletPay={handleWalletPay} onRefresh={refreshStats} />
+        <BenefactorSupportPanel
+          onWalletPay={handleWalletPay}
+          onAdjustPledge={handleAdjustPledge}
+          onRefresh={refreshStats}
+        />
       )}
 
       {activeTab === "profile" && (

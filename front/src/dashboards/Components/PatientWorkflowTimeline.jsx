@@ -17,7 +17,11 @@ export default function PatientWorkflowTimeline({ patientId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!patientId) return;
+    if (!patientId) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     requestService
       .patientWorkflow(patientId)
@@ -25,6 +29,14 @@ export default function PatientWorkflowTimeline({ patientId }) {
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, [patientId]);
+
+  if (!patientId) {
+    return (
+      <p className="text-gray-400 text-sm">
+        بیماری به این درخواست متصل نیست (مثلاً نیازمندی منطقه).
+      </p>
+    );
+  }
 
   if (loading) {
     return (

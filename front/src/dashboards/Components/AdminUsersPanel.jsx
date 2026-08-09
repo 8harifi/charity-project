@@ -7,6 +7,14 @@ import {
   fkId,
   fkLabel,
 } from "../../Services/adminService";
+import { IRAN_PROVINCES } from "../../data/staticSignupOptions";
+import { citiesByProvince } from "../../data/iranCities";
+import {
+  ORGANIZATION_ROLES,
+  ORGANIZATION_SUBTYPES,
+  ORGANIZATION_TYPES,
+} from "../../data/organizationTypes";
+import { HA_PERMISSION_GROUPS, HA_PERMISSION_KEYS } from "../../data/haPermissions";
 
 const ROLE_FILTERS = [
   { id: "", label: "همه نقش‌ها" },
@@ -14,7 +22,17 @@ const ROLE_FILTERS = [
   { id: "doctor", label: "پزشک" },
   { id: "health_assistant", label: "سلامتیار" },
   { id: "benefactor", label: "خیر" },
+  { id: "service_center", label: "مرکز خدمات سلامت" },
+  { id: "charity_center", label: "مرکز نیکوکاری" },
+  { id: "social_work_unit", label: "واحد مددکاری" },
 ];
+
+function formatJalaliDate(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
+  return d.toLocaleDateString("fa-IR");
+}
 
 const STATE_FILTERS = [
   { id: "", label: "همه وضعیت‌ها" },
@@ -89,6 +107,7 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
   const [editMode, setEditMode] = useState(false);
   const [accountForm, setAccountForm] = useState({});
   const [profileForm, setProfileForm] = useState({});
+  const [permissionForm, setPermissionForm] = useState({});
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
@@ -113,6 +132,10 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
         form[k] = typeof v === "object" && v !== null && "id" in v ? v.id : v ?? "";
       });
       setProfileForm(form);
+      const perms = u.data.permissions || {};
+      setPermissionForm(
+        Object.fromEntries(HA_PERMISSION_KEYS.map((k) => [k, !!perms[k]]))
+      );
     } catch {
       setErr("خطا در بارگذاری کاربر");
     } finally {
@@ -139,6 +162,10 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
           profilePayload[key] = profileForm[key];
         }
       });
+
+      if (user.role === "health_assistant") {
+        Object.assign(profilePayload, permissionForm);
+      }
 
       await adminService.updateUser(userId, {
         account: {
@@ -215,7 +242,7 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
                       <button
                         type="button"
                         onClick={handleApprove}
-                        className="flex items-center gap-1 px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm"
+                        className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm"
                       >
                         <Check size={16} /> تایید کاربر
                       </button>
@@ -283,7 +310,46 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
                         <span>{user.is_active !== false ? "بله" : "خیر"}</span>
                       )}
                     </label>
+                    <div className="text-sm">
+                      <span className="text-gray-500 block mb-1">تاریخ عضویت</span>
+                      <span className="font-medium text-gray-800">
+                        {formatJalaliDate(user.date_joined)}
+                      </span>
+                    </div>
                   </div>
+
+                  {user.role === "health_assistant" && (
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-gray-700">دسترسی‌های سلامتیار</h4>
+                      {HA_PERMISSION_GROUPS.map((group) => (
+                        <div key={group.id} className="rounded-xl border border-gray-200 p-3">
+                          <p className="text-xs font-bold text-gray-500 mb-2">{group.label}</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {group.permissions.map((perm) => (
+                              <label
+                                key={perm.key}
+                                className="flex items-center gap-2 text-sm text-gray-700"
+                              >
+                                <input
+                                  type="checkbox"
+                                  disabled={!editMode}
+                                  checked={!!permissionForm[perm.key]}
+                                  onChange={(e) =>
+                                    setPermissionForm({
+                                      ...permissionForm,
+                                      [perm.key]: e.target.checked,
+                                    })
+                                  }
+                                  className="w-4 h-4 accent-blue-700"
+                                />
+                                {perm.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {user.profile ? (
                     <div className="space-y-3">
@@ -353,7 +419,7 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
                 </div>
               )}
 
-              {msg && <p className="text-emerald-700 text-sm mt-4">{msg}</p>}
+              {msg && <p className="text-blue-700 text-sm mt-4">{msg}</p>}
               {err && <p className="text-red-600 text-sm mt-4">{err}</p>}
             </div>
           </>
@@ -377,9 +443,24 @@ export default function AdminUsersPanel() {
   const [patientCode, setPatientCode] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [orgType, setOrgType] = useState("");
+  const [orgSubtype, setOrgSubtype] = useState("");
+  const [orgRole, setOrgRole] = useState("");
+  const [description, setDescription] = useState("");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [exporting, setExporting] = useState("");
+
+  const cityOptions = useMemo(
+    () => (province ? citiesByProvince[province] || [] : []),
+    [province]
+  );
+  const subtypeOptions = useMemo(
+    () => (orgType ? ORGANIZATION_SUBTYPES[orgType] || [] : []),
+    [orgType]
+  );
 
   const filterParams = useMemo(
     () => ({
@@ -392,8 +473,14 @@ export default function AdminUsersPanel() {
       patient_code: patientCode || undefined,
       date_from: dateFrom || undefined,
       date_to: dateTo || undefined,
+      province: province || undefined,
+      city: city || undefined,
+      org_type: orgType || undefined,
+      org_subtype: orgSubtype || undefined,
+      org_role: orgRole || undefined,
+      description: description || undefined,
     }),
-    [roleFilter, stateFilter, activeFilter, search, phone, nationalCode, patientCode, dateFrom, dateTo]
+    [roleFilter, stateFilter, activeFilter, search, phone, nationalCode, patientCode, dateFrom, dateTo, province, city, orgType, orgSubtype, orgRole, description]
   );
 
   const load = useCallback(async () => {
@@ -442,7 +529,7 @@ export default function AdminUsersPanel() {
             type="button"
             onClick={() => handleExport("csv")}
             disabled={!!exporting}
-            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 text-white text-sm font-semibold disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold disabled:opacity-50"
           >
             <Download size={16} />
             {exporting === "csv" ? "..." : "CSV"}
@@ -542,6 +629,82 @@ export default function AdminUsersPanel() {
             <option value="true">فقط فعال</option>
             <option value="false">فقط غیرفعال</option>
           </select>
+          <select
+            value={province}
+            onChange={(e) => {
+              setProvince(e.target.value);
+              setCity("");
+            }}
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          >
+            <option value="">همه استان‌ها</option>
+            {IRAN_PROVINCES.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            disabled={!province}
+            className="p-3 rounded-xl border border-gray-200 bg-white disabled:bg-gray-100"
+          >
+            <option value="">{province ? "همه شهرها" : "ابتدا استان را انتخاب کنید"}</option>
+            {cityOptions.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          <select
+            value={orgRole}
+            onChange={(e) => setOrgRole(e.target.value)}
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          >
+            <option value="">همه انواع عضویت سازمانی</option>
+            {ORGANIZATION_ROLES.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={orgType}
+            onChange={(e) => {
+              setOrgType(e.target.value);
+              setOrgSubtype("");
+            }}
+            className="p-3 rounded-xl border border-gray-200 bg-white"
+          >
+            <option value="">همه انواع سازمان</option>
+            {ORGANIZATION_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+          <select
+            value={orgSubtype}
+            onChange={(e) => setOrgSubtype(e.target.value)}
+            disabled={subtypeOptions.length === 0}
+            className="p-3 rounded-xl border border-gray-200 bg-white disabled:bg-gray-100"
+          >
+            <option value="">
+              {subtypeOptions.length ? "همه زیرمجموعه‌ها" : "زیرمجموعه‌ای ندارد"}
+            </option>
+            {subtypeOptions.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="توضیحات عضو شبکه — خدمات، مهارت، تجهیزات (مثلاً اسکان یا ویلچر)"
+            className="p-3 rounded-xl border border-gray-200 bg-white sm:col-span-2 lg:col-span-3"
+          />
         </div>
       )}
 
@@ -559,6 +722,7 @@ export default function AdminUsersPanel() {
                 <th className="p-3 text-right">نام</th>
                 <th className="p-3 text-right">موبایل</th>
                 <th className="p-3 text-right">نقش</th>
+                <th className="p-3 text-right">تاریخ عضویت</th>
                 <th className="p-3 text-right">وضعیت</th>
                 <th className="p-3 text-right">عملیات</th>
               </tr>
@@ -569,6 +733,7 @@ export default function AdminUsersPanel() {
                   <td className="p-3 font-medium">{u.display_name || "—"}</td>
                   <td className="p-3">{u.phone || u.username}</td>
                   <td className="p-3">{ROLE_LABELS[u.role] || u.role}</td>
+                  <td className="p-3 text-gray-600">{formatJalaliDate(u.date_joined)}</td>
                   <td className="p-3">
                     {!u.state ? (
                       <span className="text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full text-xs">
@@ -579,7 +744,7 @@ export default function AdminUsersPanel() {
                         غیرفعال
                       </span>
                     ) : (
-                      <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-xs">
+                      <span className="text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full text-xs">
                         فعال
                       </span>
                     )}
