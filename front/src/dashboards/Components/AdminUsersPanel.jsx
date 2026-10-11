@@ -7,6 +7,7 @@ import {
   fkId,
   fkLabel,
 } from "../../Services/adminService";
+import { publicApi } from "../../API/publicApi";
 import { IRAN_PROVINCES } from "../../data/staticSignupOptions";
 import { citiesByProvince } from "../../data/iranCities";
 import {
@@ -108,18 +109,34 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
   const [accountForm, setAccountForm] = useState({});
   const [profileForm, setProfileForm] = useState({});
   const [permissionForm, setPermissionForm] = useState({});
+  const [affiliationKind, setAffiliationKind] = useState("independent");
+  const [affiliatedOrganizationId, setAffiliatedOrganizationId] = useState("");
+  const [affiliatedMedicalCenterId, setAffiliatedMedicalCenterId] = useState("");
+  const [orgOptions, setOrgOptions] = useState([]);
+  const [centerOptions, setCenterOptions] = useState([]);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [u, r] = await Promise.all([
+      const [u, r, orgsRes, centersRes] = await Promise.all([
         adminService.getUser(userId),
         adminService.getUserRequests(userId, "all"),
+        publicApi.supportingOrgs().catch(() => ({ data: [] })),
+        publicApi.medicalCenters().catch(() => ({ data: [] })),
       ]);
       setUser(u.data);
       setRequests(Array.isArray(r.data) ? r.data : []);
+      setOrgOptions(
+        (Array.isArray(orgsRes.data) ? orgsRes.data : []).filter(
+          (o) => o && !String(o.id).startsWith("mc-")
+        )
+      );
+      setCenterOptions(Array.isArray(centersRes.data) ? centersRes.data : []);
+      setAffiliationKind(u.data.affiliation_kind || u.data.affiliation?.kind || "independent");
+      setAffiliatedOrganizationId(u.data.affiliated_organization_id || "");
+      setAffiliatedMedicalCenterId(u.data.affiliated_medical_center_id || "");
       setAccountForm({
         state: u.data.state !== false,
         is_active: u.data.is_active !== false,
@@ -165,6 +182,15 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
 
       if (user.role === "health_assistant") {
         Object.assign(profilePayload, permissionForm);
+        profilePayload.affiliation_kind = affiliationKind || "independent";
+        profilePayload.affiliated_organization_id =
+          affiliationKind === "affiliated" && affiliatedOrganizationId
+            ? Number(affiliatedOrganizationId)
+            : null;
+        profilePayload.affiliated_medical_center_id =
+          affiliationKind === "affiliated" && affiliatedMedicalCenterId
+            ? Number(affiliatedMedicalCenterId)
+            : null;
       }
 
       await adminService.updateUser(userId, {
@@ -320,6 +346,66 @@ function UserDetailModal({ userId, onClose, onUpdated }) {
 
                   {user.role === "health_assistant" && (
                     <div className="space-y-4">
+                      <h4 className="font-bold text-gray-700">وابستگی سلامتیار</h4>
+                      <p className="text-sm text-gray-600">
+                        {user.affiliation?.label || "سلامتیار مستقل"}
+                        {user.affiliation?.type_label ? ` — ${user.affiliation.type_label}` : ""}
+                      </p>
+                      {editMode && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <label className="text-sm sm:col-span-2">
+                            <span className="text-gray-500 block mb-1">نوع وابستگی</span>
+                            <select
+                              value={affiliationKind}
+                              onChange={(e) => {
+                                setAffiliationKind(e.target.value);
+                                if (e.target.value === "independent") {
+                                  setAffiliatedOrganizationId("");
+                                  setAffiliatedMedicalCenterId("");
+                                }
+                              }}
+                              className="w-full p-2 rounded-lg border border-gray-200"
+                            >
+                              <option value="independent">مستقل</option>
+                              <option value="affiliated">وابسته</option>
+                            </select>
+                          </label>
+                          {affiliationKind === "affiliated" && (
+                            <>
+                              <label className="text-sm">
+                                <span className="text-gray-500 block mb-1">مرکز درمانی</span>
+                                <select
+                                  value={affiliatedMedicalCenterId}
+                                  onChange={(e) => setAffiliatedMedicalCenterId(e.target.value)}
+                                  className="w-full p-2 rounded-lg border border-gray-200"
+                                >
+                                  <option value="">—</option>
+                                  {centerOptions.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                      {c.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="text-sm">
+                                <span className="text-gray-500 block mb-1">سازمان حامی</span>
+                                <select
+                                  value={affiliatedOrganizationId}
+                                  onChange={(e) => setAffiliatedOrganizationId(e.target.value)}
+                                  className="w-full p-2 rounded-lg border border-gray-200"
+                                >
+                                  <option value="">—</option>
+                                  {orgOptions.map((o) => (
+                                    <option key={o.id} value={o.id}>
+                                      {o.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </>
+                          )}
+                        </div>
+                      )}
                       <h4 className="font-bold text-gray-700">دسترسی‌های سلامتیار</h4>
                       {HA_PERMISSION_GROUPS.map((group) => (
                         <div key={group.id} className="rounded-xl border border-gray-200 p-3">

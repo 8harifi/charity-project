@@ -58,6 +58,21 @@ export const adminService = {
   deleteCampaign(id) {
     return apiClient.delete(`/admin/campaigns/${id}/`);
   },
+  listMedicalCenters() {
+    return apiClient.get("/admin/medical-centers/");
+  },
+  createMedicalCenter(data) {
+    return apiClient.post("/admin/medical-centers/", data);
+  },
+  deleteMedicalCenter(id) {
+    return apiClient.delete(`/admin/medical-centers/${id}/`);
+  },
+  uploadMedicalCenterImage(id, formData) {
+    return apiClient.post(`/admin/medical-centers/${id}/images/`, formData);
+  },
+  deleteMedicalCenterImage(centerId, imageId) {
+    return apiClient.delete(`/admin/medical-centers/${centerId}/images/${imageId}/`);
+  },
 };
 
 export const ROLE_LABELS = {

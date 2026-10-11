@@ -7,6 +7,7 @@ export default function AdminWalletPanel() {
   const [payments, setPayments] = useState([]);
   const [wallets, setWallets] = useState([]);
   const [pledges, setPledges] = useState([]);
+  const [generalDonations, setGeneralDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [walletSearch, setWalletSearch] = useState("");
   const [form, setForm] = useState({
@@ -15,24 +16,31 @@ export default function AdminWalletPanel() {
     amount: "",
     reason: "",
   });
+  const [payRequestForm, setPayRequestForm] = useState({
+    network_request_id: "",
+    amount: "",
+  });
   const [msg, setMsg] = useState("");
   const [msgIsError, setMsgIsError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [pRes, wRes, plRes] = await Promise.all([
+      const [pRes, wRes, plRes, gRes] = await Promise.all([
         adminWalletService.listGatewayPayments({ page_size: 30 }),
         adminWalletService.listWallets(walletSearch),
         adminWalletService.listPledges({ page_size: 30 }),
+        adminWalletService.listGeneralDonations({ page_size: 30 }),
       ]);
       setPayments(pRes.data?.results || []);
       setWallets(Array.isArray(wRes.data) ? wRes.data : []);
       setPledges(plRes.data?.results || []);
+      setGeneralDonations(gRes.data?.results || []);
     } catch {
       setPayments([]);
       setWallets([]);
       setPledges([]);
+      setGeneralDonations([]);
     } finally {
       setLoading(false);
     }
@@ -123,6 +131,84 @@ export default function AdminWalletPanel() {
         </form>
         {msg && (
           <p className={`text-sm mt-3 ${msgIsError ? "text-red-600" : "text-blue-700"}`}>{msg}</p>
+        )}
+      </div>
+
+      <div className="bg-gray-50 border border-gray-100 rounded-2xl p-6">
+        <h3 className="font-bold text-gray-800 mb-2">پرداخت درخواست از کیف پول سامانه</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          کمک‌های کلی وارد کیف پول سامانه می‌شود؛ مدیر می‌تواند به تشخیص خود از همان موجودی درخواست مالی را پرداخت کند.
+        </p>
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setMsg("");
+            setMsgIsError(false);
+            try {
+              await adminWalletService.payRequest(
+                Number(payRequestForm.network_request_id),
+                Number(payRequestForm.amount)
+              );
+              setPayRequestForm({ network_request_id: "", amount: "" });
+              setMsg("پرداخت از کیف پول سامانه انجام شد.");
+              load();
+            } catch (err) {
+              setMsgIsError(true);
+              setMsg(err.response?.data?.detail || "پرداخت انجام نشد.");
+            }
+          }}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+        >
+          <input
+            type="number"
+            required
+            placeholder="شناسه درخواست"
+            value={payRequestForm.network_request_id}
+            onChange={(e) =>
+              setPayRequestForm((f) => ({ ...f, network_request_id: e.target.value }))
+            }
+            className="p-3 rounded-xl border border-gray-200"
+          />
+          <input
+            type="number"
+            required
+            placeholder="مبلغ (تومان)"
+            value={payRequestForm.amount}
+            onChange={(e) => setPayRequestForm((f) => ({ ...f, amount: e.target.value }))}
+            className="p-3 rounded-xl border border-gray-200"
+          />
+          <button
+            type="submit"
+            className="sm:col-span-2 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700"
+          >
+            پرداخت از کیف پول سامانه
+          </button>
+        </form>
+      </div>
+
+      <div>
+        <h3 className="font-bold text-gray-800 mb-2">کمک‌های کلی</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          مبالغی که خیر بدون انتخاب کمپین یا درخواست، به تشخیص مدیریت سامانه اهدا کرده است.
+        </p>
+        {generalDonations.length === 0 ? (
+          <p className="text-gray-500 bg-gray-50 rounded-xl p-6 text-center">کمک کلی ثبت نشده است.</p>
+        ) : (
+          <div className="space-y-2">
+            {generalDonations.map((d) => (
+              <div key={d.id} className="bg-white border rounded-xl p-4 flex justify-between gap-4">
+                <div>
+                  <p className="font-medium">{d.title || "کمک کلی"}</p>
+                  <p className="text-xs text-gray-500">
+                    {d.benefactor_username || "مهمان"} — {d.status_label || d.status}
+                  </p>
+                </div>
+                <p className="font-bold text-emerald-700">
+                  {Number(d.amount).toLocaleString("fa-IR")} تومان
+                </p>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

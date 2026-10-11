@@ -47,8 +47,8 @@ const PatientDashboard = () => {
 
   const tabs = [
     { id: "overview", label: "پیشخوان", icon: LayoutDashboard },
-    { id: "newRequest", label: "ثبت درخواست جدید", icon: FilePlus },
-    { id: "myRequests", label: "درخواست‌های من", icon: List },
+    { id: "newRequest", label: "ثبت درخواست جدید", icon: FilePlus, group: "درخواست‌ها" },
+    { id: "myRequests", label: "درخواست‌های من", icon: List, group: "درخواست‌ها" },
     { id: "profile", label: "پروفایل", icon: User },
   ];
 
@@ -84,8 +84,9 @@ const PatientDashboard = () => {
       {activeTab === "myRequests" && (
         <RequestListPanel
           title="درخواست‌های من"
-          fetchFn={(scope) => requestService.list(scope)}
+          fetchFn={(scope, filters) => requestService.list(scope, filters)}
           mode="view"
+          showFilters
         />
       )}
       {activeTab === "profile" && (

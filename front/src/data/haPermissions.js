@@ -16,6 +16,13 @@ export const HA_PERMISSION_GROUPS = [
       { key: "can_create_visits", label: "ثبت درخواست ویزیت" },
       { key: "can_create_financial", label: "ثبت درخواست مالی" },
       { key: "can_create_services", label: "ثبت درخواست خدمات" },
+      { key: "can_approve_visits", label: "تأیید نوبت بیماران خود" },
+      { key: "can_edit_visits", label: "ویرایش نوبت بیماران خود" },
+      { key: "can_approve_financial", label: "تأیید مالی بیماران خود" },
+      { key: "can_edit_financial", label: "ویرایش مالی بیماران خود" },
+      { key: "can_approve_services", label: "تأیید خدمات بیماران خود" },
+      { key: "can_edit_services", label: "ویرایش خدمات بیماران خود" },
+      { key: "is_network_consultant", label: "مشاور شبکه (صندوق تماس و ارجاع به پزشک)" },
     ],
   },
   {

@@ -178,6 +178,9 @@ export default function GlobalSearchPanel({ permissions = {} }) {
                           {row.code && s.key === "health_assistants" && (
                             <span className="text-gray-400 mr-2"> — {row.code}</span>
                           )}
+                          {s.key === "health_assistants" && row.affiliation?.label && (
+                            <span className="text-amber-700 mr-2"> — {row.affiliation.label}</span>
+                          )}
                           {(row.province || row.city) && (
                             <span className="text-gray-400 mr-2">
                               {" "}

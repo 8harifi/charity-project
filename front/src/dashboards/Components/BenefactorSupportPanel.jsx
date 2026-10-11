@@ -60,7 +60,7 @@ export default function BenefactorSupportPanel({ onWalletPay, onAdjustPledge, on
           mode="view"
           showFilters
           advancedFilters
-          defaultScope="active"
+          defaultScope="all"
           enableWalletPay
           onWalletPay={handleWalletPay}
           onAdjustPledge={handleAdjustPledge}

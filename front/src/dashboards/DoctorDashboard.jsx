@@ -60,10 +60,10 @@ const DoctorDashboard = () => {
 
   const tabs = [
     { id: "overview", label: "پیشخوان", icon: LayoutDashboard },
-    { id: "incoming", label: "درخواست‌های بیماران", icon: Users },
-    { id: "myActive", label: "درخواست‌های من", icon: ClipboardList },
-    { id: "staffRequests", label: "درخواست به سلامتیار", icon: Send },
-    { id: "payout", label: "تسویه", icon: Wallet },
+    { id: "incoming", label: "درخواست‌های بیماران", icon: Users, group: "درخواست‌ها" },
+    { id: "myActive", label: "درخواست‌های من", icon: ClipboardList, group: "درخواست‌ها" },
+    { id: "staffRequests", label: "درخواست به سلامتیار", icon: Send, group: "درخواست‌ها" },
+    { id: "payout", label: "تسویه", icon: Wallet, group: "درخواست‌ها" },
     { id: "profile", label: "پروفایل", icon: User },
   ];
 

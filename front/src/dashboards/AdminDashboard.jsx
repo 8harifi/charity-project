@@ -33,6 +33,8 @@ import {
   UserCheck,
   HandHeart,
   FileText,
+  Hospital,
+  MessageCircle,
 } from "lucide-react";
 import { adminService } from "../Services/adminService";
 import { dashboardService, profileService } from "../Services/dashboardApi";
@@ -42,6 +44,8 @@ import AdminUsersPanel from "./Components/AdminUsersPanel";
 import RequestListPanel from "./Components/RequestListPanel";
 import AdminReportsPanel from "./Components/AdminReportsPanel";
 import AdminPayoutsPanel from "./Components/AdminPayoutsPanel";
+import ContactInboxPanel from "./Components/ContactInboxPanel";
+import AdminMedicalCentersPanel from "./Components/AdminMedicalCentersPanel";
 import { ProfileTabContent } from "./Components/ProfileEditModal";
 
 function adminProfileFields(profile) {
@@ -639,12 +643,14 @@ const AdminDashboard = () => {
   const tabs = [
     { id: "overview", label: "پیشخوان", icon: LayoutDashboard },
     { id: "users", label: "کاربران", icon: Users },
-    { id: "requests", label: "درخواست‌ها", icon: List },
-    { id: "campaigns", label: "کمپین‌ها", icon: Megaphone },
-    { id: "wallet", label: "کیف پول", icon: Wallet },
-    { id: "payouts", label: "تسویه‌ها", icon: HandHeart },
-    { id: "reports", label: "گزارش‌ها", icon: FileText },
+    { id: "requests", label: "درخواست‌ها", icon: List, group: "درخواست‌ها" },
+    { id: "campaigns", label: "کمپین‌ها", icon: Megaphone, group: "درخواست‌ها" },
+    { id: "payouts", label: "تسویه‌ها", icon: HandHeart, group: "درخواست‌ها" },
+    { id: "wallet", label: "کیف پول", icon: Wallet, group: "مالی" },
+    { id: "reports", label: "گزارش‌ها", icon: FileText, group: "مالی" },
     { id: "lookups", label: "داده‌های پایه", icon: Database },
+    { id: "centers", label: "مراکز درمانی", icon: Hospital },
+    { id: "inbox", label: "صندوق تماس", icon: MessageCircle },
     { id: "profile", label: "حساب مدیر", icon: Shield },
   ];
 
@@ -689,6 +695,8 @@ const AdminDashboard = () => {
       {activeTab === "payouts" && <AdminPayoutsPanel />}
       {activeTab === "reports" && <AdminReportsPanel />}
       {activeTab === "lookups" && <AdminLookupsPanel />}
+      {activeTab === "centers" && <AdminMedicalCentersPanel />}
+      {activeTab === "inbox" && <ContactInboxPanel />}
 
       {activeTab === "profile" && (
         <ProfileTabContent

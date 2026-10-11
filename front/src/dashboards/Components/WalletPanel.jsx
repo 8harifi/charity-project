@@ -11,6 +11,9 @@ export default function WalletPanel({ onBalanceChange }) {
   const [topUpMsg, setTopUpMsg] = useState("");
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [networkAmount, setNetworkAmount] = useState("");
+  const [networkMsg, setNetworkMsg] = useState("");
+  const [networkLoading, setNetworkLoading] = useState(false);
 
   // Keep the latest callback in a ref so `load` never needs to change
   // identity just because the parent re-renders with a new inline function.
@@ -74,6 +77,30 @@ export default function WalletPanel({ onBalanceChange }) {
       setTopUpMsg(err.response?.data?.detail || "خطا در شروع پرداخت.");
     } finally {
       setTopUpLoading(false);
+    }
+  };
+
+  const handleNetworkDonate = async () => {
+    const amt = Number(networkAmount);
+    if (!amt || amt < 1000) {
+      setNetworkMsg("مبلغ معتبر وارد کنید.");
+      return;
+    }
+    setNetworkLoading(true);
+    setNetworkMsg("");
+    try {
+      await walletService.donate({
+        amount: amt,
+        destination_type: "general",
+        title: "کمک کلی",
+      });
+      setNetworkAmount("");
+      setNetworkMsg("کمک کلی ثبت شد و در اختیار مدیریت سامانه قرار گرفت.");
+      await load();
+    } catch (err) {
+      setNetworkMsg(err.response?.data?.detail || "پرداخت انجام نشد.");
+    } finally {
+      setNetworkLoading(false);
     }
   };
 
@@ -144,6 +171,31 @@ export default function WalletPanel({ onBalanceChange }) {
             </button>
           </div>
           {topUpMsg && <p className="text-sm mt-3 text-amber-700">{topUpMsg}</p>}
+        </div>
+
+        <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5 sm:p-6">
+          <h3 className="font-bold text-gray-800 mb-2">کمک کلی به تشخیص مدیریت</h3>
+          <p className="text-sm text-gray-600 mb-4 leading-7">
+            مبلغ به مدیر سامانه می‌رسد تا در امور خیریه، جدا از کمپین و درخواست مشخص، به تشخیص مدیریت خرج شود.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="number"
+              value={networkAmount}
+              onChange={(e) => setNetworkAmount(e.target.value)}
+              placeholder="مبلغ (تومان)"
+              className="flex-1 p-3 rounded-xl border border-emerald-100 outline-none"
+            />
+            <button
+              type="button"
+              onClick={handleNetworkDonate}
+              disabled={networkLoading}
+              className="px-6 py-3 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {networkLoading ? "..." : "کمک کلی"}
+            </button>
+          </div>
+          {networkMsg && <p className="text-sm mt-3 text-emerald-800">{networkMsg}</p>}
         </div>
 
         <ConfirmDialog

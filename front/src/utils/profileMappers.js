@@ -120,6 +120,13 @@ function extractHaPermissions(ha) {
     "can_create_financial",
     "can_create_services",
     "can_create_visits",
+    "can_approve_visits",
+    "can_edit_visits",
+    "can_approve_financial",
+    "can_edit_financial",
+    "can_approve_services",
+    "can_edit_services",
+    "is_network_consultant",
     "can_approve_registration_all",
     "can_edit_registration_all",
     "can_approve_visits_all",
@@ -154,6 +161,12 @@ export function mapHealthAssistantProfile(ha) {
     memberSince: ha.created_at ? String(ha.created_at).slice(0, 10) : "",
     profileType: ind ? "individual" : org ? "organization" : "",
     permissions: extractHaPermissions(ha),
+    affiliation: ha.affiliation || null,
+    affiliationLabel:
+      ha.affiliation?.label ||
+      (ha.affiliation?.kind === "affiliated" && ha.affiliation?.name
+        ? `وابسته به ${ha.affiliation.name}`
+        : "سلامتیار مستقل"),
   };
 
   if (ind) {
@@ -292,6 +305,7 @@ export function healthAssistantProfileFields(p) {
     { label: "نام کاربری", value: p.username },
     { label: "کد سلامتیاری", value: p.healthAssistanceCode },
     { label: "نوع همکاری", value: p.collaborationType },
+    { label: "وابستگی", value: p.affiliationLabel || p.affiliation?.label || "سلامتیار مستقل" },
     { label: "توضیحات همکاری", value: p.cooperationDescription, fullWidth: true },
     { label: "تاریخ عضویت", value: p.memberSince },
   ];

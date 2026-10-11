@@ -12,6 +12,8 @@ const EDIT_FIELDS = [
   { key: "city", label: "شهر" },
   { key: "address", label: "آدرس", multiline: true },
   { key: "sickness_description", label: "شرح بیماری", multiline: true },
+  { key: "family_status", label: "شرح حال مختصر بیمار و خانواده", multiline: true },
+  { key: "financial_level", label: "سطح مالی" },
   { key: "contact1_full_name", label: "نام آشنای اول" },
   { key: "contact1_phone_number", label: "تلفن آشنای اول" },
   { key: "contact2_full_name", label: "نام آشنای دوم" },
@@ -91,6 +93,17 @@ export default function HAPatientEditModal({ open, patient, onClose, onSaved }) 
                     rows={3}
                     className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-200 resize-none"
                   />
+                ) : f.key === "financial_level" ? (
+                  <select
+                    value={form[f.key] || ""}
+                    onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 p-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                  >
+                    <option value="">انتخاب کنید</option>
+                    <option value="very_weak">خیلی ضعیف</option>
+                    <option value="weak">ضعیف</option>
+                    <option value="average">متوسط</option>
+                  </select>
                 ) : (
                   <input
                     type="text"

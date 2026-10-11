@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Loader2, Paperclip, SlidersHorizontal, X } from "lucide-react";
+import { Calendar, Check, CheckCheck, Loader2, Paperclip, SlidersHorizontal, X } from "lucide-react";
 import FundingProgressBar from "../../components/FundingProgressBar";
 import ConfirmDialog from "../../components/ConfirmDialog";
 import PatientWorkflowTimeline from "./PatientWorkflowTimeline";
 import { fetchSpecialties, requestService } from "../../Services/dashboardApi";
+import { adminWalletService } from "../../Services/walletService";
 import { IRAN_PROVINCES } from "../../data/staticSignupOptions";
 import { useAuth } from "../../context/AuthContext";
 
@@ -98,6 +99,7 @@ export default function RequestListPanel({
   onAdjustPledge,
   hideWorkflow = false,
   accent = "blue",
+  isNetworkConsultant = false,
 }) {
   const isBlue = accent === "blue";
   const accentBtn = isBlue ? "bg-blue-600 hover:bg-blue-700" : "bg-emerald-600 hover:bg-emerald-700";
@@ -144,6 +146,11 @@ export default function RequestListPanel({
   const [maxAmount, setMaxAmount] = useState("");
   const [provinceFilter, setProvinceFilter] = useState("");
   const [specialtyOptions, setSpecialtyOptions] = useState([]);
+  const [readStatus, setReadStatus] = useState("all");
+  const [familyOpen, setFamilyOpen] = useState(false);
+  const [wantContact, setWantContact] = useState(null);
+  const [platformPayAmount, setPlatformPayAmount] = useState("");
+  const [referDoctorName, setReferDoctorName] = useState("");
 
   useEffect(() => {
     if (!advancedFilters) return;
@@ -161,8 +168,9 @@ export default function RequestListPanel({
             min_amount: minAmount || undefined,
             max_amount: maxAmount || undefined,
             province: provinceFilter || undefined,
+            read_status: readStatus !== "all" ? readStatus : undefined,
           }
-        : undefined;
+        : { read_status: readStatus !== "all" ? readStatus : undefined };
       const r = await fetchFn(scope, filters);
       setRequests(Array.isArray(r.data) ? r.data : []);
     } catch (err) {
@@ -172,7 +180,7 @@ export default function RequestListPanel({
     } finally {
       setLoading(false);
     }
-  }, [fetchFn, scope, advancedFilters, search, specialtyFilter, minAmount, maxAmount, provinceFilter]);
+  }, [fetchFn, scope, advancedFilters, search, specialtyFilter, minAmount, maxAmount, provinceFilter, readStatus]);
 
   useEffect(() => {
     load();
@@ -191,30 +199,34 @@ export default function RequestListPanel({
         req.patient_name,
         req.patient?.first_name,
         req.patient?.last_name,
-        req.patient?.phone_number,
+        user?.role === "benefactor" ? "" : req.patient?.phone_number,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [requests, search]);
+  }, [requests, search, user?.role]);
 
-  const performAction = async (action) => {
+  const performAction = async (action, extra = {}) => {
     if (!selected) return;
     setActing(true);
     try {
       if (onAction) {
-        await onAction(selected.id, action, actionNote);
+        await onAction(selected.id, action, actionNote, extra);
       } else {
-        await requestService.updateStatus(selected.id, action, actionNote);
+        await requestService.updateStatus(selected.id, {
+          action,
+          note: actionNote,
+          ...extra,
+        });
       }
       setActionNote("");
       setSelected(null);
       await load();
     } catch (err) {
       console.error(err);
-      setError("عملیات با خطا مواجه شد");
+      setError(err.response?.data?.detail || "عملیات با خطا مواجه شد");
     } finally {
       setActing(false);
       setConfirmAction(null);
@@ -235,6 +247,28 @@ export default function RequestListPanel({
     setOverrideStatus("");
     setOverrideNote("");
     setOverrideError("");
+    setFamilyOpen(false);
+    setWantContact(null);
+    setPlatformPayAmount("");
+    setReferDoctorName("");
+  };
+
+  const openRequest = (req) => {
+    setSelected(req);
+    setPledgeAmount(req.my_pledge > 0 ? String(req.my_pledge) : "");
+    setPayMsg("");
+    setPayMsgIsError(false);
+    setFamilyOpen(false);
+    setWantContact(null);
+    requestService
+      .markRead(req.id)
+      .then(() => {
+        setRequests((prev) =>
+          prev.map((r) => (r.id === req.id ? { ...r, is_read: true } : r))
+        );
+        setSelected((cur) => (cur?.id === req.id ? { ...cur, is_read: true } : cur));
+      })
+      .catch(() => {});
   };
 
   const applyStatusOverride = async () => {
@@ -351,9 +385,53 @@ export default function RequestListPanel({
       setPayMsg("موجودی کیف پول کافی نیست.");
       return;
     }
+    if (user?.role === "benefactor" && wantContact === null) {
+      setPayMsgIsError(true);
+      setPayMsg("لطفاً مشخص کنید آیا مشخصات تماس بیمار را می‌خواهید یا خیر.");
+      return;
+    }
     setPayMsg("");
     setPayMsgIsError(false);
     setConfirmPay(true);
+  };
+
+  const requestPatientContact = async () => {
+    if (!selected?.patient) return;
+    try {
+      await requestService.contactDisclosure({
+        patient_id: selected.patient,
+        network_request_id: selected.id,
+      });
+      setWantContact(true);
+      setPayMsgIsError(false);
+      setPayMsg("درخواست مشخصات تماس ثبت شد. پس از هماهنگی با بیمار مطلع می‌شوید.");
+    } catch (err) {
+      setPayMsgIsError(true);
+      setPayMsg(err.response?.data?.detail || "ثبت درخواست تماس ممکن نشد.");
+    }
+  };
+
+  const payFromPlatform = async () => {
+    if (!selected) return;
+    const amt = Number(platformPayAmount || selected.remaining || selected.amount_needed);
+    if (!amt || amt <= 0) {
+      setPayMsgIsError(true);
+      setPayMsg("مبلغ نامعتبر است.");
+      return;
+    }
+    setPaying(true);
+    try {
+      await adminWalletService.payRequest(selected.id, amt);
+      setPayMsgIsError(false);
+      setPayMsg("پرداخت از کیف پول سامانه انجام شد.");
+      setPlatformPayAmount("");
+      await load();
+    } catch (err) {
+      setPayMsgIsError(true);
+      setPayMsg(err.response?.data?.detail || "پرداخت از کیف پول سامانه ممکن نشد.");
+    } finally {
+      setPaying(false);
+    }
   };
 
   const handleWalletPay = async () => {
@@ -418,6 +496,24 @@ export default function RequestListPanel({
               onClick={() => setScope(f.id)}
               className={`px-4 py-1.5 rounded-full text-sm font-semibold transition ${
                 scope === f.id
+                  ? accentActive
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+          {[
+            { id: "all", label: "همه پیام‌ها" },
+            { id: "unread", label: "خوانده نشده" },
+            { id: "read", label: "خوانده شده" },
+          ].map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setReadStatus(f.id)}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold transition ${
+                readStatus === f.id
                   ? accentActive
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
               }`}
@@ -520,14 +616,7 @@ export default function RequestListPanel({
             <button
               key={req.id}
               type="button"
-              onClick={() => {
-                setSelected(req);
-                setPledgeAmount(
-                  req.my_pledge > 0 ? String(req.my_pledge) : ""
-                );
-                setPayMsg("");
-                setPayMsgIsError(false);
-              }}
+              onClick={() => openRequest(req)}
               className={`w-full text-right bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md ${accentHoverBorder} transition`}
             >
               <div className="flex flex-col sm:flex-row justify-between gap-2">
@@ -555,6 +644,14 @@ export default function RequestListPanel({
                     className={`text-xs px-2 py-1 rounded-full font-semibold ${statusBadgeClass(req)}`}
                   >
                     {req.status_label}
+                  </span>
+                  <span
+                    className={`text-xs flex items-center gap-1 ${
+                      req.is_read ? "text-blue-500" : "text-gray-400"
+                    }`}
+                    title={req.is_read ? "خوانده شده" : "خوانده نشده"}
+                  >
+                    {req.is_read ? <CheckCheck size={16} /> : <Check size={16} />}
                   </span>
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Calendar size={12} />
@@ -597,8 +694,32 @@ export default function RequestListPanel({
                 {selected.request_subtype_label && selected.request_subtype && (
                   <p><span className="font-semibold">موضوع درخواست:</span> {selected.request_subtype_label}</p>
                 )}
+                <p className="text-xs text-gray-400">
+                  «موضوع» عنوان کلی درخواست است؛ «موضوع هزینه» دستهٔ هزینه‌کرد (ویزیت، دارو و ...) است.
+                </p>
                 <p><span className="font-semibold">وضعیت:</span> {selected.status_label}</p>
                 <p><span className="font-semibold">بیمار:</span> {selected.patient_name}</p>
+                {selected.patient_public && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50 p-3 space-y-1">
+                    <p><span className="font-semibold">بیماری:</span> {selected.patient_public.disease || "—"}</p>
+                    <p><span className="font-semibold">سن:</span> {selected.patient_public.age || "—"}</p>
+                    <p><span className="font-semibold">وضعیت تأهل:</span> {selected.patient_public.marital_status || "—"}</p>
+                    <p><span className="font-semibold">محل سکونت:</span> {selected.patient_public.residence || "—"}</p>
+                    <p><span className="font-semibold">بیمه:</span> {selected.patient_public.insurance || "—"}</p>
+                    <p><span className="font-semibold">سازمان پوشش‌دهنده:</span> {selected.patient_public.covered_organization || "—"}</p>
+                    <p><span className="font-semibold">سطح مالی:</span> {selected.patient_public.financial_level || "—"}</p>
+                    <button
+                      type="button"
+                      onClick={() => setFamilyOpen((v) => !v)}
+                      className="text-xs text-blue-700 underline"
+                    >
+                      {familyOpen ? "بستن شرح حال خانواده" : "شرح حال مختصر خانواده"}
+                    </button>
+                    {familyOpen && (
+                      <p className="text-xs text-gray-600">{selected.patient_public.family_status || "ثبت نشده"}</p>
+                    )}
+                  </div>
+                )}
                 {selected.amount_needed > 0 && (
                   <div className={`${accentFundingBox} rounded-xl p-4 my-3`}>
                     <p className={`text-sm font-semibold ${accentFundingTitle} mb-2`}>پیشرفت تأمین مالی</p>
@@ -644,6 +765,9 @@ export default function RequestListPanel({
                     {selected.created_by_national_code
                       ? ` — کد ملی ${selected.created_by_national_code}`
                       : ""}
+                    {selected.created_by_organization
+                      ? ` — سازمان ${selected.created_by_organization}`
+                      : ""}
                   </p>
                 )}
                 {selected.doctor_name && (
@@ -653,7 +777,10 @@ export default function RequestListPanel({
                   <p><span className="font-semibold">تخصص:</span> {selected.specialty_name}</p>
                 )}
                 {selected.expense_category && (
-                  <p><span className="font-semibold">موضوع هزینه‌کرد:</span> {selected.expense_category_label}</p>
+                  <p>
+                    <span className="font-semibold">موضوع هزینه‌کرد:</span> {selected.expense_category_label}
+                    <span className="block text-xs text-gray-400">دسته هزینه جدا از عنوان موضوع درخواست است.</span>
+                  </p>
                 )}
                 {(selected.companion_male_count > 0 || selected.companion_female_count > 0) && (
                   <p>
@@ -669,6 +796,18 @@ export default function RequestListPanel({
                   <p><span className="font-semibold">شرح حال:</span> {selected.illness_summary}</p>
                 )}
                 <p><span className="font-semibold">توضیحات:</span> {selected.description}</p>
+                {selected.recipient_role_label && (
+                  <p><span className="font-semibold">نقش گیرنده:</span> {selected.recipient_role_label}</p>
+                )}
+                {selected.recipient_organization_name && (
+                  <p><span className="font-semibold">سازمان گیرنده:</span> {selected.recipient_organization_name}</p>
+                )}
+                {selected.service_kind_label && (
+                  <p><span className="font-semibold">نوع خدمت:</span> {selected.service_kind_label}</p>
+                )}
+                {selected.referred_to_doctor_name && (
+                  <p><span className="font-semibold">ارجاع به پزشک:</span> {selected.referred_to_doctor_name}</p>
+                )}
                 {selected.attachments?.length > 0 && (
                   <div>
                     <span className="font-semibold">مدارک پیوست:</span>
@@ -690,6 +829,88 @@ export default function RequestListPanel({
                   </div>
                 )}
               </div>
+
+              {user?.role === "benefactor" && selected.patient && (
+                <div className="mb-4 rounded-xl border border-amber-100 bg-amber-50 p-3 text-sm text-amber-900 space-y-2">
+                  <p>آیا مشخصات تماس بیمار را می‌خواهید؟ در صورت موافقت بیمار، پس از هماهنگی مطلع می‌شوید.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={requestPatientContact}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                        wantContact === true ? "bg-amber-600 text-white" : "bg-white border border-amber-200"
+                      }`}
+                    >
+                      بله، درخواست مشخصات تماس
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWantContact(false)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                        wantContact === false ? "bg-amber-600 text-white" : "bg-white border border-amber-200"
+                      }`}
+                    >
+                      خیر، ادامه حمایت بدون تماس
+                    </button>
+                    <a
+                      href={`/contact?intent=contact_disclosure&subject=اطلاعات تماس و مشخصات کامل بیمار&patient=${selected.patient}`}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-amber-200"
+                    >
+                      اطلاعات تماس و مشخصات کامل بیمار
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {canManage && selected.request_type === "financial" && (
+                <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-2">
+                  <h4 className="font-bold text-blue-800">پرداخت از کیف پول سامانه</h4>
+                  <input
+                    type="number"
+                    value={platformPayAmount}
+                    onChange={(e) => setPlatformPayAmount(e.target.value)}
+                    placeholder={
+                      selected.remaining
+                        ? `حداکثر: ${Number(selected.remaining).toLocaleString("fa-IR")}`
+                        : "مبلغ (تومان)"
+                    }
+                    className="w-full rounded-xl border border-blue-100 p-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    disabled={paying}
+                    onClick={payFromPlatform}
+                    className="w-full py-2 rounded-xl bg-blue-700 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    {paying ? "..." : "پرداخت از کیف پول شبکه"}
+                  </button>
+                </div>
+              )}
+
+              {mode === "staffManage" &&
+                user?.role === "health_assistant" &&
+                isNetworkConsultant &&
+                ["service", "consultation"].includes(selected.request_type) && (
+                <div className="mb-4 rounded-xl border border-purple-100 bg-purple-50 p-4 space-y-2">
+                  <h4 className="font-bold text-purple-800">ارجاع به پزشک (مشاور شبکه)</h4>
+                  <input
+                    value={referDoctorName}
+                    onChange={(e) => setReferDoctorName(e.target.value)}
+                    placeholder="نام پزشک"
+                    className="w-full rounded-xl border border-purple-100 p-2 text-sm"
+                  />
+                  <button
+                    type="button"
+                    disabled={acting || !referDoctorName.trim()}
+                    onClick={() =>
+                      performAction("refer_to_doctor", { doctor_name: referDoctorName.trim() })
+                    }
+                    className="w-full py-2 rounded-xl bg-purple-700 text-white text-sm font-semibold disabled:opacity-50"
+                  >
+                    ارجاع درخواست به پزشک
+                  </button>
+                </div>
+              )}
 
               {canManage && (
                 <div className="mb-6 space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">

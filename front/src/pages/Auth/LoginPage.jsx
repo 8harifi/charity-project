@@ -3,11 +3,12 @@ import React, {useState, useEffect} from "react";
 
 import {motion, AnimatePresence} from "framer-motion";
 import {Heart, HandHeart, Users, Sparkles, Phone} from "lucide-react";
-import {Link, useNavigate} from "react-router-dom";
+import {Link, useNavigate, useSearchParams} from "react-router-dom";
 import {useAuth} from "../../context/AuthContext";
 import {getDashboardRoute} from "../../Configs/dashboardRoutes";
 import { useEnterSubmit } from "../../hooks/useEnterSubmit";
-import { sanitizePhone } from "./utils/signupValidation";
+import {sanitizePhone} from "./utils/signupValidation";
+import { publicApi } from "../../API/publicApi";
 
 const LoginPage = () => {
   const [password, setPassword] = useState("");
@@ -19,6 +20,8 @@ const LoginPage = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [newPassword, setNewPassword] = useState("");
+  const [debugResetCode, setDebugResetCode] = useState("");
 
   // تایمر شمارش معکوس کد تایید
   useEffect(() => {
@@ -33,6 +36,8 @@ const LoginPage = () => {
 
   const {login, error: authError} = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const loginIntent = searchParams.get("intent") || "";
 
   const containerVariants = {
     hidden: {opacity: 0},
@@ -96,12 +101,23 @@ const LoginPage = () => {
       setError("شماره تلفن همراه معتبر نیست");
       return;
     }
-
-    setSuccess("کد تایید ارسال شد");
-    setTimer(120);
+    try {
+      const r = await publicApi.passwordReset(sanitizePhone(phoneNumber));
+      const code = r.data?.debug_code;
+      setDebugResetCode(code || "");
+      if (code) setConfirmCode(code);
+      setSuccess(
+        code
+          ? `کد تأیید: ${code}`
+          : "کد تأیید ارسال شد"
+      );
+      setTimer(120);
+    } catch {
+      setError("ارسال کد ناموفق بود.");
+    }
   };
 
-  const handleVerifyCode = () => {
+  const handleVerifyCode = async () => {
     setError("");
 
     if (!confirmCode) {
@@ -113,16 +129,23 @@ const LoginPage = () => {
       setError("کد تایید باید ۵ یا ۶ رقم عددی باشد");
       return;
     }
-
-    // اینجا بعداً به API واقعی وصل می‌کنی
-    setSuccess("کد تایید شد! در حال انتقال...");
-
-    setTimeout(() => {
+    if (!newPassword || newPassword.length < 6) {
+      setError("رمز جدید باید حداقل ۶ کاراکتر باشد");
+      return;
+    }
+    try {
+      await publicApi.passwordResetConfirm({
+        phone: sanitizePhone(phoneNumber),
+        code: confirmCode,
+        new_password: newPassword,
+      });
+      setSuccess("رمز عبور تغییر کرد. اکنون وارد شوید.");
       setForgotPassword(false);
-      setSuccess("");
       setConfirmCode("");
-      navigate("/");
-    }, 1000);
+      setNewPassword("");
+    } catch (err) {
+      setError(err.response?.data?.detail || "کد تأیید نامعتبر است");
+    }
   };
 
   const handleLogin = async () => {
@@ -472,12 +495,31 @@ const LoginPage = () => {
                             </div>
 
                             <input
-                              type="password"
+                              type="text"
                               value={confirmCode}
                               onChange={(e) => setConfirmCode(e.target.value)}
                               placeholder="کد را وارد کنید"
                               className="
                   w-full p-3 sm:p-4 pr-10 sm:pr-12
+                  bg-blue-50/50 rounded-xl sm:rounded-2xl
+                  border border-blue-200
+                  focus:outline-none focus:ring-2 focus:ring-blue-300
+                  text-right placeholder-blue-400
+                  text-sm sm:text-lg transition-all
+                "
+                            />
+                            {debugResetCode && (
+                              <p className="text-sm text-emerald-700 mt-2">
+                                کد تأیید شما: <span className="font-bold tracking-widest">{debugResetCode}</span>
+                              </p>
+                            )}
+                            <input
+                              type="password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="رمز عبور جدید"
+                              className="
+                  w-full mt-3 p-3 sm:p-4
                   bg-blue-50/50 rounded-xl sm:rounded-2xl
                   border border-blue-200
                   focus:outline-none focus:ring-2 focus:ring-blue-300
@@ -559,10 +601,12 @@ const LoginPage = () => {
                   <div className="mb-10">
                     <h1
                       className="text-4xl font-bold bg-gradient-to-r from-blue-900 to-emerald-700 bg-clip-text text-transparent mb-3 text-right">
-                      ورود به حساب کاربری
+                      {loginIntent === "patient" ? "ورود بیمار به شبکه" : "ورود به حساب کاربری"}
                     </h1>
                     <p className="text-blue-600 text-right text-lg">
-                      لطفا اطلاعات خود را وارد کنید
+                      {loginIntent === "patient"
+                        ? "با شماره موبایل ثبت‌شده به‌عنوان بیمار وارد شوید"
+                        : "لطفا اطلاعات خود را وارد کنید"}
                     </p>
                   </div>
 
