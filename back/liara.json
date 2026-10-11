@@ -3,11 +3,12 @@
   "platform": "django",
   "port": 8000,
   "build": {
-    "location": "iran",
-    "commands": [
-      "pip install -r requirements.txt",
-      "python manage.py collectstatic --noinput"
-    ]
+    "location": "iran"
+  },
+  "django": {
+    "pythonVersion": "3.12",
+    "timezone": "Asia/Tehran",
+    "collectStatic": true
   },
   "disks": [
     {

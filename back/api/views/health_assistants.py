@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from ..models import HealthAssistant
 from ..serializers import HealthAssistantSerializer, HealthAssistantSignupSerializer
+from ..utils import ha_affiliation_display
 from .pagination import StandardResultsSetPagination
 
 
@@ -21,7 +22,13 @@ class PublicHealthAssistantsView(APIView):
         city = request.query_params.get("city", "").strip()
 
         qs = HealthAssistant.objects.filter(user__state=True).select_related(
-            "individual_profile", "organization_profile"
+            "individual_profile",
+            "organization_profile",
+            "affiliated_organization",
+            "affiliated_organization__user",
+            "affiliated_medical_center",
+            "parent_organization",
+            "parent_organization__organization_profile",
         )
 
         results = []
@@ -56,6 +63,7 @@ class PublicHealthAssistantsView(APIView):
                     "name": name,
                     "province": ha_province,
                     "city": ha_city,
+                    "affiliation": ha_affiliation_display(ha),
                 }
             )
 
@@ -112,6 +120,11 @@ class HealthAssistantViewSet(viewsets.ModelViewSet):
         "individual_profile__education",
         "organization_profile",
         "organization_profile__organization_type",
+        "affiliated_organization",
+        "affiliated_organization__user",
+        "affiliated_medical_center",
+        "parent_organization",
+        "parent_organization__organization_profile",
     ).all()
     serializer_class = HealthAssistantSerializer
     permission_classes = [IsAuthenticated]

@@ -19,6 +19,8 @@ class CampaignSerializer(serializers.ModelSerializer):
             "urgency",
             "image_url",
             "is_published",
+            "audience",
+            "source_request",
             "created_at",
             "updated_at",
         ]
@@ -40,4 +42,5 @@ class CampaignPublicSerializer(serializers.ModelSerializer):
             "category",
             "urgency",
             "image_url",
+            "audience",
         ]

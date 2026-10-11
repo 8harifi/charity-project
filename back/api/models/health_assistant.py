@@ -36,6 +36,13 @@ class HealthAssistant(models.Model):
     can_create_services = models.BooleanField(default=True)
     can_create_visits = models.BooleanField(default=True)
     can_edit_patients = models.BooleanField(default=True)
+    can_approve_visits = models.BooleanField(default=True)
+    can_edit_visits = models.BooleanField(default=True)
+    can_approve_financial = models.BooleanField(default=True)
+    can_edit_financial = models.BooleanField(default=True)
+    can_approve_services = models.BooleanField(default=True)
+    can_edit_services = models.BooleanField(default=True)
+    is_network_consultant = models.BooleanField(default=False)
 
     # Widen approve/edit from "my caseload" to every patient on the platform.
     can_approve_registration_all = models.BooleanField(default=False)
@@ -61,6 +68,30 @@ class HealthAssistant(models.Model):
         null=True,
         blank=True,
         related_name="subordinate_assistants",
+    )
+
+    AFFILIATION_KIND_CHOICES = [
+        ("independent", "مستقل"),
+        ("affiliated", "وابسته"),
+    ]
+    affiliation_kind = models.CharField(
+        max_length=20,
+        choices=AFFILIATION_KIND_CHOICES,
+        default="independent",
+    )
+    affiliated_organization = models.ForeignKey(
+        "OrganizationApplication",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="affiliated_health_assistants",
+    )
+    affiliated_medical_center = models.ForeignKey(
+        "MedicalCenter",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="affiliated_health_assistants",
     )
 
     created_at = models.DateTimeField(auto_now_add=True)

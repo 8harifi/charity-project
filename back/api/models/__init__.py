@@ -13,3 +13,4 @@ from .organization_application import *
 from .platform_audit_log import *
 from .payout import *
 from .wallet import *
+from .public_features import *

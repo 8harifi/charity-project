@@ -63,6 +63,7 @@ def main():
         Wallet,
         WalletTransaction,
         WithdrawalRequest,
+        MedicalCenter,
     )
     from api.services.donation_service import DonationError, donate_from_wallet
     from api.services.wallet_service import (
@@ -335,6 +336,7 @@ def main():
             can_search_benefactors=True,
             can_search_organizations=True,
             org_approved=True,
+            affiliation_kind="affiliated",
         )
         IndividualHealthAssistant.objects.create(
             health_assistant=ha_sara,
@@ -371,6 +373,7 @@ def main():
             can_search_benefactors=False,
             can_search_organizations=False,
             org_approved=True,
+            affiliation_kind="affiliated",
         )
         OrganizationHealthAssistant.objects.create(
             health_assistant=ha_akbar,
@@ -390,6 +393,19 @@ def main():
         )
         health_assistants.append(ha_akbar)
         print(f"  ✓ Organization HA اکبر ({ha_akbar.health_assistance_code})")
+
+        ha_sara.parent_organization = ha_akbar
+        center = MedicalCenter.objects.filter(city="کرمان").order_by("pk").first()
+        if center:
+            ha_sara.affiliated_medical_center = center
+            print(f"  ✓ سارا وابسته به {center.name}")
+        ha_sara.save(
+            update_fields=[
+                "parent_organization",
+                "affiliated_medical_center",
+                "affiliation_kind",
+            ]
+        )
 
         return health_assistants
 
@@ -521,10 +537,10 @@ def main():
                 "province": "تهران",
                 "city": "تهران",
                 "address": "شهرری، خیابان فداییان اسلام",
-                "sickness_description": "نیاز به پیگیری درمان بدون معرف",
+                "sickness_description": "نیاز به پیگیری درمان",
                 "contact1": ("زهرا مرادی", "09361234567"),
                 "contact2": ("", ""),
-                "introducer": None,
+                "introducer": ha_akbar,
                 "admin_approved": True,
                 "ha_approved": True,
             },

@@ -135,7 +135,9 @@ class DashboardStatsView(APIView):
         if role == "health_assistant":
             ha = user.health_assistant_profile
             patients_qs = Patient.objects.filter(introducer=ha)
-            requests_qs = NetworkRequest.objects.filter(created_by=user)
+            requests_qs = NetworkRequest.objects.filter(
+                Q(created_by=user) | Q(patient__introducer=ha)
+            ).distinct()
             return Response(
                 {
                     "patients_introduced": patients_qs.count(),

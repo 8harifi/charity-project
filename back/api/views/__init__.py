@@ -87,11 +87,35 @@ from .wallet import (
     WalletTransactionsView,
 )
 from .patient_aid import PatientAidSummaryView
+from .payout import (
+    AdminWithdrawalActionView,
+    AdminWithdrawalsView,
+    StaffPayoutView,
+    StaffWithdrawalCreateView,
+)
+from .password_reset import PasswordResetConfirmView, PasswordResetRequestView
+from .public_features import (
+    AdminMedicalCenterDetailView,
+    AdminMedicalCenterImageView,
+    AdminMedicalCenterListCreateView,
+    ContactDisclosureCreateView,
+    ContactDisclosureInboxView,
+    ContactMessageCreateView,
+    ContactMessageInboxView,
+    ContactMessageReplyView,
+    PublicFundableRequestsView,
+    PublicMedicalCenterListView,
+    PublicStatsView,
+    PublicSupportingOrgSearchView,
+    RequestMarkReadView,
+)
 from .admin_wallet import (
     AdminGatewayPaymentsView,
+    AdminPayRequestView,
     AdminPledgesView,
     AdminWalletAdjustView,
     AdminWalletsView,
+    AdminGeneralDonationsView,
 )
 from .admin_reports import (
     AdminReportAuditView,
@@ -199,6 +223,7 @@ __all__ = [
     "AdminWalletsView",
     "AdminWalletAdjustView",
     "AdminPledgesView",
+    "AdminGeneralDonationsView",
     "AdminReportTransactionsView",
     "AdminReportGatewayPaymentsView",
     "AdminReportDonationsView",
@@ -213,4 +238,20 @@ __all__ = [
     "StaffWithdrawalCreateView",
     "AdminWithdrawalsView",
     "AdminWithdrawalActionView",
+    "AdminPayRequestView",
+    "PasswordResetRequestView",
+    "PasswordResetConfirmView",
+    "PublicStatsView",
+    "PublicMedicalCenterListView",
+    "AdminMedicalCenterListCreateView",
+    "AdminMedicalCenterDetailView",
+    "AdminMedicalCenterImageView",
+    "PublicSupportingOrgSearchView",
+    "PublicFundableRequestsView",
+    "ContactMessageCreateView",
+    "ContactMessageInboxView",
+    "ContactMessageReplyView",
+    "ContactDisclosureCreateView",
+    "ContactDisclosureInboxView",
+    "RequestMarkReadView",
 ]

@@ -241,6 +241,13 @@ HA_PERMISSION_FIELDS = [
     "can_create_services",
     "can_create_visits",
     "can_edit_patients",
+    "can_approve_visits",
+    "can_edit_visits",
+    "can_approve_financial",
+    "can_edit_financial",
+    "can_approve_services",
+    "can_edit_services",
+    "is_network_consultant",
     "can_approve_registration_all",
     "can_edit_registration_all",
     "can_approve_visits_all",
@@ -275,9 +282,14 @@ def admin_profile_payload(user):
     data["date_joined"] = user.date_joined
     if user.role == "health_assistant":
         try:
-            data["permissions"] = health_assistant_permissions(
-                user.health_assistant_profile
-            )
+            ha = user.health_assistant_profile
+            data["permissions"] = health_assistant_permissions(ha)
+            from ..utils import ha_affiliation_display
+
+            data["affiliation"] = ha_affiliation_display(ha)
+            data["affiliation_kind"] = ha.affiliation_kind
+            data["affiliated_organization_id"] = ha.affiliated_organization_id
+            data["affiliated_medical_center_id"] = ha.affiliated_medical_center_id
         except Exception:
             pass
     return data

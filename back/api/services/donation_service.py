@@ -178,7 +178,8 @@ def donate_from_wallet(
         donation_kwargs.update(
             {
                 "wallet_transaction": debit_tx,
-                "title": title or "کمک عمومی",
+                "title": title or "کمک کلی",
+                "description": "کمک کلی به تشخیص مدیریت سامانه",
             }
         )
     else:
@@ -403,4 +404,61 @@ def close_financial_request(
         actor=closed_by_user,
     )
 
+    return req
+
+
+@transaction.atomic
+def admin_pay_request_from_platform(*, admin_user, network_request_id, amount) -> NetworkRequest:
+    """Pay (part of) a financial request from the platform wallet."""
+    amt = _validate_amount(amount)
+    platform = get_or_create_platform_wallet()
+    try:
+        req = NetworkRequest.objects.select_for_update().get(pk=network_request_id)
+    except NetworkRequest.DoesNotExist as exc:
+        raise DonationError(msg.FINANCIAL_REQUEST_NOT_FOUND) from exc
+    if req.request_type not in ("financial", "consultation"):
+        raise DonationError(msg.REQUEST_NOT_FINANCIAL)
+    if req.status not in ("pending", "accepted", "in_progress"):
+        raise DonationError(msg.REQUEST_NOT_PAYABLE)
+    remaining = (req.amount_needed or Decimal("0")) - (req.collected_amount or Decimal("0"))
+    if amt > remaining:
+        raise DonationError(
+            f"مبلغ پرداختی ({amt} تومان) بیش از مبلغ باقی‌مانده ({remaining} تومان) است."
+        )
+    from .wallet_service import debit_wallet
+
+    debit_wallet(
+        platform,
+        amt,
+        kind="donation_out",
+        reference_type="network_request",
+        reference_id=req.pk,
+        description=f"Admin platform pay for request #{req.pk}",
+        created_by=admin_user,
+    )
+    req.collected_amount = (req.collected_amount or Decimal("0")) + amt
+    if req.status == "pending":
+        req.status = "in_progress"
+    req.save(update_fields=["collected_amount", "status", "updated_at"])
+    BenefactorDonation.objects.create(
+        benefactor=admin_user,
+        donation_type="cash",
+        amount=amt,
+        title=f"پرداخت سامانه برای {req.subject}",
+        description="پرداخت از کیف پول سامانه",
+        patient=req.patient,
+        network_request=req,
+        destination_type="request",
+        payment_source="wallet",
+        status="completed",
+        patient_name=f"{req.patient.first_name} {req.patient.last_name}".strip()
+        if req.patient_id
+        else "",
+    )
+    RequestStatusLog.objects.create(
+        request=req,
+        status=req.status,
+        note=f"پرداخت {amt} تومان از کیف پول سامانه",
+        actor=admin_user,
+    )
     return req

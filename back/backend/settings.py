@@ -135,13 +135,19 @@ WSGI_APPLICATION = 'backend.wsgi.application'
 _db_path = os.getenv("DATABASE_PATH")
 if _db_path:
     SQLITE_DB_PATH = Path(_db_path)
+    if not SQLITE_DB_PATH.is_absolute():
+        SQLITE_DB_PATH = BASE_DIR / SQLITE_DB_PATH
 elif (BASE_DIR / "database").is_dir():
     # Mounted Liara disk (or local database/ folder)
     SQLITE_DB_PATH = BASE_DIR / "database" / "db.sqlite3"
 else:
     SQLITE_DB_PATH = BASE_DIR / "db.sqlite3"
 
-SQLITE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+try:
+    SQLITE_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+except OSError:
+    # Liara app filesystem is read-only until the disk is mounted.
+    pass
 
 DATABASES = {
     'default': {
@@ -189,13 +195,28 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
-    BASE_DIR / "dist",
+    path
+    for path in (BASE_DIR / "spa", BASE_DIR / "dist")
+    if path.is_dir()
 ]
 
-MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
+_media_root = os.getenv("MEDIA_ROOT")
+if _media_root:
+    MEDIA_ROOT = Path(_media_root)
+    if not MEDIA_ROOT.is_absolute():
+        MEDIA_ROOT = BASE_DIR / MEDIA_ROOT
+elif (BASE_DIR / "database").is_dir():
+    MEDIA_ROOT = BASE_DIR / "database" / "media"
+else:
+    MEDIA_ROOT = BASE_DIR / "media"
+
+try:
+    Path(MEDIA_ROOT).mkdir(parents=True, exist_ok=True)
+except OSError:
+    pass
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

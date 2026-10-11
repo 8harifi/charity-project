@@ -78,7 +78,13 @@ class DonationListSerializer(serializers.ModelSerializer):
         return obj.campaign
 
     def get_patient_label(self, obj):
+        from ..utils import mask_patient_name, viewer_is_privacy_restricted
+
+        request = self.context.get("request")
+        user = request.user if request else None
         if obj.patient_id:
+            if viewer_is_privacy_restricted(user):
+                return mask_patient_name(obj.patient)
             return f"{obj.patient.first_name} {obj.patient.last_name}".strip()
         return obj.patient_name
 

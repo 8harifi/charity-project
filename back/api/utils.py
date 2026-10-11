@@ -58,13 +58,202 @@ def ha_city(ha) -> str:
     return ""
 
 
+def name_search_q(query, first_field="first_name", last_field="last_name", extra_fields=None):
+    """Match a free-text name query against first + last name.
+
+    A query like ``علی رضایی`` must hit first_name=علی AND last_name=رضایی,
+    not require either column to contain the whole string.
+    """
+    from django.db.models import Q
+
+    q = (query or "").strip()
+    if not q:
+        return Q()
+    extras = extra_fields or []
+    extra_q = Q()
+    for field in extras:
+        extra_q |= Q(**{f"{field}__icontains": q})
+    parts = [p for p in q.split() if p]
+    if len(parts) == 1:
+        return (
+            Q(**{f"{first_field}__icontains": parts[0]})
+            | Q(**{f"{last_field}__icontains": parts[0]})
+            | extra_q
+        )
+    combined = Q()
+    for part in parts:
+        combined &= (
+            Q(**{f"{first_field}__icontains": part})
+            | Q(**{f"{last_field}__icontains": part})
+        )
+    first_rest = Q(**{f"{first_field}__icontains": parts[0]}) & Q(
+        **{f"{last_field}__icontains": " ".join(parts[1:])}
+    )
+    last_first = Q(**{f"{last_field}__icontains": parts[0]}) & Q(
+        **{f"{first_field}__icontains": " ".join(parts[1:])}
+    )
+    return combined | first_rest | last_first | extra_q
+
+
+def mask_patient_name(patient) -> str:
+    if not patient:
+        return ""
+    last = (patient.last_name or "").strip()
+    initial = f"{last[0]}." if last else ""
+    return f"{patient.first_name} {initial}".strip()
+
+
+def viewer_is_privacy_restricted(user) -> bool:
+    if user is None or not getattr(user, "is_authenticated", False):
+        return True
+    return getattr(user, "role", "") == "benefactor"
+
+
+def ha_display_name(ha) -> str:
+    if not ha:
+        return ""
+    try:
+        ind = ha.individual_profile
+        return f"{ind.first_name} {ind.last_name}".strip()
+    except Exception:
+        pass
+    try:
+        return (ha.organization_profile.name or "").strip()
+    except Exception:
+        pass
+    return (getattr(ha, "health_assistance_code", None) or "").strip()
+
+
+def ha_organization_name(ha) -> str:
+    if not ha:
+        return ""
+    try:
+        name = (ha.organization_profile.name or "").strip()
+        if name:
+            return name
+    except Exception:
+        pass
+    center = getattr(ha, "affiliated_medical_center", None)
+    if center and getattr(center, "name", ""):
+        return center.name
+    org_app = getattr(ha, "affiliated_organization", None)
+    if org_app:
+        return (org_app.name or getattr(getattr(org_app, "user", None), "username", "") or "").strip()
+    parent = getattr(ha, "parent_organization", None)
+    if parent:
+        try:
+            name = (parent.organization_profile.name or "").strip()
+            if name:
+                return name
+        except Exception:
+            pass
+        return ha_display_name(parent)
+    return ""
+
+
+_ORG_ROLE_LABELS = {
+    "service_center": "مرکز خدمات سلامت",
+    "charity_center": "مرکز نیکوکاری",
+    "social_work_unit": "واحد مددکاری",
+}
+_CENTER_TYPE_LABELS = {
+    "government": "مرکز درمانی دولتی",
+    "private": "مرکز درمانی خصوصی",
+}
+
+
+def ha_affiliation_display(ha) -> dict:
+    """Public trust badge: independent vs affiliated to a known center/org."""
+    independent = {
+        "kind": "independent",
+        "name": "",
+        "type_label": "سلامتیار مستقل",
+        "verified": False,
+        "label": "سلامتیار مستقل",
+    }
+    if not ha:
+        return independent
+
+    center = getattr(ha, "affiliated_medical_center", None)
+    if center and getattr(center, "name", ""):
+        name = center.name
+        type_label = _CENTER_TYPE_LABELS.get(center.center_type, "مرکز درمانی")
+        return {
+            "kind": "affiliated",
+            "name": name,
+            "type_label": type_label,
+            "verified": bool(getattr(center, "is_active", True)),
+            "label": f"وابسته به {name}",
+        }
+
+    org_app = getattr(ha, "affiliated_organization", None)
+    if org_app:
+        name = (org_app.name or getattr(getattr(org_app, "user", None), "username", "") or "").strip()
+        if name:
+            type_label = _ORG_ROLE_LABELS.get(
+                org_app.organization_role, org_app.org_type or "سازمان حامی"
+            )
+            verified = bool(getattr(getattr(org_app, "user", None), "state", False))
+            return {
+                "kind": "affiliated",
+                "name": name,
+                "type_label": type_label,
+                "verified": verified,
+                "label": f"وابسته به {name}",
+            }
+
+    try:
+        org_name = (ha.organization_profile.name or "").strip()
+    except Exception:
+        org_name = ""
+    if org_name:
+        return {
+            "kind": "affiliated",
+            "name": org_name,
+            "type_label": "سلامتیار سازمانی",
+            "verified": bool(getattr(ha, "org_approved", False)),
+            "label": f"وابسته به {org_name}",
+        }
+
+    parent = getattr(ha, "parent_organization", None)
+    if parent:
+        parent_name = ha_organization_name(parent) or ha_display_name(parent)
+        if parent_name:
+            return {
+                "kind": "affiliated",
+                "name": parent_name,
+                "type_label": "سازمان سلامتیاری",
+                "verified": bool(getattr(ha, "org_approved", False)),
+                "label": f"وابسته به {parent_name}",
+            }
+
+    if getattr(ha, "affiliation_kind", "independent") == "affiliated":
+        return {
+            "kind": "affiliated",
+            "name": "",
+            "type_label": "وابسته",
+            "verified": False,
+            "label": "وابسته",
+        }
+    return independent
+
+
+def creator_organization_name(user) -> str:
+    if not user or getattr(user, "role", "") != "health_assistant":
+        return ""
+    try:
+        return ha_organization_name(user.health_assistant_profile)
+    except Exception:
+        return ""
+
+
 def ha_can_access_patient(ha, patient, action="view", domain=None) -> bool:
     """Whether a health assistant may act on a patient.
 
     Own caseload (introducer match) uses the base flags for registration
-    approve/edit. The `*_all` permission flags widen a specific action
-    (`approve` / `edit`) across every patient for a domain
-    (`registration`, `visits`, `financial`, `services`).
+    approve/edit and the per-domain own-scope flags. The `*_all` permission
+    flags widen a specific action (`approve` / `edit`) across every patient
+    for a domain (`registration`, `visits`, `financial`, `services`).
     """
     if patient is None:
         return False
@@ -75,6 +264,8 @@ def ha_can_access_patient(ha, patient, action="view", domain=None) -> bool:
             return bool(ha.can_approve_patients)
         if domain == "registration" and action == "edit":
             return bool(ha.can_edit_patients)
+        if domain in ("visits", "financial", "services"):
+            return bool(getattr(ha, f"can_{action}_{domain}", True))
         return True
     if not domain:
         return False
@@ -133,13 +324,16 @@ def ha_browse_patients(ha, params: dict):
     search = (params.get("search") or "").strip()
     if search:
         qs = qs.filter(
-            Q(first_name__icontains=search)
-            | Q(last_name__icontains=search)
-            | Q(father_name__icontains=search)
-            | Q(national_code__icontains=search)
-            | Q(patient_code__icontains=search)
-            | Q(phone_number__icontains=search)
-            | Q(sickness_description__icontains=search)
+            name_search_q(
+                search,
+                extra_fields=[
+                    "father_name",
+                    "national_code",
+                    "patient_code",
+                    "phone_number",
+                    "sickness_description",
+                ],
+            )
         )
 
     province = (params.get("province") or "").strip()
@@ -199,6 +393,24 @@ def ha_patient_list_item(ha, patient) -> dict:
         "state": patient.user.state,
         "is_mine": patient.introducer_id == ha.pk,
         "is_orphan": patient.introducer_id is None,
-        "introducer_name": introducer_name,
+        "introducer_name": patient.introducer_full_name or introducer_name,
         "introducer_code": introducer.health_assistance_code if introducer else "",
+        "introducer_national_code": patient.introducer_national_code
+        or (
+            getattr(getattr(introducer, "individual_profile", None), "national_code", "")
+            if introducer
+            else ""
+        ),
+        "introducer_organization_name": patient.introducer_organization_name
+        or ha_organization_name(introducer),
+        "family_status": patient.family_status or "",
+        "financial_level": patient.financial_level or "",
+        "financial_level_label": dict(patient.FINANCIAL_LEVELS).get(
+            patient.financial_level, ""
+        ),
+        "age": patient.age,
+        "marital_status_name": getattr(patient.marital_status, "name", "") or "",
+        "insurance_name": getattr(patient.insurance, "name", "") or "",
+        "covered_organization_name": getattr(patient.covered_organization, "name", "")
+        or "",
     }

@@ -23,7 +23,9 @@ from ..models import (
     Insurance,
     JobStatus,
     MaritalStatus,
+    MedicalCenter,
     NetworkRequest,
+    OrganizationApplication,
     OrganizationHealthAssistant,
     OrganizationType,
     Patient,
@@ -42,7 +44,7 @@ from ..serializers.admin import (
 )
 from ..serializers.requests import NetworkRequestSerializer
 from ..services.audit_service import log_audit_event
-from .requests import filter_by_scope
+from .requests import apply_read_status, filter_by_scope
 
 
 LOOKUP_REGISTRY = {
@@ -234,6 +236,48 @@ class AdminUserDetailView(APIView):
         return Response(admin_profile_payload(user))
 
 
+def _apply_ha_affiliation(ha, data):
+    if "affiliation_kind" in data:
+        kind = (data.get("affiliation_kind") or "independent").strip()
+        if kind not in ("independent", "affiliated"):
+            return {"affiliation_kind": "مقدار نامعتبر است."}
+        ha.affiliation_kind = kind
+
+    org_present = "affiliated_organization_id" in data or "affiliated_organization" in data
+    if org_present:
+        org_id = data.get("affiliated_organization_id", data.get("affiliated_organization"))
+        if org_id in ("", None, 0, "0"):
+            ha.affiliated_organization = None
+        else:
+            try:
+                ha.affiliated_organization = OrganizationApplication.objects.get(pk=int(org_id))
+            except (OrganizationApplication.DoesNotExist, TypeError, ValueError):
+                return {"affiliated_organization_id": "سازمان یافت نشد."}
+
+    center_present = "affiliated_medical_center_id" in data or "affiliated_medical_center" in data
+    if center_present:
+        center_id = data.get("affiliated_medical_center_id", data.get("affiliated_medical_center"))
+        if center_id in ("", None, 0, "0"):
+            ha.affiliated_medical_center = None
+        else:
+            try:
+                ha.affiliated_medical_center = MedicalCenter.objects.get(pk=int(center_id))
+            except (MedicalCenter.DoesNotExist, TypeError, ValueError):
+                return {"affiliated_medical_center_id": "مرکز درمانی یافت نشد."}
+
+    if ha.affiliation_kind == "independent":
+        ha.affiliated_organization = None
+        ha.affiliated_medical_center = None
+    ha.save(
+        update_fields=[
+            "affiliation_kind",
+            "affiliated_organization",
+            "affiliated_medical_center",
+        ]
+    )
+    return None
+
+
 def _patch_user_profile(user, profile_data, actor=None):
     role = user.role
     ha_perm_updated = False
@@ -255,6 +299,19 @@ def _patch_user_profile(user, profile_data, actor=None):
             )
         elif role == "health_assistant":
             ha = user.health_assistant_profile
+            aff_keys = {
+                "affiliation_kind",
+                "affiliated_organization",
+                "affiliated_organization_id",
+                "affiliated_medical_center",
+                "affiliated_medical_center_id",
+            }
+            aff_fields = {k: v for k, v in profile_data.items() if k in aff_keys}
+            if aff_fields:
+                err = _apply_ha_affiliation(ha, aff_fields)
+                if err:
+                    return err
+                profile_data = {k: v for k, v in profile_data.items() if k not in aff_keys}
             perm_fields = {
                 k: v
                 for k, v in profile_data.items()
@@ -364,6 +421,9 @@ class AdminRequestsView(APIView):
         if request_type:
             qs = qs.filter(request_type=request_type)
         qs = filter_by_scope(qs, scope)
+        qs = apply_read_status(
+            qs, request.user, request.query_params.get("read_status", "").strip()
+        )
         if search:
             qs = qs.filter(
                 Q(subject__icontains=search)
@@ -374,7 +434,9 @@ class AdminRequestsView(APIView):
                 | Q(patient__patient_code__icontains=search)
             ).distinct()
 
-        return Response(NetworkRequestSerializer(qs, many=True).data)
+        return Response(
+            NetworkRequestSerializer(qs, many=True, context={"request": request}).data
+        )
 
 
 class AdminLookupsMetaView(APIView):

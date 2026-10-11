@@ -55,7 +55,80 @@ urlpatterns = [
     path("benefactor/favorites/", views.BenefactorFavoritesView.as_view(), name="benefactor_favorites"),
     path("sign-in/", views.LoginView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("password-reset/", views.PasswordResetRequestView.as_view(), name="password_reset_request"),
+    path(
+        "password-reset/confirm/",
+        views.PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
     path("hello/", views.HelloView.as_view(), name="hello"),
+    path("public/stats/", views.PublicStatsView.as_view(), name="public_stats"),
+    path(
+        "public/medical-centers/",
+        views.PublicMedicalCenterListView.as_view(),
+        name="public_medical_centers",
+    ),
+    path(
+        "public/supporting-orgs/",
+        views.PublicSupportingOrgSearchView.as_view(),
+        name="public_supporting_orgs",
+    ),
+    path(
+        "public/fundable-requests/",
+        views.PublicFundableRequestsView.as_view(),
+        name="public_fundable_requests",
+    ),
+    path("contact-messages/", views.ContactMessageCreateView.as_view(), name="contact_messages"),
+    path(
+        "contact-messages/inbox/",
+        views.ContactMessageInboxView.as_view(),
+        name="contact_messages_inbox",
+    ),
+    path(
+        "contact-messages/<int:pk>/reply/",
+        views.ContactMessageReplyView.as_view(),
+        name="contact_message_reply",
+    ),
+    path(
+        "contact-disclosure/",
+        views.ContactDisclosureCreateView.as_view(),
+        name="contact_disclosure",
+    ),
+    path(
+        "contact-disclosure/inbox/",
+        views.ContactDisclosureInboxView.as_view(),
+        name="contact_disclosure_inbox",
+    ),
+    path(
+        "contact-disclosure/<int:pk>/",
+        views.ContactDisclosureInboxView.as_view(),
+        name="contact_disclosure_action",
+    ),
+    path(
+        "admin/medical-centers/",
+        views.AdminMedicalCenterListCreateView.as_view(),
+        name="admin_medical_centers",
+    ),
+    path(
+        "admin/medical-centers/<int:pk>/",
+        views.AdminMedicalCenterDetailView.as_view(),
+        name="admin_medical_center_detail",
+    ),
+    path(
+        "admin/medical-centers/<int:pk>/images/",
+        views.AdminMedicalCenterImageView.as_view(),
+        name="admin_medical_center_images",
+    ),
+    path(
+        "admin/medical-centers/<int:pk>/images/<int:image_id>/",
+        views.AdminMedicalCenterImageView.as_view(),
+        name="admin_medical_center_image_delete",
+    ),
+    path(
+        "requests/<int:pk>/read/",
+        views.RequestMarkReadView.as_view(),
+        name="request_mark_read",
+    ),
     path("campaigns/", views.CampaignListView.as_view(), name="campaign_list"),
     path("admin/campaigns/", views.AdminCampaignListCreateView.as_view(), name="admin_campaigns"),
     path(
@@ -234,9 +307,19 @@ urlpatterns = [
         name="admin_wallet_adjust",
     ),
     path(
+        "admin/wallet/pay-request/",
+        views.AdminPayRequestView.as_view(),
+        name="admin_wallet_pay_request",
+    ),
+    path(
         "admin/wallet/pledges/",
         views.AdminPledgesView.as_view(),
         name="admin_wallet_pledges",
+    ),
+    path(
+        "admin/wallet/general-donations/",
+        views.AdminGeneralDonationsView.as_view(),
+        name="admin_wallet_general_donations",
     ),
     path(
         "admin/reports/transactions/",

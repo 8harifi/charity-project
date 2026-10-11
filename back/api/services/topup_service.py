@@ -17,10 +17,11 @@ class TopUpError(Exception):
 
 
 def _credit_verified_payment(payment: GatewayPayment) -> GatewayPayment:
-    if (payment.callback_payload or {}).get("guest_campaign_id"):
+    payload = payment.callback_payload if isinstance(payment.callback_payload, dict) else {}
+    if payload.get("guest_campaign_id"):
         from ..models import Campaign, BenefactorDonation
 
-        campaign_id = payment.callback_payload["guest_campaign_id"]
+        campaign_id = payload["guest_campaign_id"]
         campaign = Campaign.objects.select_for_update().get(pk=campaign_id, is_published=True)
         campaign.raised_amount = (campaign.raised_amount or 0) + payment.amount
         campaign.save(update_fields=["raised_amount", "updated_at"])
@@ -44,6 +45,19 @@ def _credit_verified_payment(payment: GatewayPayment) -> GatewayPayment:
         description=f"Wallet top-up via {payment.gateway}",
         created_by=payment.user,
     )
+    if payload.get("destination_type") == "general":
+        from ..models import BenefactorDonation
+
+        BenefactorDonation.objects.create(
+            benefactor=payment.user,
+            donation_type="cash",
+            amount=payment.amount,
+            title="کمک کلی",
+            description="کمک کلی به تشخیص مدیریت سامانه",
+            destination_type="general",
+            payment_source="gateway_direct",
+            status="completed",
+        )
     return payment
 
 
@@ -59,7 +73,11 @@ def mock_instant_topup(*, payment: GatewayPayment) -> GatewayPayment:
     payment.gateway = "mock"
     payment.status = "verified"
     payment.verified_at = timezone.now()
-    payment.callback_payload = {"mock": True, "note": "ZARINPAL_DISABLED"}
+    payment.callback_payload = {
+        **(payment.callback_payload if isinstance(payment.callback_payload, dict) else {}),
+        "mock": True,
+        "note": "ZARINPAL_DISABLED",
+    }
     payment.save(
         update_fields=[
             "authority",
@@ -107,7 +125,9 @@ def verify_and_credit_topup(*, authority: str, status_param: str) -> GatewayPaym
     payment.ref_id = verify_result.ref_id
     payment.status = "verified"
     payment.verified_at = timezone.now()
-    payment.callback_payload = verify_result.raw
+    existing = payment.callback_payload if isinstance(payment.callback_payload, dict) else {}
+    raw = verify_result.raw if isinstance(getattr(verify_result, "raw", None), dict) else {}
+    payment.callback_payload = {**existing, **raw}
     payment.save(
         update_fields=["ref_id", "status", "verified_at", "callback_payload", "updated_at"]
     )

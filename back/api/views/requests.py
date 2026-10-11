@@ -7,7 +7,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .. import messages as msg
-from ..models import DonationHold, NetworkRequest, Patient, RequestAttachment, RequestStatusLog
+from ..models import (
+    DonationHold,
+    NetworkRequest,
+    OrganizationApplication,
+    Patient,
+    RequestAttachment,
+    RequestStatusLog,
+)
 from ..permissions import IsBenefactor, IsDoctor, IsHealthAssistant, is_platform_admin
 from ..utils import (
     ha_browse_patients,
@@ -90,6 +97,19 @@ def filter_by_scope(queryset, scope):
     return queryset
 
 
+def apply_read_status(queryset, user, read_status):
+    if read_status not in ("read", "unread") or not user or not user.is_authenticated:
+        return queryset
+    from ..models import RequestReadReceipt
+
+    read_ids = RequestReadReceipt.objects.filter(user=user).values_list(
+        "request_id", flat=True
+    )
+    if read_status == "read":
+        return queryset.filter(pk__in=read_ids)
+    return queryset.exclude(pk__in=read_ids)
+
+
 class NetworkRequestListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -121,7 +141,8 @@ class NetworkRequestListCreateView(APIView):
             return Response({"detail": msg.FORBIDDEN}, status=403)
 
         qs = filter_by_scope(qs, scope)
-        data = NetworkRequestSerializer(qs, many=True).data
+        qs = apply_read_status(qs, user, request.query_params.get("read_status", "").strip())
+        data = NetworkRequestSerializer(qs, many=True, context={"request": request}).data
         return Response(data)
 
     def post(self, request):
@@ -212,6 +233,11 @@ class NetworkRequestDetailView(APIView):
             return Response({"detail": msg.NOT_FOUND}, status=404)
         if not self._can_view(request.user, network_request):
             return Response({"detail": msg.FORBIDDEN}, status=403)
+        from ..models import RequestReadReceipt
+
+        RequestReadReceipt.objects.get_or_create(
+            request=network_request, user=request.user
+        )
         return Response(
             NetworkRequestSerializer(network_request, context={"request": request}).data
         )
@@ -316,6 +342,8 @@ class NetworkRequestStatusView(APIView):
                 "appointment_place",
                 "appointment_phone",
                 "confirmation_message",
+                "doctor_id",
+                "doctor_name",
             )
             if k in serializer.validated_data
         }
@@ -334,6 +362,8 @@ class NetworkRequestStatusView(APIView):
                 return Response({"detail": msg.FORBIDDEN}, status=403)
 
         elif user.role == "health_assistant":
+            if action == "refer_to_doctor":
+                return self._handle_refer_to_doctor(user, network_request, note, extra)
             if action in ("ha_approve", "ha_reject"):
                 return self._handle_ha_approval(user, network_request, action, note)
             if network_request.request_type == "financial" and network_request.created_by_id == user.pk:
@@ -410,6 +440,46 @@ class NetworkRequestStatusView(APIView):
             metadata={"from": previous, "to": new_status, "note": note},
         )
         return Response(NetworkRequestSerializer(network_request).data)
+
+    def _handle_refer_to_doctor(self, user, network_request, note, extra):
+        ha = user.health_assistant_profile
+        if not ha.is_network_consultant:
+            return Response({"detail": "فقط مشاور شبکه می‌تواند درخواست را به پزشک ارجاع دهد."}, status=403)
+        from ..models import Doctor
+
+        doctor = None
+        doctor_id = extra.get("doctor_id")
+        doctor_name = (extra.get("doctor_name") or "").strip()
+        if doctor_id:
+            doctor = Doctor.objects.filter(pk=doctor_id).first()
+            if not doctor:
+                return Response({"detail": "پزشک یافت نشد."}, status=400)
+            doctor_name = f"{doctor.first_name} {doctor.last_name}".strip()
+        if not doctor_name:
+            return Response({"detail": "نام یا شناسه پزشک الزامی است."}, status=400)
+        network_request.referred_to_doctor = doctor
+        network_request.doctor_name = doctor_name
+        if network_request.request_type == "service":
+            network_request.request_type = "consultation"
+        network_request.status = "pending"
+        network_request.handled_by = None
+        network_request.save(
+            update_fields=[
+                "referred_to_doctor",
+                "doctor_name",
+                "request_type",
+                "status",
+                "handled_by",
+                "updated_at",
+            ]
+        )
+        RequestStatusLog.objects.create(
+            request=network_request,
+            status="pending",
+            note=note or f"ارجاع به پزشک {doctor_name}",
+            actor=user,
+        )
+        return Response(NetworkRequestSerializer(network_request, context={"request": self.request if hasattr(self, "request") else None}).data)
 
     def _handle_doctor_medical(self, user, network_request, action, note, extra):
         doctor = user.doctor_profile
@@ -629,12 +699,15 @@ class DoctorIncomingRequestsView(APIView):
         doctor = request.user.doctor_profile
         patient_ids = _doctor_patient_ids(doctor)
         qs = NetworkRequest.objects.filter(
-            request_type="consultation",
-            status="pending",
-            handled_by__isnull=True,
-            patient_id__in=patient_ids,
-            created_by__role__in=("patient", "health_assistant"),
-        ).select_related("patient", "created_by", "specialty")
+            Q(
+                request_type="consultation",
+                status="pending",
+                handled_by__isnull=True,
+                patient_id__in=patient_ids,
+                created_by__role__in=("patient", "health_assistant"),
+            )
+            | Q(referred_to_doctor=doctor, status="pending")
+        ).select_related("patient", "created_by", "specialty").distinct()
         return Response(
             NetworkRequestSerializer(qs, many=True, context={"request": request}).data
         )
@@ -703,6 +776,9 @@ class BenefactorIncomingRequestsView(APIView):
         qs = _fundable_requests_qs()
         scope = request.query_params.get("scope", "active")
         qs = filter_by_scope(qs, scope)
+        qs = apply_read_status(
+            qs, request.user, request.query_params.get("read_status", "").strip()
+        )
 
         search = request.query_params.get("search", "").strip()
         if search:
@@ -756,6 +832,9 @@ class BenefactorMyCasesView(APIView):
             pk__in=request_ids,
         )
         qs = filter_by_scope(qs, scope)
+        qs = apply_read_status(
+            qs, request.user, request.query_params.get("read_status", "").strip()
+        )
 
         search = request.query_params.get("search", "").strip()
         if search:
@@ -814,7 +893,19 @@ class FundRecipientOptionsView(APIView):
             }
             for u in users
         ]
-        return Response(data)
+        orgs = [
+            {
+                "id": o.pk,
+                "label": o.name or o.user.username,
+                "organization_role": o.organization_role,
+            }
+            for o in OrganizationApplication.objects.filter(user__state=True)[:80]
+        ]
+        roles = [
+            {"id": value, "label": label}
+            for value, label in NetworkRequest.RECIPIENT_ROLES
+        ]
+        return Response({"users": data, "organizations": orgs, "roles": roles})
 
 
 def _staff_display_name(user):
@@ -920,11 +1011,12 @@ class HealthAssistantApprovePatientView(APIView):
             return Response({"detail": msg.FORBIDDEN}, status=403)
 
         patient.ha_approved = True
-        patient.save(update_fields=["ha_approved"])
+        patient.admin_approved = True
+        update_fields = ["ha_approved", "admin_approved"]
+        patient.save(update_fields=update_fields)
 
-        if patient.admin_approved and patient.ha_approved:
-            patient.user.state = True
-            patient.user.save(update_fields=["state"])
+        patient.user.state = True
+        patient.user.save(update_fields=["state"])
 
         return Response(
             {

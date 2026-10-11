@@ -2,18 +2,19 @@ from decimal import Decimal
 
 from django.db.models import Sum
 
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .. import messages as msg
-from ..models import GatewayPayment, DonationHold, Wallet, WalletTransaction
+from ..models import BenefactorDonation, GatewayPayment, DonationHold, Wallet, WalletTransaction
 from ..models.user import CustomUser
 from ..permissions import IsPlatformAdmin
 from ..serializers.wallet import (
     AdminWalletAdjustSerializer,
     AdminWalletSerializer,
     DonationHoldSerializer,
+    DonationListSerializer,
     GatewayPaymentSerializer,
 )
 from ..utils import normalize_phone
@@ -54,6 +55,7 @@ class AdminWalletsView(APIView):
 
     def get(self, request):
         search = request.query_params.get("search", "")
+        include_platform = request.query_params.get("include_platform", "1")
         qs = Wallet.objects.filter(wallet_type="benefactor").select_related("owner_user")
         if search:
             phone = normalize_phone(search)
@@ -62,7 +64,24 @@ class AdminWalletsView(APIView):
             else:
                 qs = qs.filter(owner_user__username__icontains=search)
         qs = qs.order_by("-cached_balance")[:200]
-        return Response(AdminWalletSerializer(qs, many=True).data)
+        results = list(AdminWalletSerializer(qs, many=True).data)
+        if include_platform and include_platform not in ("0", "false"):
+            from ..services.wallet_service import get_or_create_platform_wallet
+
+            platform = get_or_create_platform_wallet()
+            results.insert(
+                0,
+                {
+                    "id": platform.pk,
+                    "phone_number": "",
+                    "owner_username": "کیف پول سامانه",
+                    "wallet_type": "platform",
+                    "cached_balance": str(platform.cached_balance),
+                    "held_balance": str(platform.held_balance),
+                    "is_platform": True,
+                },
+            )
+        return Response(results)
 
 
 class AdminWalletAdjustView(APIView):
@@ -161,5 +180,64 @@ class AdminPledgesView(APIView):
                 "count": qs.count(),
                 "page": page,
                 "results": DonationHoldSerializer(items, many=True).data,
+            }
+        )
+
+
+class AdminPayRequestView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    def post(self, request):
+        request_id = request.data.get("network_request_id") or request.data.get("request_id")
+        amount = request.data.get("amount")
+        if not request_id or not amount:
+            return Response({"detail": "شناسه درخواست و مبلغ الزامی است."}, status=400)
+        from ..services.donation_service import DonationError, admin_pay_request_from_platform
+        from ..serializers.requests import NetworkRequestSerializer
+
+        try:
+            req = admin_pay_request_from_platform(
+                admin_user=request.user,
+                network_request_id=request_id,
+                amount=amount,
+            )
+        except DonationError as exc:
+            return Response({"detail": str(exc)}, status=400)
+        log_audit_event(
+            actor=request.user,
+            event_type="request_paid_from_platform",
+            summary=f"پرداخت درخواست #{req.pk} از کیف پول سامانه",
+            target_type="network_request",
+            target_id=req.pk,
+            metadata={"amount": str(amount)},
+        )
+        return Response(NetworkRequestSerializer(req, context={"request": request}).data)
+
+
+class AdminGeneralDonationSerializer(DonationListSerializer):
+    benefactor_username = serializers.CharField(source="benefactor.username", read_only=True)
+
+    class Meta(DonationListSerializer.Meta):
+        fields = list(DonationListSerializer.Meta.fields) + ["benefactor_username", "created_at"]
+
+
+class AdminGeneralDonationsView(APIView):
+    permission_classes = [IsPlatformAdmin]
+
+    def get(self, request):
+        qs = BenefactorDonation.objects.filter(destination_type="general").select_related(
+            "benefactor"
+        ).order_by("-created_at")
+        page = int(request.query_params.get("page", 1))
+        page_size = min(int(request.query_params.get("page_size", 50)), 100)
+        start = (page - 1) * page_size
+        items = qs[start : start + page_size]
+        return Response(
+            {
+                "count": qs.count(),
+                "page": page,
+                "results": AdminGeneralDonationSerializer(
+                    items, many=True, context={"request": request}
+                ).data,
             }
         )

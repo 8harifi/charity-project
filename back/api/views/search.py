@@ -14,6 +14,7 @@ from ..models import (
 )
 from ..serializers import DoctorSerializer, PatientSerializer
 from ..serializers.admin import health_assistant_permissions
+from ..utils import ha_affiliation_display, name_search_q
 
 
 class GlobalSearchView(APIView):
@@ -57,7 +58,15 @@ class GlobalSearchView(APIView):
 
         patients = Patient.objects.all()
         doctors = Doctor.objects.all()
-        health_assistants = HealthAssistant.objects.all()
+        health_assistants = HealthAssistant.objects.select_related(
+            "individual_profile",
+            "organization_profile",
+            "affiliated_organization",
+            "affiliated_organization__user",
+            "affiliated_medical_center",
+            "parent_organization",
+            "parent_organization__organization_profile",
+        )
         benefactors = Benefactor.objects.all()
         organizations = OrganizationApplication.objects.all()
 
@@ -124,21 +133,19 @@ class GlobalSearchView(APIView):
 
         if want_patients:
             patient_results = patients.filter(
-                Q(first_name__icontains=query)
-                | Q(last_name__icontains=query)
-                | Q(national_code__icontains=query)
-                | Q(phone_number__icontains=query)
-                | Q(patient_code__icontains=query)
+                name_search_q(
+                    query,
+                    extra_fields=["national_code", "phone_number", "patient_code"],
+                )
             )[:30]
             response["patients"] = PatientSerializer(patient_results, many=True).data
 
         if want_doctors:
             doctor_results = doctors.filter(
-                Q(first_name__icontains=query)
-                | Q(last_name__icontains=query)
-                | Q(national_code__icontains=query)
-                | Q(medical_system_code__icontains=query)
-                | Q(phone_number__icontains=query)
+                name_search_q(
+                    query,
+                    extra_fields=["national_code", "medical_system_code", "phone_number"],
+                )
             )[:30]
             response["doctors"] = DoctorSerializer(doctor_results, many=True).data
 
@@ -147,9 +154,18 @@ class GlobalSearchView(APIView):
             for ha in health_assistants.filter(
                 Q(individual_profile__first_name__icontains=query)
                 | Q(individual_profile__last_name__icontains=query)
-                | Q(organization_profile__name__icontains=query)
-                | Q(health_assistance_code__icontains=query)
-                | Q(cooperation_description__icontains=query)
+                | name_search_q(
+                    query,
+                    first_field="individual_profile__first_name",
+                    last_field="individual_profile__last_name",
+                    extra_fields=[
+                        "organization_profile__name",
+                        "health_assistance_code",
+                        "cooperation_description",
+                        "affiliated_organization__name",
+                        "affiliated_medical_center__name",
+                    ],
+                )
             )[:30]:
                 name = ""
                 if getattr(ha, "individual_profile", None):
@@ -164,6 +180,7 @@ class GlobalSearchView(APIView):
                         "name": name,
                         "type": "health_assistant",
                         "description": ha.cooperation_description or "",
+                        "affiliation": ha_affiliation_display(ha),
                     }
                 )
             response["health_assistants"] = ha_results
@@ -171,10 +188,7 @@ class GlobalSearchView(APIView):
         if want_benefactors:
             benefactor_results = []
             for b in benefactors.filter(
-                Q(first_name__icontains=query)
-                | Q(last_name__icontains=query)
-                | Q(national_code__icontains=query)
-                | Q(phone_number__icontains=query)
+                name_search_q(query, extra_fields=["national_code", "phone_number"])
             )[:30]:
                 benefactor_results.append(
                     {

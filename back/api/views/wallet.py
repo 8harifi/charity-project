@@ -22,6 +22,7 @@ from ..serializers.wallet import (
 from ..services.donation_service import (
     DonationError,
     adjust_request_pledge,
+    admin_pay_request_from_platform,
     donate_from_wallet,
 )
 from ..services.topup_service import mock_instant_topup
@@ -290,32 +291,58 @@ class GuestCampaignDonateView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        destination = (request.data.get("destination_type") or "campaign").strip()
         campaign_id = request.data.get("campaign_id")
         amount = request.data.get("amount")
-        if not campaign_id or not amount:
-            return Response({"detail": "campaign_id و amount الزامی است."}, status=400)
+        if not amount:
+            return Response({"detail": "amount الزامی است."}, status=400)
         try:
             amount = Decimal(str(amount))
-            campaign = Campaign.objects.get(pk=campaign_id, is_published=True)
-        except (InvalidOperation, Campaign.DoesNotExist):
-            return Response({"detail": "کمپین یا مبلغ نامعتبر است."}, status=400)
+        except (InvalidOperation, TypeError):
+            return Response({"detail": "مبلغ نامعتبر است."}, status=400)
 
         user = _system_payment_user()
         if not user:
             return Response({"detail": "سیستم پرداخت پیکربندی نشده."}, status=503)
 
         platform_wallet = get_or_create_platform_wallet()
+        payload = {"guest": True, "destination_type": destination}
+        campaign = None
+        network_request_id = request.data.get("network_request_id")
+        if destination == "request":
+            if not network_request_id:
+                return Response({"detail": "network_request_id الزامی است."}, status=400)
+            payload["guest_request_id"] = network_request_id
+        elif destination != "general":
+            if not campaign_id:
+                return Response({"detail": "campaign_id و amount الزامی است."}, status=400)
+            try:
+                campaign = Campaign.objects.get(pk=campaign_id, is_published=True)
+            except Campaign.DoesNotExist:
+                return Response({"detail": "کمپین یا مبلغ نامعتبر است."}, status=400)
+            payload["guest_campaign_id"] = campaign.pk
+
         payment = GatewayPayment.objects.create(
             user=user,
             wallet=platform_wallet,
             amount=amount,
             status="created",
-            callback_payload={"guest_campaign_id": campaign.pk, "guest": True},
+            callback_payload=payload,
         )
 
         if getattr(settings, "ZARINPAL_DISABLED", False):
             mock_instant_topup(payment=payment)
-            _credit_guest_campaign(payment)
+            if campaign:
+                _credit_guest_campaign(payment)
+            if destination == "request":
+                try:
+                    admin_pay_request_from_platform(
+                        admin_user=user,
+                        network_request_id=network_request_id,
+                        amount=amount,
+                    )
+                except DonationError as exc:
+                    return Response({"detail": str(exc)}, status=400)
             return Response(
                 {
                     "payment_id": payment.pk,
@@ -334,9 +361,11 @@ class GuestCampaignDonateView(APIView):
         try:
             result = payment_request(
                 amount=amount,
-                description=f"Campaign donation #{campaign.pk}",
+                description=(
+                    f"Campaign donation #{campaign.pk}" if campaign else "Network wallet donation"
+                ),
                 callback_url=callback_url,
-                metadata={"payment_id": payment.pk, "guest_campaign_id": campaign.pk},
+                metadata={"payment_id": payment.pk, **payload},
             )
         except ZarinpalError as exc:
             payment.status = "failed"

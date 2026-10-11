@@ -61,11 +61,17 @@ class PatientSignupSerializer(serializers.Serializer):
     national_card_image = serializers.ImageField(required=False, allow_null=True)
     birth_certificate_image = serializers.ImageField(required=False, allow_null=True)
 
+    financial_level = serializers.ChoiceField(
+        choices=["very_weak", "weak", "average"],
+        required=False,
+        allow_blank=True,
+    )
     health_assistant_code = serializers.CharField(required=False, allow_blank=True)
 
     presenter_first_name = serializers.CharField(required=False, allow_blank=True)
     presenter_last_name = serializers.CharField(required=False, allow_blank=True)
     presenter_national_code = serializers.CharField(required=False, allow_blank=True)
+    presenter_organization_name = serializers.CharField(required=False, allow_blank=True)
 
     def validate_phone_number(self, value):
         phone = normalize_phone(value)
@@ -101,6 +107,21 @@ class PatientSignupSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {"national_code": msg.NATIONAL_CODE_EXISTS_PATIENT}
             )
+        ha_code = (data.get("health_assistant_code") or "").strip()
+        presenter_nc = (data.get("presenter_national_code") or "").strip()
+        if not self.context.get("introducer") and not ha_code and not presenter_nc:
+            raise serializers.ValidationError(
+                {
+                    "health_assistant_code": "کد سلامتیار معرف یا کد ملی یک سلامتیار واقعی الزامی است."
+                }
+            )
+        if not self.context.get("introducer") and presenter_nc and not ha_code:
+            if not HealthAssistant.objects.filter(
+                individual_profile__national_code=presenter_nc
+            ).exists():
+                raise serializers.ValidationError(
+                    {"presenter_national_code": "سلامتیار معرفی با این کد ملی یافت نشد."}
+                )
         data["gender"] = resolve_lookup(Gender, data["gender"], field_name="gender")
         data["marital_status"] = resolve_lookup(
             MaritalStatus, data["marital_status"], field_name="marital_status"
@@ -119,30 +140,57 @@ class PatientSignupSerializer(serializers.Serializer):
         return data
 
     def create(self, validated):
+        introducer = self.context.get("introducer")
+        ha_code = (validated.get("health_assistant_code") or "").strip()
+        if not introducer and ha_code:
+            introducer = HealthAssistant.objects.filter(
+                health_assistance_code=ha_code
+            ).first()
+        if not introducer:
+            presenter_nc = (validated.get("presenter_national_code") or "").strip()
+            if presenter_nc:
+                introducer = HealthAssistant.objects.filter(
+                    individual_profile__national_code=presenter_nc
+                ).first()
+        if not introducer:
+            raise serializers.ValidationError(
+                {
+                    "health_assistant_code": "کد سلامتیار معرف یا کد ملی یک سلامتیار واقعی الزامی است."
+                }
+            )
+
         phone = validated["phone_number"]
         user = CustomUser.objects.create_user(
             username=phone,
             password=validated["password"],
             role="patient",
         )
+        if user.state:
+            user.state = False
+            user.save(update_fields=["state"])
 
-        ha_code = (validated.get("health_assistant_code") or "").strip()
-        introducer = None
-        if ha_code:
-            introducer = HealthAssistant.objects.filter(
-                health_assistance_code=ha_code
-            ).first()
-            # Self-registered patients with an introducer must stay pending
-            # until BOTH admin and introducer HA approve them.
-            if user.state:
-                user.state = False
-                user.save(update_fields=["state"])
+        from ..utils import ha_organization_name
+
+        intro_name = (
+            f"{(validated.get('presenter_first_name') or '').strip()} "
+            f"{(validated.get('presenter_last_name') or '').strip()}"
+        ).strip()
+        if not intro_name and introducer and getattr(introducer, "individual_profile", None):
+            ind = introducer.individual_profile
+            intro_name = f"{ind.first_name} {ind.last_name}".strip()
+        intro_nc = (validated.get("presenter_national_code") or "").strip()
+        if not intro_nc and introducer and getattr(introducer, "individual_profile", None):
+            intro_nc = introducer.individual_profile.national_code or ""
+        intro_org = (validated.get("presenter_organization_name") or "").strip() or ha_organization_name(introducer)
 
         patient = Patient.objects.create(
             user=user,
             patient_code=generate_patient_code(),
             national_code=(validated.get("national_code") or "").strip(),
             introducer=introducer,
+            introducer_full_name=intro_name,
+            introducer_national_code=intro_nc,
+            introducer_organization_name=intro_org,
             first_name=validated["first_name"],
             last_name=validated["last_name"],
             father_name=validated["father_name"],
@@ -168,6 +216,7 @@ class PatientSignupSerializer(serializers.Serializer):
             contact2_phone_number=validated.get("contact2_phone_number") or "",
             insurance=validated["insurance"],
             sickness_description=validated.get("sickness_description") or "",
+            financial_level=validated.get("financial_level") or "",
             national_card_image=validated.get("national_card_image"),
             birth_certificate_image=validated.get("birth_certificate_image"),
         )

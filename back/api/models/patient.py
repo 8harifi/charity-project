@@ -108,6 +108,21 @@ class Patient(models.Model):
     )
     sickness_description = models.TextField(blank=True, default="")
 
+    FINANCIAL_LEVELS = [
+        ("very_weak", "خیلی ضعیف"),
+        ("weak", "ضعیف"),
+        ("average", "متوسط"),
+    ]
+    financial_level = models.CharField(
+        max_length=20,
+        choices=FINANCIAL_LEVELS,
+        blank=True,
+        default="",
+    )
+    introducer_full_name = models.CharField(max_length=200, blank=True, default="")
+    introducer_national_code = models.CharField(max_length=10, blank=True, default="")
+    introducer_organization_name = models.CharField(max_length=255, blank=True, default="")
+
     # acquaintances
     contact1_full_name = models.CharField(max_length=100, blank=True)
     contact1_phone_number = models.CharField(max_length=20, blank=True)

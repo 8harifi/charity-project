@@ -31,9 +31,14 @@ def approve_user(request, user_id):
         except Patient.DoesNotExist:
             patient = None
         if patient:
+            if not patient.introducer_id:
+                return Response(
+                    {"detail": "بیمار بدون معرف واقعی قابل تأیید نیست."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             patient.admin_approved = True
             patient.save(update_fields=["admin_approved"])
-            if not patient.introducer_id or patient.ha_approved:
+            if patient.ha_approved:
                 user.state = True
                 user.save(update_fields=["state"])
                 return Response({"message": msg.USER_APPROVED}, status=status.HTTP_200_OK)

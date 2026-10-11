@@ -86,6 +86,22 @@ class NetworkRequest(models.Model):
         ("حضوری", "حضوری"),
         ("تلفنی", "تلفنی"),
     ]
+    RECIPIENT_KINDS = [
+        ("user", "فرد"),
+        ("organization", "سازمان"),
+        ("role", "نقش"),
+    ]
+    RECIPIENT_ROLES = [
+        ("patient_approval", "تأیید بیمار"),
+        ("appointment", "نوبت"),
+        ("financial", "مالی"),
+        ("services", "خدمات"),
+        ("network_consultant", "مشاور شبکه"),
+    ]
+    SERVICE_KINDS = [
+        ("general", "عمومی"),
+        ("network_consultation", "مشاوره با سلامتیار مشاور شبکه"),
+    ]
     STATUS_CHOICES = [
         ("pending", "در انتظار بررسی"),
         ("accepted", "پذیرفته شده"),
@@ -116,6 +132,38 @@ class NetworkRequest(models.Model):
         blank=True,
         related_name="fund_recipient_requests",
         help_text="HA or doctor who receives the collected funds (financial requests only).",
+    )
+    recipient_kind = models.CharField(
+        max_length=20,
+        choices=RECIPIENT_KINDS,
+        blank=True,
+        default="",
+    )
+    recipient_role = models.CharField(
+        max_length=40,
+        choices=RECIPIENT_ROLES,
+        blank=True,
+        default="",
+    )
+    recipient_organization = models.ForeignKey(
+        "OrganizationApplication",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assigned_requests",
+    )
+    service_kind = models.CharField(
+        max_length=40,
+        choices=SERVICE_KINDS,
+        blank=True,
+        default="",
+    )
+    referred_to_doctor = models.ForeignKey(
+        "Doctor",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="referred_requests",
     )
     specialty = models.ForeignKey(
         Specialty,
@@ -371,6 +419,11 @@ class Campaign(models.Model):
         ("تجهیزات", "تجهیزات"),
         ("عمومی", "عمومی"),
     ]
+    AUDIENCE_CHOICES = [
+        ("patients", "بیماران"),
+        ("regional", "مناطق نیازمند"),
+        ("network", "شبکه"),
+    ]
 
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, default="")
@@ -394,6 +447,11 @@ class Campaign(models.Model):
         blank=True,
         related_name="campaigns",
         help_text="Regional NetworkRequest that spawned this campaign, if any.",
+    )
+    audience = models.CharField(
+        max_length=20,
+        choices=AUDIENCE_CHOICES,
+        default="patients",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

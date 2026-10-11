@@ -10,11 +10,13 @@ from ..models import (
     HealthAssistant,
     HealthAssistantCooperationType,
     IndividualHealthAssistant,
+    MedicalCenter,
+    OrganizationApplication,
     OrganizationHealthAssistant,
     OrganizationType,
 )
 
-from ..utils import generate_health_assistance_code, normalize_phone
+from ..utils import generate_health_assistance_code, ha_affiliation_display, normalize_phone
 from .lookup_utils import resolve_lookup
 from .user import UserSerializer
 
@@ -58,11 +60,15 @@ class HealthAssistantSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     individual_profile = IndividualHealthAssistantSerializer(read_only=True)
     organization_profile = OrganizationHealthAssistantSerializer(read_only=True)
+    affiliation = serializers.SerializerMethodField()
 
     class Meta:
         model = HealthAssistant
         fields = "__all__"
         read_only_fields = ("health_assistance_code", "created_at")
+
+    def get_affiliation(self, obj):
+        return ha_affiliation_display(obj)
 
 
 class HealthAssistantSignupSerializer(serializers.Serializer):
@@ -105,9 +111,31 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
     social_unit_head_last_name = serializers.CharField(required=False, allow_blank=True)
     social_unit_head_phone_number = serializers.CharField(required=False, allow_blank=True)
     social_unit_head_landline_number = serializers.CharField(required=False, allow_blank=True)
+    affiliation_kind = serializers.ChoiceField(
+        choices=("independent", "affiliated"),
+        required=False,
+        default="independent",
+    )
+    affiliationKind = serializers.CharField(required=False, allow_blank=True)
+    affiliated_organization_id = serializers.IntegerField(required=False, allow_null=True)
+    affiliatedOrganizationId = serializers.IntegerField(required=False, allow_null=True)
+    affiliated_medical_center_id = serializers.IntegerField(required=False, allow_null=True)
+    affiliatedMedicalCenterId = serializers.IntegerField(required=False, allow_null=True)
 
     def to_internal_value(self, data):
-        return super().to_internal_value(flatten_signup_payload(data))
+        data = flatten_signup_payload(data)
+        for key in (
+            "affiliated_organization_id",
+            "affiliatedOrganizationId",
+            "affiliated_medical_center_id",
+            "affiliatedMedicalCenterId",
+        ):
+            if data.get(key) in ("", "independent"):
+                data[key] = None
+        kind = data.get("affiliation_kind") or data.get("affiliationKind")
+        if kind:
+            data["affiliation_kind"] = kind
+        return super().to_internal_value(data)
 
     def _ensure_login_phone_available(self, phone):
         phone = normalize_phone(phone)
@@ -231,6 +259,38 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
 
         attrs["cooperation_description"] = (attrs.get("cooperation_description") or attrs.get("explanation") or "")[
                                            :2000]
+
+        kind = (attrs.get("affiliation_kind") or attrs.get("affiliationKind") or "independent").strip()
+        if kind not in ("independent", "affiliated"):
+            kind = "independent"
+        if attrs.get("profile_type") == "organization":
+            kind = "affiliated"
+        attrs["affiliation_kind"] = kind
+        org_id = attrs.get("affiliated_organization_id") or attrs.get("affiliatedOrganizationId")
+        mc_id = attrs.get("affiliated_medical_center_id") or attrs.get("affiliatedMedicalCenterId")
+        attrs["affiliated_organization"] = None
+        attrs["affiliated_medical_center"] = None
+        if kind == "affiliated" and attrs.get("profile_type") != "organization":
+            if not org_id and not mc_id:
+                raise serializers.ValidationError(
+                    {"affiliation_kind": "سازمان حامی یا مرکز درمانی را انتخاب کنید."}
+                )
+            if org_id:
+                org_app = OrganizationApplication.objects.filter(
+                    pk=org_id, user__state=True
+                ).first()
+                if not org_app:
+                    raise serializers.ValidationError(
+                        {"affiliated_organization_id": "سازمان حامی یافت نشد."}
+                    )
+                attrs["affiliated_organization"] = org_app
+            if mc_id:
+                center = MedicalCenter.objects.filter(pk=mc_id, is_active=True).first()
+                if not center:
+                    raise serializers.ValidationError(
+                        {"affiliated_medical_center_id": "مرکز درمانی یافت نشد."}
+                    )
+                attrs["affiliated_medical_center"] = center
         return attrs
 
     def create(self, validated):
@@ -246,6 +306,9 @@ class HealthAssistantSignupSerializer(serializers.Serializer):
             health_assistance_code=generate_health_assistance_code(),
             cooperation_type=validated.get("cooperation_type"),
             cooperation_description=validated["cooperation_description"],
+            affiliation_kind=validated.get("affiliation_kind") or "independent",
+            affiliated_organization=validated.get("affiliated_organization"),
+            affiliated_medical_center=validated.get("affiliated_medical_center"),
         )
 
         if validated["profile_type"] == "organization":
