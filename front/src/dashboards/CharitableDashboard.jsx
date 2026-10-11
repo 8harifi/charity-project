@@ -107,9 +107,9 @@ const CharitableDashboard = () => {
 
   const tabs = [
     { id: "overview", label: "پیشخوان", icon: LayoutDashboard },
-    { id: "wallet", label: "کیف پول", icon: WalletIcon },
-    { id: "incoming", label: "درخواست‌های حمایت مالی", icon: Inbox },
-    { id: "mySupport", label: "حمایت‌های من", icon: Heart },
+    { id: "wallet", label: "کیف پول", icon: WalletIcon, group: "حمایت" },
+    { id: "incoming", label: "درخواست‌های حمایت مالی", icon: Inbox, group: "حمایت" },
+    { id: "mySupport", label: "حمایت‌های من", icon: Heart, group: "حمایت" },
     { id: "profile", label: "پروفایل", icon: User },
   ];
 
@@ -152,11 +152,12 @@ const CharitableDashboard = () => {
 
       {activeTab === "incoming" && (
         <RequestListPanel
-          title="نیازهای مالی باز"
+          title="نیازهای مالی باز — سابقه شبکه"
           fetchFn={(scope, filters) => requestService.benefactorIncoming({ scope, ...filters })}
           mode="view"
           showFilters
           advancedFilters
+          defaultScope="all"
           enableWalletPay
           walletBalance={walletBalance}
           onWalletPay={handleWalletPay}

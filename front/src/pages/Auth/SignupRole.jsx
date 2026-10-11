@@ -271,24 +271,24 @@ const SignupRole = () => {
                 >
                 ثبت نام سلامتیاران و مددکاران
                 </Link>
-                {/* <Link*/}
-                {/*  to="/doctor"*/}
-                {/*  className="text-blue-600 hover:text-blue-800 font-bold text-lg py-3"*/}
-                {/*>*/}
-                {/*ثبت نام مراکز خدمت سلامت*/}
-                {/*</Link>*/}
-                {/* <Link*/}
-                {/*  to="/charitycenter"*/}
-                {/*  className="text-blue-600 hover:text-blue-800 font-bold text-lg py-3"*/}
-                {/*>*/}
-                {/*ثبت نام مراکز نیکوکاری*/}
-                {/*</Link>*/}
-                {/* <Link*/}
-                {/*  to="/socialworkunit"*/}
-                {/*  className="text-blue-600 hover:text-blue-800 font-bold text-lg py-3"*/}
-                {/*>*/}
-                {/*ثبت نام واحد مددکاری یا امور اجتماعی */}
-                {/*</Link>*/}
+                <Link
+                  to="/charitycenter"
+                  className="text-blue-600 hover:text-blue-800 font-bold text-lg py-3"
+                >
+                ثبت نام مراکز نیکوکاری
+                </Link>
+                <Link
+                  to="/healthservicecenter"
+                  className="text-blue-600 hover:text-blue-800 font-bold text-lg py-3"
+                >
+                ثبت نام مراکز خدمت سلامت
+                </Link>
+                <Link
+                  to="/socialworkunit"
+                  className="text-blue-600 hover:text-blue-800 font-bold text-lg py-3"
+                >
+                ثبت نام واحد مددکاری یا امور اجتماعی
+                </Link>
               </motion.div>
             }
           </AnimatePresence>

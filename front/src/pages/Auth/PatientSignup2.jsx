@@ -22,7 +22,6 @@ const PatientSignup2 = () => {
   const [loading, setLoading] = useState(false);
 
   const [province, setProvince] = useState(null);
-  const [town, setTown] = useState("");
   const [address, setAddress] = useState("");
   const [friendFirstName1, setFriendFirstName1] = useState("");
   const [friendLastName1, setFriendLastName1] = useState("");
@@ -31,6 +30,7 @@ const PatientSignup2 = () => {
   const [friendPhone1, setFriendPhone1] = useState("");
   const [friendPhone2, setFriendPhone2] = useState("");
   const [familyStatus, setFamilyStatus] = useState("");
+  const [financialLevel, setFinancialLevel] = useState("");
   const [ability, setAbility] = useState("");
   const [illness, setIllNess] = useState("");
   const [error, setError] = useState("");
@@ -56,7 +56,6 @@ const PatientSignup2 = () => {
       if (data.city) {
         setCity({label: data.city, value: data.city});
       }
-      setTown(data.town || data.county || "");
       setAddress(data.address || "");
       const [c1f, c1l] = splitFullName(
         data.contact1_full_name || data.friendName1 || ""
@@ -71,6 +70,7 @@ const PatientSignup2 = () => {
       setFriendPhone1(data.contact1_phone_number || data.friendPhone1 || "");
       setFriendPhone2(data.contact2_phone_number || data.friendPhone2 || "");
       setFamilyStatus(data.family_status || data.familyStatus || "");
+      setFinancialLevel(data.financial_level || data.financialLevel || "");
       setAbility(data.skill || data.ability || "");
       setIllNess(data.sickness_description || data.illness || "");
     }
@@ -130,10 +130,10 @@ const PatientSignup2 = () => {
 
     const payload = {
       province: province?.value,
-      town,
       city: city?.value,
       address,
       family_status: familyStatus,
+      financial_level: financialLevel,
       skill: ability,
       sickness_description: illness,
       contact1_first_name: friendFirstName1.trim(),
@@ -441,17 +441,30 @@ const PatientSignup2 = () => {
                       {/* family status */}
                       <div className="sm:col-span-2">
                         <label className="block mb-2 text-blue-700 text-sm sm:text-base">
-                          شرح حال مختصر از وضع خانواده
+                          شرح حال مختصر از وضعیت بیمار و خانواده او
                         </label>
                         <input
                           type="text"
                           value={familyStatus}
                           onChange={(e) => setFamilyStatus(e.target.value)}
-                          placeholder="شرح حال وضع خانواده"
+                          placeholder="شرح حال مختصر از وضعیت بیمار و خانواده"
                           className="w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl
           border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300
           text-right placeholder-blue-400 text-sm sm:text-lg text-blue-950"
                         />
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-blue-700 text-sm sm:text-base">سطح مالی</label>
+                        <select
+                          value={financialLevel}
+                          onChange={(e) => setFinancialLevel(e.target.value)}
+                          className="w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl border border-blue-200"
+                        >
+                          <option value="">انتخاب کنید</option>
+                          <option value="very_weak">خیلی ضعیف</option>
+                          <option value="weak">ضعیف</option>
+                          <option value="average">متوسط</option>
+                        </select>
                       </div>
 
                       {/* ability */}

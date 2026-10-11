@@ -1,12 +1,21 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 //import heroImage from "../../images/heroImage.jpg";
 import heroImage from "../../images/heroone.png";
 
 import Stars from "../../images/stars.png";
 import { motion } from "framer-motion";
+import { publicApi } from "../../API/publicApi";
 
 const HeroSection = () => {
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    publicApi
+      .stats()
+      .then((r) => setStats(r.data))
+      .catch(() => setStats(null));
+  }, []);
   return (
     <div className="bg-[#e0e0e0] font-kook overflow-x-hidden">
       <div className="relative pt-[30px] pb-[110px] lg:pt-[150px]">
@@ -94,7 +103,9 @@ const HeroSection = () => {
 
                     <div>
                       <h3 className="text-2xl font-bold text-emerald-600">
-                        ۱۲۰۰+
+                        {stats?.supported_patients != null
+                          ? `${Number(stats.supported_patients).toLocaleString("fa-IR")}+`
+                          : "—"}
                       </h3>
                       <p className="text-gray-600 text-sm">
                         بیمار حمایت شده
@@ -103,7 +114,9 @@ const HeroSection = () => {
 
                     <div>
                       <h3 className="text-2xl font-bold text-blue-600">
-                        ۴۵۰+
+                        {stats?.benefactors != null
+                          ? `${Number(stats.benefactors).toLocaleString("fa-IR")}+`
+                          : "—"}
                       </h3>
                       <p className="text-gray-600 text-sm">
                         خیر عضو شبکه
@@ -112,7 +125,9 @@ const HeroSection = () => {
 
                     <div>
                       <h3 className="text-2xl font-bold text-purple-600">
-                        ۸۰+
+                        {stats?.charity_centers != null
+                          ? `${Number(stats.charity_centers).toLocaleString("fa-IR")}+`
+                          : "—"}
                       </h3>
                       <p className="text-gray-600 text-sm">
                         مرکز نیکوکاری

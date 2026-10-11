@@ -7,12 +7,13 @@ import {
   List,
   User,
   CheckCircle2,
-  Clock,
-  ShieldCheck,
-  Search,
-  Edit,
-  Wallet,
-  Building2,
+    Clock,
+    ShieldCheck,
+    Search,
+    Edit,
+    Wallet,
+    Building2,
+    MessageCircle,
 } from "lucide-react";
 import DashboardShell from "./Components/DashboardShell";
 import DashboardOverview from "./Components/DashboardOverview";
@@ -24,6 +25,7 @@ import HAPatientEditModal from "./Components/HAPatientEditModal";
 import GlobalSearchPanel from "./Components/GlobalSearchPanel";
 import PayoutPanel from "./Components/PayoutPanel";
 import OrgSubordinatesPanel from "./Components/OrgSubordinatesPanel";
+import ContactInboxPanel from "./Components/ContactInboxPanel";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { ProfileTabContent } from "./Components/ProfileEditModal";
 import { healthAssistantDashboardService } from "../Services/healthAssistantDashboardService";
@@ -130,8 +132,8 @@ const SalamatyarDashboard = () => {
 
   const tabs = [
     { id: "overview", label: "پیشخوان", icon: LayoutDashboard },
-    { id: "myPatients", label: "بیماران من", icon: Users },
-    { id: "allPatients", label: "همه بیماران", icon: Search },
+    { id: "myPatients", label: "بیماران من", icon: Users, group: "بیمار" },
+    { id: "allPatients", label: "همه بیماران", icon: Search, group: "بیمار" },
     {
       id: "globalSearch",
       label: "جستجوی کلی",
@@ -144,16 +146,22 @@ const SalamatyarDashboard = () => {
         perms.can_search_organizations
       ),
     },
-    { id: "newRequest", label: "ثبت درخواست برای بیمار", icon: FilePlus },
-    { id: "requests", label: "درخواست‌ها", icon: List },
-    { id: "staffRequests", label: "درخواست‌های پزشک", icon: ShieldCheck },
+    { id: "newRequest", label: "ثبت درخواست", icon: FilePlus, group: "درخواست‌ها" },
+    { id: "requests", label: "درخواست‌ها", icon: List, group: "درخواست‌ها" },
+    { id: "staffRequests", label: "درخواست‌های پزشک", icon: ShieldCheck, group: "درخواست‌ها" },
+    { id: "payout", label: "تسویه", icon: Wallet, group: "درخواست‌ها" },
+    {
+      id: "inbox",
+      label: "صندوق تماس",
+      icon: MessageCircle,
+      hidden: !perms.is_network_consultant,
+    },
     {
       id: "subordinates",
       label: "زیرمجموعه‌ها",
       icon: Building2,
       hidden: profile?.profileType !== "organization",
     },
-    { id: "payout", label: "تسویه", icon: Wallet },
     { id: "profile", label: "پروفایل", icon: User },
   ].filter((t) => !t.hidden);
 
@@ -182,6 +190,7 @@ const SalamatyarDashboard = () => {
         <div className="text-right">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <h2 className="text-lg sm:text-2xl font-bold text-gray-800">بیماران من</h2>
+            <p className="text-sm text-gray-500">بیمار جدید از دکمه «معرفی بیمار» اضافه می‌شود.</p>
             <button
               type="button"
               onClick={() => setIntroduceOpen(true)}
@@ -312,12 +321,15 @@ const SalamatyarDashboard = () => {
       {activeTab === "requests" && (
         <RequestListPanel
           title="درخواست‌ها"
-          fetchFn={(scope) => requestService.list(scope)}
+          fetchFn={(scope, filters) => requestService.list(scope, filters)}
           mode="staffManage"
+          isNetworkConsultant={!!perms.is_network_consultant}
         />
       )}
 
       {activeTab === "payout" && <PayoutPanel />}
+
+      {activeTab === "inbox" && <ContactInboxPanel />}
 
       {activeTab === "staffRequests" && (
         <div className="text-right space-y-3">

@@ -91,6 +91,7 @@ function App() {
           <Route element={<MainLayout/>}>
             <Route path="/" element={<Home/>}/>
             <Route path="/campaigns" element={<Needs/>}/>
+            <Route path="/donate" element={<Needs/>}/>
             <Route path="/education" element={<EducationCourse/>}/>
             <Route path="/members" element={<Aboutus/>}/>
             <Route path="/news" element={<News/>}/>

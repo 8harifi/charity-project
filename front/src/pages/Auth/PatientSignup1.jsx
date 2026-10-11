@@ -32,6 +32,10 @@ const PatientSignup1 = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [number, setNumber] = useState("");
   const [healthAssistantCode, setHealthAssistantCode] = useState("");
+  const [introducerFirstName, setIntroducerFirstName] = useState("");
+  const [introducerLastName, setIntroducerLastName] = useState("");
+  const [introducerNationalCode, setIntroducerNationalCode] = useState("");
+  const [introducerOrg, setIntroducerOrg] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [leaving, setLeaving] = useState(false);
@@ -194,6 +198,10 @@ useEffect(() => {
       covered_organization: organ,
       phone_number: phoneNumber,
       landline_number: number,
+      health_assistant_code: healthAssistantCode,
+      presenter_first_name: introducerFirstName,
+      presenter_last_name: introducerLastName,
+      presenter_national_code: introducerNationalCode,
     });
   };
 
@@ -227,6 +235,10 @@ const handleSignup = async () => {
     phone_number: phoneNumber,
     landline_number: number,
     health_assistant_code: healthAssistantCode.trim(),
+    presenter_first_name: introducerFirstName.trim(),
+    presenter_last_name: introducerLastName.trim(),
+    presenter_national_code: introducerNationalCode.trim(),
+    presenter_organization_name: introducerOrg.trim(),
   };
 
   try {
@@ -690,21 +702,46 @@ const handleSignup = async () => {
                       </div>
 
                       <div className="relative sm:col-span-2">
-                        <RequiredLabel htmlFor="ha_code" required={false} className="mb-2 text-sm sm:text-base text-blue-700">
-                          کد سلامتیار معرف (اختیاری)
+                        <RequiredLabel htmlFor="ha_code" required className="mb-2 text-sm sm:text-base text-blue-700">
+                          سلامتیار معرف
                         </RequiredLabel>
+                        <p className="text-xs text-blue-600 mb-2">
+                          بیمار بدون معرف ثبت نمی‌شود. کد سلامتیار یا کد ملی او را وارد کنید؛ نام به‌تنهایی کافی نیست.
+                        </p>
                         <input
                           id="ha_code"
                           type="text"
                           value={healthAssistantCode}
                           onChange={(e) => setHealthAssistantCode(e.target.value)}
-                          placeholder="در صورتی که سلامتیاری شما را معرفی کرده، کد او را وارد کنید"
-                          className="
-            w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl sm:rounded-2xl
-            border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300
-            text-right placeholder-blue-400 text-sm sm:text-lg text-blue-950 transition-all
-          "
+                          placeholder="کد سلامتیار معرف"
+                          className="w-full p-3 sm:p-4 bg-blue-50/50 rounded-xl border border-blue-200 text-right placeholder-blue-400"
                         />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                          <input
+                            value={introducerFirstName}
+                            onChange={(e) => setIntroducerFirstName(e.target.value)}
+                            placeholder="نام سلامتیار معرف"
+                            className="p-3 bg-blue-50/50 rounded-xl border border-blue-200"
+                          />
+                          <input
+                            value={introducerLastName}
+                            onChange={(e) => setIntroducerLastName(e.target.value)}
+                            placeholder="نام خانوادگی سلامتیار معرف"
+                            className="p-3 bg-blue-50/50 rounded-xl border border-blue-200"
+                          />
+                          <input
+                            value={introducerNationalCode}
+                            onChange={(e) => setIntroducerNationalCode(e.target.value)}
+                            placeholder="کد ملی سلامتیار معرف"
+                            className="p-3 bg-blue-50/50 rounded-xl border border-blue-200"
+                          />
+                          <input
+                            value={introducerOrg}
+                            onChange={(e) => setIntroducerOrg(e.target.value)}
+                            placeholder="سازمان سلامتیار معرف"
+                            className="p-3 bg-blue-50/50 rounded-xl border border-blue-200"
+                          />
+                        </div>
                       </div>
                     </div>
                   </>

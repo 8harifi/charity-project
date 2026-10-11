@@ -60,6 +60,7 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
   const [city, setCity] = useState(null);
   const [address, setAddress] = useState("");
   const [familyStatus, setFamilyStatus] = useState("");
+  const [financialLevel, setFinancialLevel] = useState("");
   const [skill, setSkill] = useState("");
   const [illness, setIllness] = useState("");
   const [friendFirstName1, setFriendFirstName1] = useState("");
@@ -126,6 +127,7 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
     setCity(null);
     setAddress("");
     setFamilyStatus("");
+    setFinancialLevel("");
     setSkill("");
     setIllness("");
     setFriendFirstName1("");
@@ -179,6 +181,7 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
       city: city?.value,
       address,
       family_status: familyStatus,
+      financial_level: financialLevel,
       skill,
       sickness_description: illness,
       contact1_full_name: joinFullName(friendFirstName1, friendLastName1),
@@ -187,7 +190,7 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
       contact2_phone_number: friendPhone2,
     }),
     [
-      province, city, address, familyStatus, skill, illness,
+      province, city, address, familyStatus, financialLevel, skill, illness,
       friendFirstName1, friendLastName1, friendPhone1,
       friendFirstName2, friendLastName2, friendPhone2,
     ]
@@ -195,10 +198,13 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
 
   const validateCurrentStep = () => {
     if (step === 1) {
-      return validatePatientStep1({
-        ...step1Payload,
-        head_household: headOfFamily,
-      });
+      return validatePatientStep1(
+        {
+          ...step1Payload,
+          head_household: headOfFamily,
+        },
+        { skipIntroducer: true }
+      );
     }
     if (step === 2) {
       return validatePatientStep2({
@@ -317,6 +323,9 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
               </p>
               {introducer.nationalCode && <p>کد ملی: {introducer.nationalCode}</p>}
               {introducer.phoneNumber && <p>تلفن: {introducer.phoneNumber}</p>}
+              {introducer.profileType === "organization" && introducer.name && (
+                <p>سازمان: {introducer.name}</p>
+              )}
             </div>
           )}
 
@@ -387,7 +396,16 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
                       </div>
                       <div>
                         <RequiredLabel>کد ملی</RequiredLabel>
-                        <input className={inputClass} value={nationalCode} onChange={(e) => setNationalCode(e.target.value)} maxLength={10} inputMode="numeric" />
+                        <input
+                          className={inputClass}
+                          value={nationalCode}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (/^\d{0,10}$/.test(v)) setNationalCode(v);
+                          }}
+                          maxLength={10}
+                          inputMode="numeric"
+                        />
                       </div>
                       <div>
                         <RequiredLabel>جنسیت</RequiredLabel>
@@ -395,7 +413,23 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
                       </div>
                       <div>
                         <RequiredLabel>سن</RequiredLabel>
-                        <input type="number" className={inputClass} value={age} onChange={(e) => setAge(e.target.value)} />
+                        <input
+                          type="number"
+                          min="1"
+                          max="120"
+                          className={inputClass}
+                          value={age}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (v === "") {
+                              setAge("");
+                              return;
+                            }
+                            if (/^\d{1,3}$/.test(v) && Number(v) >= 1 && Number(v) <= 120) {
+                              setAge(v);
+                            }
+                          }}
+                        />
                       </div>
                       <div>
                         <RequiredLabel>وضعیت تأهل</RequiredLabel>
@@ -410,7 +444,7 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
                         <input type="number" className={inputClass} value={numberOfMembers} onChange={(e) => setNumberOfMembers(e.target.value)} />
                       </div>
                       <div>
-                        <RequiredLabel>تحصیلات</RequiredLabel>
+                        <RequiredLabel>سطح تحصیلات</RequiredLabel>
                         <RenderDropdown value={education} setValue={setEducation} options={educationLevels} placeholder="انتخاب" name="education" required />
                       </div>
                       <div>
@@ -426,12 +460,31 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
                         <RenderDropdown value={organ} setValue={setOrgan} options={organOptions} placeholder="انتخاب" name="organ" required />
                       </div>
                       <div>
-                        <RequiredLabel>موبایل</RequiredLabel>
-                        <input className={inputClass} value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="09xxxxxxxxx" />
+                        <RequiredLabel>تلفن همراه</RequiredLabel>
+                        <input
+                          className={inputClass}
+                          value={phoneNumber}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (/^\d{0,11}$/.test(v)) setPhoneNumber(v);
+                          }}
+                          maxLength={11}
+                          inputMode="numeric"
+                          placeholder="09xxxxxxxxx"
+                        />
                       </div>
                       <div>
                         <RequiredLabel required={false}>تلفن ثابت</RequiredLabel>
-                        <input className={inputClass} value={landline} onChange={(e) => setLandline(e.target.value)} />
+                        <input
+                          className={inputClass}
+                          value={landline}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (/^\d{0,11}$/.test(v)) setLandline(v);
+                          }}
+                          maxLength={11}
+                          inputMode="numeric"
+                        />
                       </div>
                     </div>
                   )}
@@ -451,39 +504,70 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
                         <textarea className={`${inputClass} resize-none`} rows={2} value={address} onChange={(e) => setAddress(e.target.value)} />
                       </div>
                       <div className="sm:col-span-2">
-                        <RequiredLabel required={false}>شرح حال بیماری</RequiredLabel>
+                        <RequiredLabel required={false}>شرح حال مختصر بیماری</RequiredLabel>
                         <textarea className={`${inputClass} resize-none`} rows={2} value={illness} onChange={(e) => setIllness(e.target.value)} />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام آشنای ۱</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام آشنای اول</label>
                         <input className={inputClass} value={friendFirstName1} onChange={(e) => setFriendFirstName1(e.target.value)} />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام خانوادگی آشنای ۱</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام خانوادگی آشنای اول</label>
                         <input className={inputClass} value={friendLastName1} onChange={(e) => setFriendLastName1(e.target.value)} />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">تلفن آشنای ۱</label>
-                        <input className={inputClass} value={friendPhone1} onChange={(e) => setFriendPhone1(e.target.value)} />
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">موبایل آشنای اول</label>
+                        <input
+                          className={inputClass}
+                          value={friendPhone1}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (/^\d{0,11}$/.test(v)) setFriendPhone1(v);
+                          }}
+                          maxLength={11}
+                          inputMode="numeric"
+                        />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام آشنای ۲</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام آشنای دوم</label>
                         <input className={inputClass} value={friendFirstName2} onChange={(e) => setFriendFirstName2(e.target.value)} />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام خانوادگی آشنای ۲</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">نام خانوادگی آشنای دوم</label>
                         <input className={inputClass} value={friendLastName2} onChange={(e) => setFriendLastName2(e.target.value)} />
                       </div>
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">تلفن آشنای ۲</label>
-                        <input className={inputClass} value={friendPhone2} onChange={(e) => setFriendPhone2(e.target.value)} />
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">موبایل آشنای دوم</label>
+                        <input
+                          className={inputClass}
+                          value={friendPhone2}
+                          onChange={(e) => {
+                            const v = e.target.value;
+                            if (/^\d{0,11}$/.test(v)) setFriendPhone2(v);
+                          }}
+                          maxLength={11}
+                          inputMode="numeric"
+                        />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">وضعیت خانوادگی (اختیاری)</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">شرح حال مختصر از وضعیت بیمار و خانواده او</label>
                         <textarea className={`${inputClass} resize-none`} rows={2} value={familyStatus} onChange={(e) => setFamilyStatus(e.target.value)} />
                       </div>
                       <div className="sm:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">مهارت / توانایی (اختیاری)</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">سطح مالی</label>
+                        <select
+                          className={inputClass}
+                          value={financialLevel}
+                          onChange={(e) => setFinancialLevel(e.target.value)}
+                        >
+                          <option value="">انتخاب کنید</option>
+                          <option value="very_weak">خیلی ضعیف</option>
+                          <option value="weak">ضعیف</option>
+                          <option value="average">متوسط</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-sm font-semibold text-gray-700 mb-1">حرفه / مهارت</label>
                         <input className={inputClass} value={skill} onChange={(e) => setSkill(e.target.value)} />
                       </div>
                     </div>
@@ -502,8 +586,20 @@ export default function IntroducePatientModal({ open, onClose, onSuccess, introd
                           required
                         />
                       </div>
-                      <FileUpload label="تصویر کارت ملی (اختیاری)" value={nationalCardImage} onChange={setNationalCardImage} />
-                      <FileUpload label="تصویر شناسنامه (اختیاری)" value={birthCertificateImage} onChange={setBirthCertificateImage} />
+                      <FileUpload
+                        label="تصویر کارت ملی (اختیاری)"
+                        value={nationalCardImage}
+                        onChange={setNationalCardImage}
+                        accept=".pdf,.jpg,.png,.jpeg"
+                        maxSize={1.5}
+                      />
+                      <FileUpload
+                        label="تصویر شناسنامه (اختیاری)"
+                        value={birthCertificateImage}
+                        onChange={setBirthCertificateImage}
+                        accept=".pdf,.jpg,.png,.jpeg"
+                        maxSize={1.5}
+                      />
                     </div>
                   )}
 

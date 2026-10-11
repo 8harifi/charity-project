@@ -23,6 +23,12 @@ L.Icon.Default.mergeOptions({
 
 const IRAN_CENTER = [32.4279, 53.688];
 
+function affiliationText(ha) {
+  const aff = ha?.affiliation;
+  if (!aff) return "سلامتیار مستقل";
+  return aff.label || (aff.kind === "affiliated" && aff.name ? `وابسته به ${aff.name}` : "سلامتیار مستقل");
+}
+
 // کامپوننت کارت سلامتیار
 const HealthAssistantCard = ({ ha, onClick }) => (
   <motion.div
@@ -59,10 +65,13 @@ const HealthAssistantCard = ({ ha, onClick }) => (
     </div>
 
     {/* Badges */}
-    <div className="flex items-center gap-2 mt-3 text-xs">
+    <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
       <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full flex items-center gap-1 border border-blue-100">
         <Shield size={12} />
         {ha.province}
+      </span>
+      <span className="bg-amber-50 text-amber-800 px-2.5 py-1 rounded-full border border-amber-100">
+        {affiliationText(ha)}
       </span>
       {ha.isActive && (
         <span className="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full flex items-center gap-1 border border-emerald-100">
@@ -244,6 +253,7 @@ export default function HealthAssistantMapSection() {
                             <MapPin size={12} className="text-blue-400" /> 
                             {ha.city}، {ha.province}
                           </p>
+                          <p className="text-xs text-amber-800 mt-1">{affiliationText(ha)}</p>
                           {ha.isActive && (
                             <span className="inline-block mt-2 text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                               فعال
@@ -362,6 +372,7 @@ export default function HealthAssistantMapSection() {
               <h3 className="text-xl font-bold text-blue-900">{selectedAssistant.name}</h3>
               <p className="text-sm text-gray-500 mt-1">کد: {selectedAssistant.code}</p>
               <p className="text-sm mt-2">{selectedAssistant.province} — {selectedAssistant.city}</p>
+              <p className="text-sm mt-2 text-amber-800">{affiliationText(selectedAssistant)}</p>
               {selectedAssistant.description && <p className="text-sm mt-3 text-gray-600">{selectedAssistant.description}</p>}
               <button type="button" onClick={() => setSelectedAssistant(null)} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl">بستن</button>
             </div>

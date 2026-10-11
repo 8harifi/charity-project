@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "deploy:django": "vite build && cp -r dist/* ../back/dist/ && cp dist/index.html ../back/templates/index.html"
+    "deploy:django": "vite build && mkdir -p ../back/spa && rm -rf ../back/spa/* && cp -r dist/. ../back/spa/ && cp dist/index.html ../back/templates/index.html"
   },
   "dependencies": {
     "@fontsource/vazirmatn": "^5.2.8",

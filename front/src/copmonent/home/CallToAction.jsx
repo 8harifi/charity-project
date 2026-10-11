@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { motion, useInView, useAnimation } from "framer-motion";
 
 const CallToAction = () => {
@@ -54,10 +55,12 @@ const CallToAction = () => {
                     animate={mainControls}
                     transition={{ duration: 0.4, delay: 0.2 }}
                   >
-                    <button className="hover:bg-white/20 my-1 mr-4 inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm py-4 px-6 text-base font-medium text-white transition hover:bg-opacity-100 md:px-9 lg:px-8 xl:px-9 border border-white/20">
-                    
+                    <Link
+                      to="/campaigns"
+                      className="hover:bg-white/20 my-1 mr-4 inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-sm py-4 px-6 text-base font-medium text-white transition hover:bg-opacity-100 md:px-9 lg:px-8 xl:px-9 border border-white/20"
+                    >
                       مشارکت در خیریه
-                    </button>
+                    </Link>
                   </motion.div>
                   <motion.div
                     ref={ref}
@@ -69,10 +72,12 @@ const CallToAction = () => {
                     animate={mainControls}
                     transition={{ duration: 0.4, delay: 0.5 }}
                   >
-                    <button className="my-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 py-4 px-6 text-base font-medium text-white transition hover:from-cyan-500 hover:to-blue-600 md:px-9 lg:px-6 xl:px-9 shadow-lg shadow-blue-500/30">
-                    
+                    <Link
+                      to="/news"
+                      className="my-1 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 py-4 px-6 text-base font-medium text-white transition hover:from-cyan-500 hover:to-blue-600 md:px-9 lg:px-6 xl:px-9 shadow-lg shadow-blue-500/30"
+                    >
                       اخبار
-                    </button>
+                    </Link>
                   </motion.div>
                 </div>
               </div>

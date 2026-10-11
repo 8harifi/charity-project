@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import NewsBackground3D from "../copmonent/NewsBackground3D";
+import { publicApi } from "../API/publicApi";
 
 const News = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -37,8 +38,19 @@ const News = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [likedPosts, setLikedPosts] = useState([]);
   const [viewedPosts, setViewedPosts] = useState([]);
+  const [supportedPatients, setSupportedPatients] = useState("—");
   
   const itemsPerPage = 6;
+
+  useEffect(() => {
+    publicApi
+      .stats()
+      .then((r) => {
+        const n = r.data?.supported_patients ?? 0;
+        setSupportedPatients(Number(n).toLocaleString("fa-IR"));
+      })
+      .catch(() => setSupportedPatients("۰"));
+  }, []);
 
   // داده‌های نمونه برای اخبار
   const newsData = {
@@ -325,6 +337,7 @@ return (
         >
           {[
             { label: "کل اخبار", value: "۱۲۴", icon: <Newspaper className="w-5 h-5" />, color: "bg-blue-500" },
+            { label: "بیمار حمایت‌شده", value: supportedPatients, icon: <Heart className="w-5 h-5" />, color: "bg-emerald-500" },
             { label: "اعضای فعال", value: "۴۵۰+", icon: <Users className="w-5 h-5" />, color: "bg-blue-400" },
             { label: "رویدادها", value: "۳۶", icon: <Calendar className="w-5 h-5" />, color: "bg-blue-300" },
             { label: "گزارش‌ها", value: "۸۹", icon: <FileText className="w-5 h-5" />, color: "bg-blue-200" }

@@ -1,4 +1,7 @@
 import HeroSection from "../copmonent/home/HeroSection";
+import DoctorScheduleSection from "../copmonent/home/DoctorScheduleSection";
+import HomePatientActions from "../copmonent/home/HomePatientActions";
+import SupportingOrgSearch from "../copmonent/home/SupportingOrgSearch";
 import FeatureSection from "../copmonent/home/FeatureSection";
 import HealthAssistantMapSection from "../copmonent/home/HealthAssistantMapSection";
 import CallToAction from "../copmonent/home/CallToAction";
@@ -9,6 +12,9 @@ function Home() {
   return (
     <>
       <HeroSection />
+      <DoctorScheduleSection />
+      <HomePatientActions />
+      <SupportingOrgSearch />
       <FeatureSection />
       <HealthAssistantMapSection />
       <CallToAction />

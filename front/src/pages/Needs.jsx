@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FaSearch,
@@ -11,7 +11,10 @@ import {
 import CharityCard from "../copmonent/home/CharityCard";
 import BackgroundNetwork3D from "../copmonent/home/BackgroundNetwork3D";
 import DonateModal from "../components/DonateModal";
-import { campaignService } from "../Services/dashboardApi";
+import { campaignService, requestService } from "../Services/dashboardApi";
+import { publicApi } from "../API/publicApi";
+import { useAuth } from "../context/AuthContext";
+import { walletService } from "../Services/walletService";
 
 const DEFAULT_IMAGE =
   "https://images.unsplash.com/photo-1516549655669-df6654e447e7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80";
@@ -20,6 +23,10 @@ const formatAmount = (n) => Number(n || 0).toLocaleString("fa-IR");
 
 const Needs = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { isLogin } = useAuth() || {};
+  const tab = searchParams.get("tab") || "patients";
+  const setTab = (next) => setSearchParams({ tab: next });
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('همه');
   const [selectedUrgency, setSelectedUrgency] = useState('همه');
@@ -30,6 +37,12 @@ const Needs = () => {
   const [favorites, setFavorites] = useState([]);
   const [campaigns, setCampaigns] = useState([]);
   const [donateTarget, setDonateTarget] = useState(null);
+  const [patientRequests, setPatientRequests] = useState([]);
+  const [networkAmount, setNetworkAmount] = useState("");
+  const [networkMsg, setNetworkMsg] = useState("");
+  const [contactWarn, setContactWarn] = useState(null);
+  const [guestContact, setGuestContact] = useState({ name: "", phone: "", region: "" });
+  const [guestContactError, setGuestContactError] = useState("");
 
   const loadCampaigns = () => {
     campaignService
@@ -47,6 +60,7 @@ const Needs = () => {
             progress: c.progress ?? 0,
             urgency: c.urgency || "عادی",
             category: c.category || "عمومی",
+            audience: c.audience || "patients",
             buttonText: "حمایت کن",
             buttonColor: "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
             daysLeft: 30,
@@ -61,13 +75,31 @@ const Needs = () => {
 
   useEffect(loadCampaigns, []);
 
-  const filteredNeeds = useMemo(() => campaigns.filter((need) => {
-    const matchesSearch =
-      need.title.includes(searchTerm) || need.description.includes(searchTerm);
-    const matchesCategory = selectedCategory === 'همه' || need.category === selectedCategory;
-    const matchesUrgency = selectedUrgency === 'همه' || need.urgency === selectedUrgency;
-    return matchesSearch && matchesCategory && matchesUrgency;
-  }), [campaigns, searchTerm, selectedCategory, selectedUrgency]);
+  useEffect(() => {
+    publicApi
+      .fundableRequests({ scope: "all" })
+      .then((r) => setPatientRequests(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setPatientRequests([]));
+  }, []);
+
+  const patientCampaigns = useMemo(
+    () => campaigns.filter((c) => !c.audience || c.audience === "patients"),
+    [campaigns]
+  );
+  const regionalCampaigns = useMemo(
+    () => campaigns.filter((c) => c.audience === "regional"),
+    [campaigns]
+  );
+  const filteredNeeds = useMemo(() => {
+    const source = tab === "regions" ? regionalCampaigns : tab === "patients" ? patientCampaigns : [];
+    return source.filter((need) => {
+      const matchesSearch =
+        need.title.includes(searchTerm) || need.description.includes(searchTerm);
+      const matchesCategory = selectedCategory === "همه" || need.category === selectedCategory;
+      const matchesUrgency = selectedUrgency === "همه" || need.urgency === selectedUrgency;
+      return matchesSearch && matchesCategory && matchesUrgency;
+    });
+  }, [tab, regionalCampaigns, patientCampaigns, searchTerm, selectedCategory, selectedUrgency]);
 
   const sortedNeeds = useMemo(() => [...filteredNeeds].sort((a, b) => {
     switch (sortBy) {
@@ -101,7 +133,25 @@ const Needs = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl mb-4 shadow-lg">
             <FaHandHoldingHeart className="text-2xl text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-blue-700">نیازمندی‌های سلامت</h1>
+          <h1 className="text-3xl font-bold text-blue-700">فراخوان‌ها و نیازمندی‌ها</h1>
+          <div className="flex flex-wrap justify-center gap-2 mt-6">
+            {[
+              { id: "patients", label: "بیماران" },
+              { id: "regions", label: "مناطق نیازمند" },
+              { id: "network", label: "کمک کلی" },
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`px-5 py-2 rounded-xl font-bold ${
+                  tab === t.id ? "bg-blue-600 text-white" : "bg-white text-blue-700 border border-blue-100"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </motion.div>
 
         {/* بخش فیلترها */}
@@ -154,7 +204,115 @@ const Needs = () => {
           </AnimatePresence>
         </div>
 
-        {/* گرید اصلی کارت‌ها */}
+        {tab === "network" ? (
+          <div className="max-w-2xl mx-auto bg-white rounded-2xl p-6 shadow-sm border border-blue-50 text-right">
+            <h2 className="text-xl font-bold text-gray-800 mb-2">کمک کلی</h2>
+            <p className="text-gray-700 leading-8">
+              مبلغ به مدیر سامانه می‌رسد تا در امور خیریه، به تشخیص مدیریت شبکه، خرج شود.
+              این کمک به یک کمپین یا درخواست مشخص وصل نیست.
+            </p>
+            <p className="text-sm text-gray-500 mt-2">پرداخت وارد کیف پول سامانه می‌شود.</p>
+            <input
+              type="number"
+              min="1000"
+              value={networkAmount}
+              onChange={(e) => setNetworkAmount(e.target.value)}
+              placeholder="مبلغ (تومان)"
+              className="w-full mt-4 p-3 rounded-xl border border-blue-100"
+            />
+            {networkMsg && <p className="text-sm mt-2 text-blue-700">{networkMsg}</p>}
+            <button
+              type="button"
+              className="mt-4 w-full py-3 rounded-xl bg-emerald-600 text-white font-bold"
+              onClick={async () => {
+                if (!networkAmount) return;
+                if (isLogin) {
+                  try {
+                    await walletService.donate({
+                      amount: Number(networkAmount),
+                      destination_type: "general",
+                      title: "کمک کلی",
+                    });
+                    setNetworkMsg("کمک کلی ثبت شد و در اختیار مدیریت سامانه قرار گرفت.");
+                  } catch (err) {
+                    setNetworkMsg(err.response?.data?.detail || "پرداخت انجام نشد.");
+                  }
+                } else {
+                  setDonateTarget({
+                    id: null,
+                    title: "کمک کلی به تشخیص مدیریت",
+                    destination_type: "general",
+                  });
+                }
+              }}
+            >
+              کمک کلی
+            </button>
+          </div>
+        ) : (
+          <>
+        {tab === "patients" && (
+          <div className="max-w-6xl mx-auto mb-8 space-y-3">
+            <h2 className="text-lg font-bold text-gray-800 text-right">درخواست‌های مالی بیماران</h2>
+            {patientRequests.map((req) => (
+              <div key={req.id} className="bg-white rounded-xl p-4 border border-blue-50 text-right">
+                <div className="flex justify-between gap-3">
+                  <div>
+                    <p className="font-bold">{req.patient_name}</p>
+                    <p className="text-sm text-gray-500">{req.subject}</p>
+                    <p className="text-xs text-gray-400 mt-1">{req.patient_public?.disease}</p>
+                    {req.patient_public && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {[
+                          req.patient_public.age && `سن ${req.patient_public.age}`,
+                          req.patient_public.marital_status,
+                          req.patient_public.residence,
+                          req.patient_public.insurance && `بیمه ${req.patient_public.insurance}`,
+                          req.patient_public.covered_organization,
+                        ]
+                          .filter(Boolean)
+                          .join(" — ")}
+                      </p>
+                    )}
+                    {req.patient_public?.family_status && (
+                      <details className="mt-1 text-xs text-gray-500">
+                        <summary className="cursor-pointer text-blue-700">شرح حال خانواده</summary>
+                        <p className="mt-1">{req.patient_public.family_status}</p>
+                      </details>
+                    )}
+                    {Number(req.amount_needed) > 0 && (
+                      <p className="text-xs text-emerald-700 mt-1">
+                        نیاز: {formatAmount(req.amount_needed)} تومان
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className="mt-2 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold"
+                      onClick={() => {
+                        setGuestContact({ name: "", phone: "", region: "" });
+                        setGuestContactError("");
+                        setContactWarn(req);
+                      }}
+                    >
+                      حمایت از این درخواست
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="text-xs text-blue-700 underline shrink-0"
+                    onClick={() =>
+                      navigate(
+                        `/contact?intent=contact_disclosure&subject=درخواست مشخصات کامل بیمار&patient=${req.patient || ""}`
+                      )
+                    }
+                  >
+                    اطلاعات تماس و مشخصات کامل بیمار
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map(i => <div key={i} className="h-96 bg-gray-100 animate-pulse rounded-2xl"></div>)}
@@ -191,12 +349,115 @@ const Needs = () => {
             <h3 className="text-xl font-bold text-gray-400">موردی یافت نشد</h3>
           </div>
         )}
+          </>
+        )}
       </div>
 
       {/* دکمه شناور */}
       <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="fixed bottom-8 left-8 z-50 p-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full shadow-2xl" onClick={() => navigate("/campaigns")}>
         <FaMoneyBillWave className="text-2xl" />
       </motion.button>
+
+      {contactWarn && (
+        <div className="fixed inset-0 z-[90] bg-black/40 flex items-center justify-center p-4" onClick={() => setContactWarn(null)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full text-right space-y-3" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-lg">قبل از حمایت</h3>
+            <p className="text-sm text-gray-700 leading-7">
+              آیا مشخصات تماس بیمار را برای ارتباط مستقیم می‌خواهید؟ اگر بله، درخواستی ثبت می‌شود و پس از هماهنگی با بیمار به شما اطلاع داده می‌شود.
+            </p>
+            {!isLogin && (
+              <div className="space-y-2">
+                <input
+                  value={guestContact.name}
+                  onChange={(e) => setGuestContact((c) => ({ ...c, name: e.target.value }))}
+                  placeholder="نام و نام خانوادگی"
+                  className="w-full p-2.5 rounded-xl border border-blue-100 text-sm"
+                />
+                <input
+                  value={guestContact.phone}
+                  onChange={(e) => setGuestContact((c) => ({ ...c, phone: e.target.value }))}
+                  placeholder="شماره همراه"
+                  className="w-full p-2.5 rounded-xl border border-blue-100 text-sm"
+                />
+                <input
+                  value={guestContact.region}
+                  onChange={(e) => setGuestContact((c) => ({ ...c, region: e.target.value }))}
+                  placeholder="منطقه محل سکونت"
+                  className="w-full p-2.5 rounded-xl border border-blue-100 text-sm"
+                />
+                {guestContactError && <p className="text-xs text-red-600">{guestContactError}</p>}
+              </div>
+            )}
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                className="py-2.5 rounded-xl bg-amber-600 text-white font-semibold"
+                onClick={async () => {
+                  const req = contactWarn;
+                  if (isLogin) {
+                    try {
+                      await requestService.contactDisclosure({
+                        patient_id: req.patient,
+                        network_request_id: req.id,
+                      });
+                    } catch {
+                      /* غیرخیر لاگین‌شده همچنان می‌تواند حمایت کند */
+                    }
+                  } else {
+                    if (!guestContact.name.trim() || !guestContact.phone.trim() || !guestContact.region.trim()) {
+                      setGuestContactError("نام، شماره همراه و منطقه برای ثبت درخواست تماس الزامی است.");
+                      return;
+                    }
+                    try {
+                      await publicApi.sendContact({
+                        name: guestContact.name,
+                        phone: guestContact.phone,
+                        region: guestContact.region,
+                        subject: "درخواست مشخصات کامل بیمار",
+                        message: "درخواست مشاهده اطلاعات تماس پس از هماهنگی با بیمار.",
+                        intent: "contact_disclosure",
+                        patient: req.patient || undefined,
+                      });
+                    } catch {
+                      setGuestContactError("ثبت درخواست تماس انجام نشد.");
+                      return;
+                    }
+                  }
+                  setContactWarn(null);
+                  setGuestContactError("");
+                  setDonateTarget({
+                    id: req.id,
+                    title: req.subject,
+                    destination_type: "request",
+                    network_request_id: req.id,
+                  });
+                }}
+              >
+                بله، مشخصات تماس را می‌خواهم
+              </button>
+              <button
+                type="button"
+                className="py-2.5 rounded-xl bg-emerald-600 text-white font-semibold"
+                onClick={() => {
+                  const req = contactWarn;
+                  setContactWarn(null);
+                  setDonateTarget({
+                    id: req.id,
+                    title: req.subject,
+                    destination_type: "request",
+                    network_request_id: req.id,
+                  });
+                }}
+              >
+                خیر، ادامه حمایت بدون تماس
+              </button>
+              <button type="button" className="text-sm text-gray-500" onClick={() => setContactWarn(null)}>
+                انصراف
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {donateTarget && (
         <DonateModal

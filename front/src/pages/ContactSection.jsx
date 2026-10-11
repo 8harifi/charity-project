@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Phone, 
@@ -14,33 +15,54 @@ import {
   HeadphonesIcon
 } from "lucide-react";
 import ContactBackground3D from "../copmonent/home/ContactBackground3D";
+import { publicApi } from "../API/publicApi";
 
 const ContactSection = () => {
+  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
-    subject: "",
-    message: ""
+    subject: searchParams.get("subject") || "",
+    message: "",
+    region: searchParams.get("region") || "",
+    intent: searchParams.get("intent") || "general",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    setSubmitError("");
+    try {
+      await publicApi.sendContact({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        region: formData.region,
+        intent: formData.intent || "general",
+        patient: searchParams.get("patient") || undefined,
+      });
       setIsSubmitted(true);
       setFormData({
         name: "",
         phone: "",
         email: "",
         subject: "",
-        message: ""
+        message: "",
+        region: "",
+        intent: "general",
       });
       setTimeout(() => setIsSubmitted(false), 5000);
-    }, 1500);
+    } catch {
+      setSubmitError("ارسال پیام انجام نشد. دوباره تلاش کنید.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -221,7 +243,13 @@ const ContactSection = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-blue-900 text-base sm:text-lg">ارسال پیام</h3>
-                    <p className="text-[10px] sm:text-xs text-gray-500">ما در اسرع وقت پاسخگوی شما خواهیم بود</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">
+                      {formData.intent === "join_helper"
+                        ? "لطفاً نام، شماره همراه و منطقه محل سکونت خود را وارد کنید تا با شما تماس گرفته شود."
+                        : formData.intent === "contact_disclosure"
+                          ? "درخواست مشخصات کامل بیمار پس از هماهنگی با بیمار بررسی می‌شود."
+                          : "ما در اسرع وقت پاسخگوی شما خواهیم بود"}
+                    </p>
                   </div>
                 </div>
 
@@ -241,6 +269,9 @@ const ContactSection = () => {
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+                    {submitError && (
+                      <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{submitError}</p>
+                    )}
                     {/* Name & Phone - ریسپانسیو */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div>
@@ -277,6 +308,20 @@ const ContactSection = () => {
                           />
                         </div>
                       </div>
+                    </div>
+                    <div>
+                      <label className="block text-right text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-1.5">
+                        منطقه محل سکونت
+                      </label>
+                      <input
+                        type="text"
+                        name="region"
+                        value={formData.region}
+                        onChange={handleChange}
+                        placeholder="استان و شهر"
+                        required={formData.intent === "join_helper"}
+                        className="w-full py-2.5 sm:py-3 px-3 rounded-xl border-2 border-blue-100 bg-white/50 text-right text-sm sm:text-base outline-none focus:border-blue-400"
+                      />
                     </div>
 
                     {/* Email & Subject - ریسپانسیو */}

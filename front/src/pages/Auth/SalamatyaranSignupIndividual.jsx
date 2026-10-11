@@ -12,6 +12,7 @@ import { validateHealthAssistantIndividualStep2 } from "./utils/signupValidation
 import RequiredLabel from "../../components/RequiredLabel";
 import { useEnterSubmit } from "../../hooks/useEnterSubmit";
 import SignupStepProgress from "./components/SignupStepProgress";
+import { publicApi } from "../../API/publicApi";
 
 const HA_SIGNUP_STEPS = ["نوع همکاری", "اطلاعات و مدارک", "رمز عبور"];
 
@@ -24,6 +25,11 @@ const SalamatyaranSignupIndividual = () => {
   const [jobAddress, setJobAddress] = useState("");
   const [collaborationType, setCollaborationType] = useState(null);
   const [explanation, setExplanation] = useState("");
+  const [affiliationKind, setAffiliationKind] = useState("independent");
+  const [affiliatedOrganizationId, setAffiliatedOrganizationId] = useState("");
+  const [affiliatedMedicalCenterId, setAffiliatedMedicalCenterId] = useState("");
+  const [orgOptions, setOrgOptions] = useState([]);
+  const [centerOptions, setCenterOptions] = useState([]);
   const [leaving, setLeaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -70,7 +76,32 @@ const SalamatyaranSignupIndividual = () => {
       )
     );
     setExplanation(saved.explanation || saved.cooperation_description || "");
+    setAffiliationKind(saved.affiliation_kind || saved.affiliationKind || "independent");
+    setAffiliatedOrganizationId(
+      saved.affiliated_organization_id || saved.affiliatedOrganizationId || ""
+    );
+    setAffiliatedMedicalCenterId(
+      saved.affiliated_medical_center_id || saved.affiliatedMedicalCenterId || ""
+    );
   }, [lookupsLoading, educationLevels, collaborationNames]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      publicApi.supportingOrgs().catch(() => ({ data: [] })),
+      publicApi.medicalCenters().catch(() => ({ data: [] })),
+    ]).then(([orgsRes, centersRes]) => {
+      if (cancelled) return;
+      const orgs = (Array.isArray(orgsRes.data) ? orgsRes.data : []).filter(
+        (o) => o && !String(o.id).startsWith("mc-")
+      );
+      setOrgOptions(orgs);
+      setCenterOptions(Array.isArray(centersRes.data) ? centersRes.data : []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!province?.value || !citiesByProvince[province.value]) {
@@ -138,6 +169,9 @@ const SalamatyaranSignupIndividual = () => {
       city: city?.value ?? city,
       address,
       collaborationType,
+      affiliation_kind: affiliationKind,
+      affiliated_organization_id: affiliatedOrganizationId,
+      affiliated_medical_center_id: affiliatedMedicalCenterId,
     });
   };
 
@@ -163,6 +197,9 @@ const SalamatyaranSignupIndividual = () => {
       cooperation_type: collaborationType?.value ?? collaborationType,
       explanation,
       cooperation_description: explanation,
+      affiliation_kind: affiliationKind,
+      affiliated_organization_id: affiliationKind === "affiliated" ? affiliatedOrganizationId || null : null,
+      affiliated_medical_center_id: affiliationKind === "affiliated" ? affiliatedMedicalCenterId || null : null,
     });
 
     setTimeout(() => {
@@ -507,8 +544,59 @@ const SalamatyaranSignupIndividual = () => {
                         placeholder="توضیحات همکاری"
                         className="w-full p-4 bg-blue-50/50 rounded-2xl border border-blue-200
                    placeholder-blue-400 text-blue-950 focus:outline-none
-                   focus:ring-3 focus:ring-blue-300"
+                   focus:ring-3 focus:ring-blue-300 text-lg"
                       />
+
+                      <div className="space-y-3 pt-2">
+                        <RequiredLabel className="text-blue-700 block">وابستگی سازمانی</RequiredLabel>
+                        <select
+                          value={affiliationKind}
+                          onChange={(e) => {
+                            setAffiliationKind(e.target.value);
+                            if (e.target.value === "independent") {
+                              setAffiliatedOrganizationId("");
+                              setAffiliatedMedicalCenterId("");
+                            }
+                          }}
+                          className="w-full p-4 bg-blue-50/50 rounded-2xl border border-blue-200
+                     focus:outline-none focus:ring-3 focus:ring-blue-300 text-right text-lg text-blue-950"
+                        >
+                          <option value="independent">سلامتیار مستقل</option>
+                          <option value="affiliated">وابسته به مرکز / خیریه</option>
+                        </select>
+                        {affiliationKind === "affiliated" && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <select
+                              value={affiliatedMedicalCenterId}
+                              onChange={(e) => setAffiliatedMedicalCenterId(e.target.value)}
+                              className="w-full p-4 bg-blue-50/50 rounded-2xl border border-blue-200
+                         focus:outline-none focus:ring-3 focus:ring-blue-300 text-right text-blue-950"
+                            >
+                              <option value="">مرکز درمانی</option>
+                              {centerOptions.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                  {c.city ? ` — ${c.city}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={affiliatedOrganizationId}
+                              onChange={(e) => setAffiliatedOrganizationId(e.target.value)}
+                              className="w-full p-4 bg-blue-50/50 rounded-2xl border border-blue-200
+                         focus:outline-none focus:ring-3 focus:ring-blue-300 text-right text-blue-950"
+                            >
+                              <option value="">سازمان حامی / خیریه</option>
+                              {orgOptions.map((o) => (
+                                <option key={o.id} value={o.id}>
+                                  {o.name}
+                                  {o.city ? ` — ${o.city}` : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                   </div>

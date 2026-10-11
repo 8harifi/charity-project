@@ -36,6 +36,7 @@ export async function buildPatientFormData(form) {
   fd.append("contact2_phone_number", form.contact2_phone_number || "");
   fd.append("insurance", String(form.insurance ?? ""));
   fd.append("sickness_description", form.sickness_description || "");
+  fd.append("financial_level", form.financial_level || "");
   await appendFile(fd, "national_card_image", form.national_card_image);
   await appendFile(fd, "birth_certificate_image", form.birth_certificate_image);
   return fd;

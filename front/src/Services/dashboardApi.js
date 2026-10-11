@@ -4,6 +4,12 @@ export const requestService = {
   list(scope = "active", params = {}) {
     return apiClient.get("/requests/", { params: { scope, ...params } });
   },
+  markRead(id) {
+    return apiClient.post(`/requests/${id}/read/`);
+  },
+  contactDisclosure(data) {
+    return apiClient.post("/contact-disclosure/", data);
+  },
   get(id) {
     return apiClient.get(`/requests/${id}/`);
   },
@@ -82,6 +88,18 @@ export const requestService = {
   fundRecipientOptions() {
     return apiClient.get("/requests/fund-recipients/");
   },
+  contactInbox(params = {}) {
+    return apiClient.get("/contact-messages/inbox/", { params });
+  },
+  replyContact(id, data) {
+    return apiClient.patch(`/contact-messages/${id}/reply/`, data);
+  },
+  contactDisclosureInbox() {
+    return apiClient.get("/contact-disclosure/inbox/");
+  },
+  updateContactDisclosure(id, data) {
+    return apiClient.patch(`/contact-disclosure/${id}/`, data);
+  },
   staffRequests() {
     return apiClient.get("/staff-requests/");
   },
@@ -140,11 +158,10 @@ export const donationService = {
 };
 
 export const walletServiceGuest = {
-  guestDonate(campaignId, amount) {
-    return apiClient.post("/wallet/donate/guest/", {
-      campaign_id: campaignId,
-      amount,
-    });
+  guestDonate(campaignId, amount, destinationType = "campaign", extra = {}) {
+    const payload = { amount, destination_type: destinationType, ...extra };
+    if (campaignId) payload.campaign_id = campaignId;
+    return apiClient.post("/wallet/donate/guest/", payload);
   },
 };
 

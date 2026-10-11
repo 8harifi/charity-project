@@ -31,10 +31,7 @@ export function buildPatientFormFromDraft(steps, password) {
     headRaw === "1" ||
     headRaw === "true";
 
-  const town = (s2.town || s2.county || "").trim();
-  const addressBase = (s2.address || "").trim();
-  const address =
-    town && addressBase ? `${town}، ${addressBase}` : addressBase || town;
+  const address = (s2.address || "").trim();
 
   return {
     national_code: (s1.national_code || "").trim(),
@@ -58,6 +55,11 @@ export function buildPatientFormFromDraft(steps, password) {
     ),
     landline_number: s1.landline_number || s1.phone || "",
     health_assistant_code: (s1.health_assistant_code || "").trim(),
+    presenter_first_name: s1.presenter_first_name || "",
+    presenter_last_name: s1.presenter_last_name || "",
+    presenter_national_code: s1.presenter_national_code || "",
+    presenter_organization_name: s1.presenter_organization_name || "",
+    financial_level: s2.financial_level || "",
     province: s2.province || "",
     city: s2.city || "",
     address,
@@ -94,6 +96,11 @@ export async function registerPatient(form) {
   fd.append("covered_organization", String(form.covered_organization ?? ""));
   fd.append("landline_number", form.landline_number || "");
   fd.append("health_assistant_code", form.health_assistant_code || "");
+  fd.append("presenter_first_name", form.presenter_first_name || "");
+  fd.append("presenter_last_name", form.presenter_last_name || "");
+  fd.append("presenter_national_code", form.presenter_national_code || "");
+  fd.append("presenter_organization_name", form.presenter_organization_name || "");
+  fd.append("financial_level", form.financial_level || "");
   fd.append("province", form.province || "");
   fd.append("city", form.city || "");
   fd.append("address", form.address || "");

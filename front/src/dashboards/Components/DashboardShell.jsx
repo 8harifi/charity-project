@@ -213,37 +213,50 @@ function SidebarNav({
           {(!isCollapsed || isMobile) && (
             <p className="text-indigo-400 text-sm px-4 pt-2 pb-2 flex-shrink-0">منوی اصلی</p>
           )}
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onTabChange(tab.id)}
-                className={`nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-150 text-base mb-0.5 ${
-                  isActive
-                    ? "bg-indigo-600/50 text-white shadow-lg shadow-indigo-600/20"
-                    : "text-indigo-200 hover:bg-indigo-700/30 hover:text-white"
-                } ${isCollapsed && !isMobile ? "justify-center" : ""}`}
-                title={isCollapsed && !isMobile ? tab.label : undefined}
-                style={{ minHeight: "48px" }}
-              >
-                {Icon && (
-                  <Icon
-                    size={22}
-                    className={`flex-shrink-0 ${isActive ? "text-blue-400" : "text-indigo-300"}`}
-                  />
-                )}
-                {(!isCollapsed || isMobile) && (
-                  <>
-                    <span className="flex-1 text-right font-medium truncate">{tab.label}</span>
-                    {isActive && <div className="w-1 h-7 bg-blue-400 rounded-full flex-shrink-0" />}
-                  </>
-                )}
-              </button>
-            );
-          })}
+          {(() => {
+            const items = [];
+            let lastGroup = null;
+            tabs.forEach((tab) => {
+              if (tab.group && tab.group !== lastGroup && (!isCollapsed || isMobile)) {
+                items.push(
+                  <p key={`g-${tab.group}`} className="text-indigo-400 text-xs px-4 pt-3 pb-1">
+                    {tab.group}
+                  </p>
+                );
+              }
+              lastGroup = tab.group || null;
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              items.push(
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onTabChange(tab.id)}
+                  className={`nav-item w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-150 text-base mb-0.5 ${
+                    isActive
+                      ? "bg-indigo-600/50 text-white shadow-lg shadow-indigo-600/20"
+                      : "text-indigo-200 hover:bg-indigo-700/30 hover:text-white"
+                  } ${isCollapsed && !isMobile ? "justify-center" : ""}`}
+                  title={isCollapsed && !isMobile ? tab.label : undefined}
+                  style={{ minHeight: "48px" }}
+                >
+                  {Icon && (
+                    <Icon
+                      size={22}
+                      className={`flex-shrink-0 ${isActive ? "text-blue-400" : "text-indigo-300"}`}
+                    />
+                  )}
+                  {(!isCollapsed || isMobile) && (
+                    <>
+                      <span className="flex-1 text-right font-medium truncate">{tab.label}</span>
+                      {isActive && <div className="w-1 h-7 bg-blue-400 rounded-full flex-shrink-0" />}
+                    </>
+                  )}
+                </button>
+              );
+            });
+            return items;
+          })()}
         </nav>
 
         <div className={`sidebar-bottom p-3 ${isCollapsed && !isMobile ? "flex flex-col items-center" : ""}`}>

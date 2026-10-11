@@ -38,4 +38,13 @@ export const adminWalletService = {
   listPledges(params = {}) {
     return apiClient.get("/admin/wallet/pledges/", { params });
   },
+  listGeneralDonations(params = {}) {
+    return apiClient.get("/admin/wallet/general-donations/", { params });
+  },
+  payRequest(networkRequestId, amount) {
+    return apiClient.post("/admin/wallet/pay-request/", {
+      network_request_id: networkRequestId,
+      amount,
+    });
+  },
 };

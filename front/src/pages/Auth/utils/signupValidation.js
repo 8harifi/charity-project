@@ -61,8 +61,8 @@ function requireHeadOfHousehold(value) {
   return "";
 }
 
-export function validatePatientStep1(data = {}) {
-  return firstError(
+export function validatePatientStep1(data = {}, options = {}) {
+  const checks = [
     requireText(data.first_name, "نام را وارد کنید."),
     requireText(data.last_name, "نام خانوادگی را وارد کنید."),
     requireText(data.father_name, "نام پدر را وارد کنید."),
@@ -75,8 +75,19 @@ export function validatePatientStep1(data = {}) {
     requireLookup(data.job_status, "وضعیت شغلی را انتخاب کنید."),
     requireLookup(data.housing_status, "وضعیت مسکن را انتخاب کنید."),
     requireLookup(data.covered_organization, "ارگان تحت پوشش را انتخاب کنید."),
-    requirePhone(data.phone_number)
-  );
+    requirePhone(data.phone_number),
+  ];
+  if (!options.skipIntroducer) {
+    checks.push(requireIntroducer(data));
+  }
+  return firstError(...checks);
+}
+
+function requireIntroducer(data) {
+  const code = (data.health_assistant_code || "").trim();
+  const nc = (data.presenter_national_code || "").trim();
+  if (code || nc) return "";
+  return "کد سلامتیار معرف یا کد ملی یک سلامتیار واقعی الزامی است.";
 }
 
 export function validatePatientStep2(data = {}) {
@@ -157,13 +168,21 @@ export function validateHealthAssistantStep1(data = {}, profileType = "individua
 }
 
 export function validateHealthAssistantIndividualStep2(data = {}) {
+  const kind = data.affiliation_kind || data.affiliationKind || "independent";
+  const affiliatedMissing =
+    kind === "affiliated" &&
+    !data.affiliated_organization_id &&
+    !data.affiliatedOrganizationId &&
+    !data.affiliated_medical_center_id &&
+    !data.affiliatedMedicalCenterId;
   return firstError(
     requireLookup(data.education, "تحصیلات را انتخاب کنید."),
     requireText(data.job, "شغل را وارد کنید."),
     requireText(data.province, "استان را انتخاب کنید."),
     requireText(data.city, "شهر را انتخاب کنید."),
     requireText(data.address, "آدرس را وارد کنید."),
-    requireLookup(data.cooperation_type ?? data.collaborationType, "نوع همکاری را انتخاب کنید.")
+    requireLookup(data.cooperation_type ?? data.collaborationType, "نوع همکاری را انتخاب کنید."),
+    affiliatedMissing ? "سازمان حامی یا مرکز درمانی را انتخاب کنید." : ""
   );
 }
 

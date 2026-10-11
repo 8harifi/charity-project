@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { walletServiceGuest } from "../Services/dashboardApi";
+import { walletService } from "../Services/walletService";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * Donation entry point for the public site.
@@ -13,21 +15,30 @@ import { walletServiceGuest } from "../Services/dashboardApi";
  */
 export default function DonateModal({ campaign, onClose, onDonated }) {
   const navigate = useNavigate();
+  const { isLogin } = useAuth() || {};
   const [step, setStep] = useState("history");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const isNetwork = campaign?.destination_type === "general" || (campaign?.id == null && !campaign?.network_request_id);
+  const isRequest = campaign?.destination_type === "request" || !!campaign?.network_request_id;
 
   useEffect(() => {
-    setStep("history");
+    setStep(isLogin ? "amount" : "history");
     setAmount("");
     setError("");
-  }, [campaign?.id]);
+  }, [campaign?.id, campaign?.destination_type, campaign?.network_request_id, isLogin]);
 
   if (!campaign) return null;
 
   const goToLogin = () => {
-    sessionStorage.setItem("pendingDonationCampaignId", String(campaign.id));
+    if (isRequest) {
+      sessionStorage.setItem("pendingDonationRequestId", String(campaign.network_request_id || campaign.id));
+    } else if (!isNetwork) {
+      sessionStorage.setItem("pendingDonationCampaignId", String(campaign.id));
+    } else {
+      sessionStorage.setItem("pendingDonationNetwork", "1");
+    }
     navigate("/loginpage");
   };
 
@@ -40,7 +51,31 @@ export default function DonateModal({ campaign, onClose, onDonated }) {
     setLoading(true);
     setError("");
     try {
-      const r = await walletServiceGuest.guestDonate(campaign.id, value);
+      if (isLogin) {
+        const payload = { amount: value };
+        if (isRequest) {
+          payload.destination_type = "request";
+          payload.network_request_id = campaign.network_request_id || campaign.id;
+        } else if (isNetwork) {
+          payload.destination_type = "general";
+          payload.title = campaign.title || "کمک کلی";
+        } else {
+          payload.destination_type = "campaign";
+          payload.campaign_id = campaign.id;
+        }
+        await walletService.donate(payload);
+        onDonated?.();
+        onClose();
+        return;
+      }
+      const extra = isRequest
+        ? { network_request_id: campaign.network_request_id || campaign.id }
+        : {};
+      const r = isNetwork
+        ? await walletServiceGuest.guestDonate(null, value, "general")
+        : isRequest
+          ? await walletServiceGuest.guestDonate(null, value, "request", extra)
+          : await walletServiceGuest.guestDonate(campaign.id, value);
       if (r.data?.payment_url) {
         window.location.href = r.data.payment_url;
         return;

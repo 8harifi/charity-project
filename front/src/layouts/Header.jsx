@@ -62,7 +62,7 @@ const Header = () => {
               type="button"
               className="bg-green-600 px-4 py-2 text-white hidden sm:block rounded-xl ml-2 hover:bg-green-500 text-sm"
             >
-              <Link to="/donate">کمک به بیماران</Link>
+              <Link to="/campaigns">حامی باش</Link>
             </button>
 
             {/* دکمه ورود / عضویت */}
@@ -123,24 +123,24 @@ const Header = () => {
                     >
                       سلامتیاران و مددکاران
                     </Link>
-                    {/*<Link*/}
-                    {/*  to="/healthservicecenter"*/}
-                    {/*  className="block px-4 py-2 text-white hover:bg-blue-300/10"*/}
-                    {/*>*/}
-                    {/*  مراکز خدمات سلامت*/}
-                    {/*</Link>*/}
-                    {/*<Link*/}
-                    {/*  to="/charitycenter"*/}
-                    {/*  className="block px-4 py-2 text-white hover:bg-blue-300/10"*/}
-                    {/*>*/}
-                    {/*  مراکز نیکوکاری*/}
-                    {/*</Link>*/}
-                    {/*<Link*/}
-                    {/*  to="/socialworkunit"*/}
-                    {/*  className="block px-4 py-2 text-white hover:bg-blue-300/10"*/}
-                    {/*>*/}
-                    {/*  واحد مددکاری سازمان‌ها*/}
-                    {/*</Link>*/}
+                    <Link
+                      to="/charitycenter"
+                      className="block px-4 py-2 text-white hover:bg-blue-300/10"
+                    >
+                      مراکز نیکوکاری
+                    </Link>
+                    <Link
+                      to="/healthservicecenter"
+                      className="block px-4 py-2 text-white hover:bg-blue-300/10"
+                    >
+                      مراکز خدمات سلامت
+                    </Link>
+                    <Link
+                      to="/socialworkunit"
+                      className="block px-4 py-2 text-white hover:bg-blue-300/10"
+                    >
+                      واحد مددکاری سازمان‌ها
+                    </Link>
                   </div>
                 </div>
 
@@ -239,8 +239,8 @@ const Header = () => {
           <div className="flex flex-col px-8 gap-3 mt-2">
             {/* کمک به بیماران */}
             <button className="bg-green-600 text-white font-semibold rounded-xl py-2 hover:bg-green-500">
-              <Link to="/donate" onClick={() => setOpen(false)}>
-                کمک به بیماران
+              <Link to="/campaigns" onClick={() => setOpen(false)}>
+                حامی باش
               </Link>
             </button>
             {!isLogin && (
@@ -299,29 +299,29 @@ const Header = () => {
                         سلامتیاران و مددکاران
                       </Link>
 
-                      {/*<Link*/}
-                      {/*  to="/healthservicecenter"*/}
-                      {/*  onClick={() => setOpen(false)}*/}
-                      {/*  className="block px-4 py-2 text-white hover:bg-blue-300/10"*/}
-                      {/*>*/}
-                      {/*  مراکز خدمات سلامت*/}
-                      {/*</Link>*/}
+                      <Link
+                        to="/healthservicecenter"
+                        onClick={() => setOpen(false)}
+                        className="block px-4 py-2 text-white hover:bg-blue-300/10"
+                      >
+                        مراکز خدمات سلامت
+                      </Link>
 
-                      {/*<Link*/}
-                      {/*  to="/charitycenter"*/}
-                      {/*  onClick={() => setOpen(false)}*/}
-                      {/*  className="block px-4 py-2 text-white hover:bg-blue-300/10"*/}
-                      {/*>*/}
-                      {/*  مراکز نیکوکاری*/}
-                      {/*</Link>*/}
+                      <Link
+                        to="/charitycenter"
+                        onClick={() => setOpen(false)}
+                        className="block px-4 py-2 text-white hover:bg-blue-300/10"
+                      >
+                        مراکز نیکوکاری
+                      </Link>
 
-                      {/*<Link*/}
-                      {/*  to="/socialworkunit"*/}
-                      {/*  onClick={() => setOpen(false)}*/}
-                      {/*  className="block px-4 py-2 text-white hover:bg-blue-300/10"*/}
-                      {/*>*/}
-                      {/*  واحد مددکاری سازمان‌ها*/}
-                      {/*</Link>*/}
+                      <Link
+                        to="/socialworkunit"
+                        onClick={() => setOpen(false)}
+                        className="block px-4 py-2 text-white hover:bg-blue-300/10"
+                      >
+                        واحد مددکاری سازمان‌ها
+                      </Link>
                     </div>
                   </details>
                 </div>
