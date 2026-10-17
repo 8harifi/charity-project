@@ -9,8 +9,8 @@ This document describes how the **charity-center** project is divided among the 
 | Display name | Git author | Email | Primary role |
 |--------------|------------|-------|--------------|
 | **8harifi** | `8harifi` | `8harifi@gmail.com` | **Backend** — Django REST API, models, migrations, wallet/payments, admin APIs, deployment (Liara), tests, project docs |
-| **Mobina Rasa** | `mobin-84-rasa` | `mobinarasa84@gmail.com` | **Frontend (~60%)** — public site, homepage, campaigns/needs, signup flows, API client wiring, shared layout |
-| **Yasaman Alizadeh** | `yasamanalizadeh2003` | `yasamanalz00@gmail.com` | **Frontend (~40%)** — admin dashboards, request/workflow UI, wallet/admin panels, login/password reset UX |
+| **Mobina Rasa** | `mobin-84-rasa` | `mobinarasa84@gmail.com` | **Frontend** — public site, homepage, campaigns/needs, signup flows, API client wiring, shared layout |
+| **Yasaman Alizadeh** | `yasamanalizadeh2003` | `yasamanalz00@gmail.com` | **Frontend** — admin dashboards, request/workflow UI, wallet/admin panels, login/password reset UX |
 
 Approximate lifetime commit counts on this repository (all branches):
 
@@ -18,7 +18,7 @@ Approximate lifetime commit counts on this repository (all branches):
 - mobin-84-rasa: **60** commits  
 - yasamanalizadeh2003: **30** commits  
 
-Frontend ownership is intentionally **~60% Mobina / ~40% Yasaman** for the doc2 batch (by lines of React/source changed, not including the compiled `back/spa` bundle).
+Frontend ownership is divided between Mobina and Yasaman for the doc2 batch.
 
 ---
 
@@ -44,8 +44,8 @@ The backend serves the React SPA via `back/templates/index.html` and collected s
 
 ### Frontend (`front/`) — **Mobina + Yasaman**
 
-| Area | Path(s) | Primary owner (this batch) |
-|------|---------|----------------------------|
+| Area | Path(s) | Primary owner |
+|------|---------|---------------|
 | App shell & routes | `front/src/App.jsx`, `front/src/layouts/` | Mobina |
 | Public homepage | `front/src/pages/Home.jsx`, `front/src/copmonent/home/*` | Mobina (new: `DoctorScheduleSection`, `HomePatientActions`, `SupportingOrgSearch`; updates to hero, map, CTA) |
 | Campaigns / needs | `front/src/pages/Needs.jsx`, `front/src/components/DonateModal.jsx` | Mobina |
@@ -97,11 +97,11 @@ Commits are ordered so backend lands first, then the larger frontend slice, then
 - `settings.py`, `liara.json`, `liara_nginx.conf`, `.liaraignore`, `database/.gitkeep`, `populate_db.py`  
 - Requirements docx in `docs/`
 
-### 2. Frontend (~60%) — `aead7f7` — **mobin-84-rasa** `<mobinarasa84@gmail.com>`
+### 2. Frontend — `aead7f7` — **mobin-84-rasa** `<mobinarasa84@gmail.com>`
 
 **Message:** `feat(front): homepage doc2 sections, campaigns/needs UX, and signup flows`
 
-**Includes (~60% of frontend source-line changes in this batch):**
+**Includes:**
 
 - New homepage sections: doctor schedules, patient actions, supporting-org search  
 - `HeroSection`, `HealthAssistantMapSection`, `CallToAction`, `Home.jsx`  
@@ -113,32 +113,16 @@ Commits are ordered so backend lands first, then the larger frontend slice, then
 - API wiring: `publicApi`, `PatientApi`, `dashboardApi`, `walletService`, `healthAssistantDashboardService`, `App.jsx`, `package.json`  
 - **`back/spa/`** — production Vite build copied for Django/Liara (static JS/CSS/fonts; not hand-edited)
 
-### 3. Frontend (~40%) — `d82db8b` — **yasamanalizadeh2003** `<yasamanalz00@gmail.com>`
+### 3. Frontend — `d82db8b` — **yasamanalizadeh2003** `<yasamanalz00@gmail.com>`
 
 **Message:** `feat(front): admin medical centers, contact inbox, and request workflow UI`
 
-**Includes (~40% of frontend source-line changes):**
+**Includes:**
 
 - New: `AdminMedicalCentersPanel.jsx`, `ContactInboxPanel.jsx`  
 - Updates: `AdminUsersPanel`, `AdminWalletPanel`, `AdminDashboard`, `RequestListPanel`, `WalletPanel`  
 - `LoginPage.jsx` (password reset UX), `HAPatientEditModal`, `GlobalSearchPanel`, `BenefactorSupportPanel`  
 - `DoctorDashboard`, `PatientDashboard`, `adminService.js`, `haPermissions.js`, `profileMappers.js`
-
----
-
-## How frontend work was split (40 / 60)
-
-Assignment rule for **this doc2 batch** (source files only):
-
-- **Mobina (~60%)**: everything user-facing on the marketing site, campaigns/needs, navigation, signup, contact, and shared dashboard shell / introduce-patient / new-request forms that sit on public and role flows.  
-- **Yasaman (~40%)**: admin operations, request list depth, wallet panel in dashboards, medical center admin UI, contact inbox, and login recovery.
-
-Line-count check (additions in modified files + new `.jsx` files, excluding `back/spa`):
-
-| Author | Approx. lines credited | Share |
-|--------|------------------------|-------|
-| mobin-84-rasa | ~1,504 | **60%** |
-| yasamanalizadeh2003 | ~1,002 | **40%** |
 
 ---
 
