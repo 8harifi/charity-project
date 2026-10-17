@@ -138,7 +138,7 @@ const Needs = () => {
             {[
               { id: "patients", label: "بیماران" },
               { id: "regions", label: "مناطق نیازمند" },
-              { id: "network", label: "کمک کلی" },
+              { id: "network", label: "شبکه" },
             ].map((t) => (
               <button
                 key={t.id}
@@ -206,12 +206,12 @@ const Needs = () => {
 
         {tab === "network" ? (
           <div className="max-w-2xl mx-auto bg-white rounded-2xl p-6 shadow-sm border border-blue-50 text-right">
-            <h2 className="text-xl font-bold text-gray-800 mb-2">کمک کلی</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">کمک به شبکه</h2>
             <p className="text-gray-700 leading-8">
-              مبلغ به مدیر سامانه می‌رسد تا در امور خیریه، به تشخیص مدیریت شبکه، خرج شود.
-              این کمک به یک کمپین یا درخواست مشخص وصل نیست.
+              پرداخت شما صرف بیماران و مناطق نیازمند حوزه سلامت تحت پوشش شبکه،
+              که در فراخوان‌ها اعلام شده است، خواهد شد.
             </p>
-            <p className="text-sm text-gray-500 mt-2">پرداخت وارد کیف پول سامانه می‌شود.</p>
+            <p className="text-sm text-gray-500 mt-2">پرداخت به کیف پول شبکه منتقل می‌شود.</p>
             <input
               type="number"
               min="1000"
@@ -231,22 +231,22 @@ const Needs = () => {
                     await walletService.donate({
                       amount: Number(networkAmount),
                       destination_type: "general",
-                      title: "کمک کلی",
+                      title: "کمک به شبکه",
                     });
-                    setNetworkMsg("کمک کلی ثبت شد و در اختیار مدیریت سامانه قرار گرفت.");
+                    setNetworkMsg("کمک شما ثبت شد و به کیف پول شبکه منتقل شد.");
                   } catch (err) {
                     setNetworkMsg(err.response?.data?.detail || "پرداخت انجام نشد.");
                   }
                 } else {
                   setDonateTarget({
                     id: null,
-                    title: "کمک کلی به تشخیص مدیریت",
+                    title: "کمک به شبکه",
                     destination_type: "general",
                   });
                 }
               }}
             >
-              کمک کلی
+              پرداخت به کیف پول شبکه
             </button>
           </div>
         ) : (

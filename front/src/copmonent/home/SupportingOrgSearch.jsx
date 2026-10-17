@@ -36,7 +36,7 @@ export default function SupportingOrgSearch() {
   }, []);
 
   return (
-    <section className="font-kook bg-white py-12 px-4" dir="rtl">
+    <section id="supporting-org-search" className="font-kook bg-white py-12 px-4" dir="rtl">
       <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-2">جستجوی سازمان‌های حامی</h2>
         <p className="text-gray-600 mb-6">

@@ -61,7 +61,7 @@ export default function DoctorScheduleSection() {
   }, [selected, filters.weekday, filters.weekday_present]);
 
   return (
-    <section className="font-kook bg-white py-12 px-4" dir="rtl">
+    <section id="doctor-schedule" className="font-kook bg-white py-12 px-4" dir="rtl">
       <div className="max-w-6xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <h2 className="text-2xl sm:text-3xl font-bold text-blue-900 mb-2">

@@ -1,15 +1,21 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { BookOpen, HeartHandshake, UserPlus } from "lucide-react";
 
 export default function HomePatientActions() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [joinOpen, setJoinOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
 
+  useEffect(() => {
+    if (location.hash === "#join-network") setJoinOpen(true);
+    if (location.hash === "#patient-guide") setGuideOpen(true);
+  }, [location.hash]);
+
   return (
-    <section className="font-kook bg-gradient-to-l from-blue-50 to-emerald-50 py-10 px-4" dir="rtl">
+    <section id="patient-actions" className="font-kook bg-gradient-to-l from-blue-50 to-emerald-50 py-10 px-4" dir="rtl">
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
         <button
           type="button"

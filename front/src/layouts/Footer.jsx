@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300 mt-16 font-kook">
@@ -13,10 +15,21 @@ function Footer() {
         <div>
           <h4 className="text-white mb-3">دسترسی سریع</h4>
           <ul className="space-y-2 text-sm">
-            <li>خانه</li>
-            <li>کمپین‌ها</li>
-            <li>اعضای شبکه</li>
-            <li>اخبار</li>
+            <li>
+              <Link to="/campaigns" className="hover:text-white transition">حامی باش</Link>
+            </li>
+            <li>
+              <Link to="/#doctor-schedule" className="hover:text-white transition">برنامه حضور پزشکان</Link>
+            </li>
+            <li>
+              <Link to="/#join-network" className="hover:text-white transition">پیوستن بیمار به شبکه</Link>
+            </li>
+            <li>
+              <Link to="/#supporting-org-search" className="hover:text-white transition">جستجوی حامی بیمار</Link>
+            </li>
+            <li>
+              <Link to="/#patient-guide" className="hover:text-white transition">راهنمای بیمار</Link>
+            </li>
           </ul>
         </div>
 
